@@ -1,0 +1,62 @@
+spring:
+  docker:
+    compose:
+      enabled: false
+  application:
+    name: booking_travel_backend
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=YEAR
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        show_sql: true
+  sql:
+    init:
+      mode: never
+
+  mail:
+    default-encoding: UTF-8
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:tongnguyenthanhdo@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:sres rups vymy sxne}
+    properties:
+      mail:
+        SMTP:
+          auth: true
+          STARTTLS:
+            enable: true
+
+mailer:
+  service: gmail
+  from: ${MAILER_FROM:tongnguyenthanhdo@gmail.com}
+
+springdoc:
+  packages-to-scan: com.dotnt.booking_travel_backend
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+aws:
+  s3:
+    enabled: ${AWS_S3_ENABLED:false}
+    endpoint: ${AWS_S3_ENDPOINT:http://localhost:8333}
+    region: ${AWS_S3_REGION:us-east-1}
+    access-key: ${AWS_S3_ACCESS_KEY:any_key}
+    secret-key: ${AWS_S3_SECRET_KEY:any_secret}
+    bucket-name: ${AWS_S3_BUCKET_NAME:booking-travel-bucket}
+
+app:
+  upload:
+    dir: ${APP_UPLOAD_DIR:uploads}
+  jwt:
+    secret: ${APP_JWT_SECRET:default-secret-key-must-be-at-least-256-bits-long-to-be-secure-for-hmac-sha-256}
+    expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}

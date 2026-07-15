@@ -1,0 +1,102 @@
+### ServiceType CRUD Operations API
+
+@baseUrl = http://localhost:8080/api/v1/admin/services/types
+
+### Create a new ServiceType
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "code": "economy",
+  "icon": "fas fa-car",
+  "displayOrder": 1,
+  "active": true,
+  "translations": [
+    {
+      "locale": "en",
+      "name": "Economy",
+      "seoTitle": "Economy Service Type",
+      "seoDescription": "Budget-friendly travel service",
+      "canonicalUrl": "https://example.com/services/economy"
+    },
+    {
+      "locale": "vi",
+      "name": "Kinh tế",
+      "seoTitle": "Loại dịch vụ kinh tế",
+      "seoDescription": "Dịch vụ du lịch tiết kiệm",
+      "canonicalUrl": "https://example.com/services/economy"
+    }
+  ]
+}
+
+### Get all ServiceTypes with pagination
+GET {{baseUrl}}?page=0&size=10&search=&active=true
+Accept: application/json
+
+### Get ServiceType by ID
+GET {{baseUrl}}/1
+Accept: application/json
+
+### Update ServiceType
+PUT {{baseUrl}}/1
+Content-Type: application/json
+
+{
+  "code": "economy",
+  "icon": "fas fa-car-side",
+  "displayOrder": 2,
+  "active": true,
+  "translations": [
+    {
+      "id": 1,
+      "locale": "en",
+      "name": "Economy Class",
+      "seoTitle": "Economy Service Type Updated",
+      "seoDescription": "Budget-friendly travel service - Updated",
+      "canonicalUrl": "https://example.com/services/economy"
+    },
+    {
+      "locale": "vi",
+      "name": "Lớp Kinh tế",
+      "seoTitle": "Loại dịch vụ kinh tế - Cập nhật",
+      "seoDescription": "Dịch vụ du lịch tiết kiệm - Cập nhật",
+      "canonicalUrl": "https://example.com/services/economy"
+    }
+  ]
+}
+
+### Delete ServiceType
+DELETE {{baseUrl}}/1
+Accept: application/json
+
+### Create Premium ServiceType
+POST {{baseUrl}}
+Content-Type: application/json
+
+{
+  "code": "premium",
+  "icon": "fas fa-crown",
+  "displayOrder": 0,
+  "active": true,
+  "translations": [
+    {
+      "locale": "en",
+      "name": "Premium",
+      "seoTitle": "Premium Service Type",
+      "seoDescription": "Luxury travel service",
+      "canonicalUrl": "https://example.com/services/premium"
+    },
+    {
+      "locale": "vi",
+      "name": "Cao cấp",
+      "seoTitle": "Loại dịch vụ cao cấp",
+      "seoDescription": "Dịch vụ du lịch sang trọng",
+      "canonicalUrl": "https://example.com/services/premium"
+    }
+  ]
+}
+
+### Search ServiceTypes by name
+GET {{baseUrl}}?page=0&size=10&search=economy&active=true
+Accept: application/json
+

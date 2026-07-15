@@ -1,3 +1,64 @@
 spring:
+  docker:
+    compose:
+      enabled: false
   application:
     name: booking_travel_backend
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/dev_booking_travel?options=-c%20timezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:myuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:secret}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: false
+  mail:
+    default-encoding: UTF-8
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:tongnguyenthanhdo@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:sres rups vymy sxne}
+    properties:
+      mail:
+        SMTP:
+          auth: true
+          STARTTLS:
+            enable: true
+
+mailer:
+  service: gmail
+  from: ${MAILER_FROM:tongnguyenthanhdo@gmail.com}
+
+springdoc:
+  packages-to-scan: com.dotnt.booking_travel_backend
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+aws:
+  s3:
+    enabled: ${AWS_S3_ENABLED:false}
+    endpoint: ${AWS_S3_ENDPOINT:http://localhost:8333}
+    region: ${AWS_S3_REGION:us-east-1}
+    access-key: ${AWS_S3_ACCESS_KEY:dcdf5fa5c423817a0934cab20c2b89f2ef1a1c0b5973460b9d5525aedbff1132}
+    secret-key: ${AWS_S3_SECRET_KEY:776a6277921b94dfc88357297c8b575f59db33341a4e46479d201379b2503a55}
+    bucket-name: ${AWS_S3_BUCKET_NAME:booking-travel-bucket}
+
+app:
+  upload:
+    dir: ${APP_UPLOAD_DIR:uploads}
+  jwt:
+    secret: ${APP_JWT_SECRET:default-secret-key-must-be-at-least-256-bits-long-to-be-secure-for-hmac-sha-256}
+    expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
+
+cloudinary:
+  cloud_name: ${CLOUDINARY_CLOUD_NAME:dpdte7bjh}
+  api_key: ${CLOUDINARY_API_KEY:949374147113246}
+  api_secret: ${CLOUDINARY_API_SECRET:Qx9-APsihOYbU25691atvlaPeoc}
+  folder: ${CLOUDINARY_FOLDER:booking_travel}
