@@ -5,7 +5,13 @@ import com.dotnt.booking_travel_backend.fleet.api.dtos.VehicleCategoryDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-public interface IVehicleCategory {
-    CreateVehicleCategoryRequest createVehicleCategory(VehicleCategoryDTO vehicleCategoryDTO);
-    Page<VehicleCategoryDTO> getVehicleCategories(Pageable pageable, String search);
+public interface IVehicleCategoryService {
+    VehicleCategoryDTO createVehicleCategory(CreateVehicleCategoryRequest request);
+    Page<VehicleCategoryDTO> getVehicleCategories(Pageable pageable, String search, Boolean active);
+
+    VehicleCategoryDTO getVehicleCategoryById(Long id);
+
+    VehicleCategoryDTO updateVehicleCategory(Long id, VehicleCategoryDTO vehicleCategoryDTO);
+
+    void deleteVehicleCategory(Long id);
 }

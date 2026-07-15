@@ -1,0 +1,19 @@
+{
+  "identities": [
+    {
+      "name": "local-user",
+      "credentials": [
+        {
+          "accessKey": "dcdf5fa5c423817a0934cab20c2b89f2ef1a1c0b5973460b9d5525aedbff1132",
+          "secretKey": "776a6277921b94dfc88357297c8b575f59db33341a4e46479d201379b2503a55"
+        }
+      ],
+      "actions": [
+        "Read",
+        "Write",
+        "List",
+        "Admin"
+      ]
+    }
+  ]
+}

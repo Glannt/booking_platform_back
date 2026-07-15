@@ -8,6 +8,7 @@ import com.dotnt.booking_travel_backend.rental.internal.repository.RentalTypeRep
 import com.dotnt.booking_travel_backend.rental.internal.repository.RentalTypeTranslationRepository;
 import com.dotnt.booking_travel_backend.rental.internal.service.IRentalTypeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,7 @@ public class RentalTypeServiceImpl implements IRentalTypeService {
     private final RentalTypeTranslationRepository translationRepository;
 
     @Override
+    @Transactional
     public RentalTypeDto create(RentalTypeDto dto) {
         RentalType t = RentalType.builder().code(dto.getCode()).active(dto.isActive()).build();
         RentalType saved = repository.save(t);
@@ -49,6 +51,7 @@ public class RentalTypeServiceImpl implements IRentalTypeService {
     }
 
     @Override
+    @Transactional
     public RentalTypeDto update(Long id, RentalTypeDto dto) {
         return repository.findById(id).map(r -> {
             r.setCode(dto.getCode());
@@ -70,6 +73,7 @@ public class RentalTypeServiceImpl implements IRentalTypeService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
         translationRepository.findByRentalTypeId(id).forEach(translationRepository::delete);
         repository.deleteById(id);

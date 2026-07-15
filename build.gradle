@@ -30,16 +30,31 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-webclient'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    // Source: https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-    implementation 'org.springframework.modulith:spring-modulith-observability-api'
     implementation 'org.springframework.modulith:spring-modulith-starter-core'
     implementation 'org.springframework.modulith:spring-modulith-starter-jpa'
-    compileOnly 'org.projectlombok:lombok'
+    compileOnly 'org.projectlombok:lombok:1.18.36'
+    // Source: https://mvnrepository.com/artifact/org.springframework.modulith/spring-modulith-observability-api
+    implementation("org.springframework.modulith:spring-modulith-observability-api:2.1.0")
+    // Source: https://mvnrepository.com/artifact/com.cloudinary/cloudinary-core
+    implementation("com.cloudinary:cloudinary-core:2.4.0")
+    annotationProcessor 'org.projectlombok:lombok:1.18.36'
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'software.amazon.awssdk:s3:2.25.10'
+    implementation 'com.cloudinary:cloudinary-http5:2.4.0'
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'org.springframework.modulith:spring-modulith-actuator'
-    runtimeOnly 'org.springframework.modulith:spring-modulith-observability-core'
-    annotationProcessor 'org.projectlombok:lombok'
+    // ponytail: observability-core causes NPE in FormattableType.of() when scanning shared.module types
+    // runtimeOnly 'org.springframework.modulith:spring-modulith-observability-core'
+    // Source: https://mvnrepository.com/artifact/com.cloudinary/cloudinary-http5
+    implementation 'com.cloudinary:cloudinary-http5:2.4.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-restclient-test'
@@ -49,9 +64,10 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-webflux-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'org.springframework.modulith:spring-modulith-starter-test'
-    testCompileOnly 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok:1.18.36'
+    testRuntimeOnly 'com.h2database:h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testAnnotationProcessor 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
 }
 
 dependencyManagement {
@@ -62,4 +78,10 @@ dependencyManagement {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += [
+            '-Amapstruct.defaultComponentModel=spring', // Biến các Mapper thành Spring @Component mặc định
+            '-Amapstruct.unmappedTargetPolicy=IGNORE'   // Bỏ qua cảnh báo nếu Entity có trường mà Record/DTO không có
+    ]
 }

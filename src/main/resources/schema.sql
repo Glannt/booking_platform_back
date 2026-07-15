@@ -1,0 +1,14 @@
+DROP TABLE IF EXISTS vehicles CASCADE;
+DROP TABLE IF EXISTS vehicle_category_translations CASCADE;
+DROP TABLE IF EXISTS vehicle_categories CASCADE;
+
+DROP TABLE IF EXISTS tour_option_translations CASCADE;
+DROP TABLE IF EXISTS tour_options CASCADE;
+DROP TABLE IF EXISTS tour_translations CASCADE;
+DROP TABLE IF EXISTS tour_day_activity_translations CASCADE;
+DROP TABLE IF EXISTS tour_day_activities CASCADE;
+DROP TABLE IF EXISTS tour_day_translations CASCADE;
+DROP TABLE IF EXISTS tour_days CASCADE;
+DROP TABLE IF EXISTS tour_prices CASCADE;
+DROP TABLE IF EXISTS tours CASCADE;
+DROP TABLE IF EXISTS tour_category CASCADE;

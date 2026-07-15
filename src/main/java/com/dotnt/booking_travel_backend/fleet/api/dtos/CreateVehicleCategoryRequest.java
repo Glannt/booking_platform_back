@@ -1,11 +1,20 @@
 package com.dotnt.booking_travel_backend.fleet.api.dtos;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 
-public record CreateVehicleCategory(
+import java.util.List;
+
+public record CreateVehicleCategoryRequest(
         @NotBlank String code,
-        @NotBlank int seat,
-        @NotBlank int luggage,
-        boolean active
+        Integer minSeat,
+        Integer maxSeat,
+        Integer minLuggage,
+        Integer maxLuggage,
+        String unitLuggage,
+        boolean active,
+        boolean isDefault,
+        Long thumbnailId,
+        @NotEmpty List<VehicleCategoryTranslationDTO> translations
 ) {
 }

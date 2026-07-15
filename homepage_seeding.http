@@ -1,0 +1,424 @@
+### Cấu hình Host
+@host = http://localhost:8080
+
+### ====================================================================
+### 1. QUẢN LÝ DANH SÁCH NGÔN NGỮ (LANGUAGES TABLE)
+### ====================================================================
+
+### 1.1. Lấy danh sách ngôn ngữ đang hoạt động (Public API)
+GET {{host}}/api/v1/languages
+
+### 1.2. Tạo Ngôn Ngữ Mới (Admin API)
+POST {{host}}/api/v1/admin/languages
+Content-Type: application/json
+
+{
+  "code": "vi",
+  "name": "Tiếng Việt",
+  "flagIcon": "🇻🇳",
+  "isDefault": true,
+  "status": "active",
+  "orderIndex": 1
+}
+
+### 1.3. Lấy toàn bộ danh sách ngôn ngữ quản trị (Admin API)
+GET {{host}}/api/v1/admin/languages
+
+
+### ====================================================================
+### 2. QUẢN LÝ MENUS (MAIN NAVIGATION)
+### ====================================================================
+
+### 2.1. Tạo Menu Điều Hướng Chính (MAIN_NAV)
+# @name createMainMenu
+POST {{host}}/api/v1/admin/menus
+Content-Type: application/json
+
+{
+  "code": "MAIN_NAV",
+  "name": "Thanh Điều Hướng Chính",
+  "status": "active"
+}
+
+### 2.2. Lấy danh sách Menus hiện có để lấy ID
+GET {{host}}/api/v1/admin/menus
+
+### 2.3. Thêm MenuItem: Trang chủ (Home)
+# Thay menuId = 1 (hoặc ID của MAIN_NAV lấy từ bước 2.2)
+POST {{host}}/api/v1/admin/menus/items
+Content-Type: application/json
+
+{
+  "menuId": 1,
+  "urlPath": "/",
+  "target": "_self",
+  "iconClass": "HomeIcon",
+  "orderIndex": 1,
+  "status": "active",
+  "translations": [
+    { "locale": "vi", "title": "Trang chủ" },
+    { "locale": "en", "title": "Home" },
+    { "locale": "ko", "title": "홈" },
+    { "locale": "ru", "title": "Главная" }
+  ]
+}
+
+### 2.4. Thêm MenuItem Cha: Thuê xe (Car Rental)
+# Thay menuId = 1
+POST {{host}}/api/v1/admin/menus/items
+Content-Type: application/json
+
+{
+  "menuId": 1,
+  "urlPath": "#",
+  "target": "_self",
+  "iconClass": "Car",
+  "orderIndex": 2,
+  "status": "active",
+  "translations": [
+    { "locale": "vi", "title": "Thuê xe" },
+    { "locale": "en", "title": "Car Rental" },
+    { "locale": "ko", "title": "차량 렌트" },
+    { "locale": "ru", "title": "Аренда авто" }
+  ]
+}
+
+### 2.5. Lấy danh sách items để xem ID của MenuItem Cha "Thuê xe" vừa tạo
+GET {{host}}/api/v1/admin/menus
+
+### 2.6. Thêm MenuItem Con: Thuê xe đi tỉnh (Provincial Transfers)
+# Thay menuId = 1, parentId = ID của "Thuê xe" vừa tạo (thường là 2 hoặc 3 tùy thuộc DB)
+POST {{host}}/api/v1/admin/menus/items
+Content-Type: application/json
+
+{
+  "menuId": 1,
+  "parentId": 3,
+  "urlPath": "/rent-car",
+  "target": "_self",
+  "iconClass": "",
+  "orderIndex": 1,
+  "status": "active",
+  "translations": [
+    { "locale": "vi", "title": "Thuê xe đi tỉnh" },
+    { "locale": "en", "title": "Provincial Transfers" },
+    { "locale": "ko", "title": "시외 차 렌트" },
+    { "locale": "ru", "title": "Аренда авто с водителем" }
+  ]
+}
+
+### 2.7. Thêm MenuItem Con: Thuê xe tự lái (Self-Drive Rental)
+# Thay menuId = 1, parentId = ID của "Thuê xe"
+POST {{host}}/api/v1/admin/menus/items
+Content-Type: application/json
+
+{
+  "menuId": 1,
+  "parentId": 3,
+  "urlPath": "/self-drive",
+  "target": "_self",
+  "iconClass": "",
+  "orderIndex": 2,
+  "status": "active",
+  "translations": [
+    { "locale": "vi", "title": "Thuê Xe Tự Lái" },
+    { "locale": "en", "title": "Self-Drive Rental" },
+    { "locale": "ko", "title": "렌터카" },
+    { "locale": "ru", "title": "Аренда авто (без водителя)" }
+  ]
+}
+
+### 2.8. Thêm MenuItem: Đón tiễn sân bay (Airport Transfer)
+# Thay menuId = 1
+POST {{host}}/api/v1/admin/menus/items
+Content-Type: application/json
+
+{
+  "menuId": 1,
+  "urlPath": "/airport-transfer",
+  "target": "_self",
+  "iconClass": "Plane",
+  "orderIndex": 3,
+  "status": "active",
+  "translations": [
+    { "locale": "vi", "title": "Đón tiễn sân bay" },
+    { "locale": "en", "title": "Airport Transfer" },
+    { "locale": "ko", "title": "공항 픽업" },
+    { "locale": "ru", "title": "Трансфер в аэропорт" }
+  ]
+}
+
+### 2.9. Thêm MenuItem: Giới thiệu (About)
+# Thay menuId = 1
+POST {{host}}/api/v1/admin/menus/items
+Content-Type: application/json
+
+{
+  "menuId": 1,
+  "urlPath": "/about",
+  "target": "_self",
+  "iconClass": "Info",
+  "orderIndex": 4,
+  "status": "active",
+  "translations": [
+    { "locale": "vi", "title": "Giới thiệu" },
+    { "locale": "en", "title": "About" },
+    { "locale": "ko", "title": "소개" },
+    { "locale": "ru", "title": "О нас" }
+  ]
+}
+
+
+### ====================================================================
+### 3. DYNAMIC PAGE & SECTION ENGINE (TRANG CHỦ - HOME)
+### ====================================================================
+
+### 3.1. Tạo Trang (Page) mới với slug 'home' cho cả 4 ngôn ngữ
+# @name createPage
+POST {{host}}/api/v1/admin/pages
+Content-Type: application/json
+
+{
+  "status": "published",
+  "translations": [
+    { "locale": "vi", "title": "Trang chủ hệ thống", "slug": "home" },
+    { "locale": "en", "title": "System Homepage", "slug": "home" },
+    { "locale": "ko", "title": "시스템 홈페이지", "slug": "home" },
+    { "locale": "ru", "title": "Главная страница hệ thống", "slug": "home" }
+  ]
+}
+
+### 3.2. Thiết lập SEO Metadata cho trang chủ (4 ngôn ngữ)
+# Thay số 1 trên URL bằng pageId thực tế
+POST {{host}}/api/v1/admin/pages/1/seo
+Content-Type: application/json
+
+{
+  "translations": [
+    {
+      "locale": "vi",
+      "metaTitle": "Booking Travel Nha Trang - Dịch Vụ Du Lịch Uy Tín",
+      "metaDescription": "Đặt tour Nha Trang, xe đưa đón sân bay Cam Ranh giá tốt...",
+      "metaKeywords": "tour nha trang, xe cam ranh, du lich nha trang",
+      "ogTitle": "Booking Travel Nha Trang",
+      "ogDescription": "Đặt tour Nha Trang, xe đưa đón sân bay Cam Ranh giá tốt...",
+      "canonicalUrl": "http://localhost:3000/vi"
+    },
+    {
+      "locale": "en",
+      "metaTitle": "Booking Travel Nha Trang - Trusted Travel Services",
+      "metaDescription": "Book Nha Trang tours, Cam Ranh airport transfers at best prices...",
+      "metaKeywords": "nha trang tour, cam ranh transfer, travel nha trang",
+      "ogTitle": "Booking Travel Nha Trang",
+      "ogDescription": "Book Nha Trang tours, Cam Ranh airport transfers at best prices...",
+      "canonicalUrl": "http://localhost:3000/en"
+    },
+    {
+      "locale": "ko",
+      "metaTitle": "Booking Travel Nha Trang - 신뢰할 수 있는 여행 서비스",
+      "metaDescription": "가장 저렴한 가격으로 냐짱 투어, 깜라인 공항 픽업을 예약하세요...",
+      "metaKeywords": "냐짱 투어, 깜라인 공항 픽업, 냐짱 여행",
+      "ogTitle": "Booking Travel Nha Trang",
+      "ogDescription": "가장 저렴한 가격으로 냐짱 투어, 깜라인 공항 픽업을 예약하세요...",
+      "canonicalUrl": "http://localhost:3000/ko"
+    },
+    {
+      "locale": "ru",
+      "metaTitle": "Booking Travel Nha Trang - Надежные туристические услуги",
+      "metaDescription": "Забронируйте туры по Нячангу, трансфер из аэропорта Камрань по лучшим ценам...",
+      "metaKeywords": "туры нячанг, трансфер камрань, путешествие нячанг",
+      "ogTitle": "Booking Travel Nha Trang",
+      "ogDescription": "Забронируйте туры по Нячангу, трансфер из аэропорта Камрань по лучшим ценам...",
+      "canonicalUrl": "http://localhost:3000/ru"
+    }
+  ]
+}
+
+### 3.3. Tạo Section: HERO_BANNER (Cấu hình hình ảnh banner, tiêu đề cho 4 ngôn ngữ)
+# Thay số 1 trên URL bằng pageId thực tế
+POST {{host}}/api/v1/admin/pages/1/sections
+Content-Type: application/json
+
+{
+  "sectionType": "HERO_BANNER",
+  "sectionName": "Khối Banner chính",
+  "orderIndex": 1,
+  "status": "active",
+  "translations": [
+    {
+      "locale": "vi",
+      "contentData": "{\"title\": \"Du Lịch Nha Trang Trọn Vẹn\", \"subtitle\": \"Xe đưa đón sân bay Cam Ranh từ 250k - Tour ghép đảo giá rẻ\", \"bg_image\": \"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80\", \"btn_text\": \"Đặt Xe Ngay\", \"btn_link\": \"/vi/services/transfers\"}"
+    },
+    {
+      "locale": "en",
+      "contentData": "{\"title\": \"Experience Nha Trang to the Fullest\", \"subtitle\": \"Cam Ranh airport transfers from 250k - Low-cost island tours\", \"bg_image\": \"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80\", \"btn_text\": \"Book Now\", \"btn_link\": \"/en/services/transfers\"}"
+    },
+    {
+      "locale": "ko",
+      "contentData": "{\"title\": \"냐짱 여행을 완벽하게 즐기세요\", \"subtitle\": \"250k부터 시작하는 깜라인 공항 픽업 - 저렴한 섬 투어\", \"bg_image\": \"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80\", \"btn_text\": \"지금 예약하기\", \"btn_link\": \"/ko/services/transfers\"}"
+    },
+    {
+      "locale": "ru",
+      "contentData": "{\"title\": \"Исследуйте Нячанг на полную\", \"subtitle\": \"Трансфер из аэропорта Камрань от 250k - Бюджетные туры по островаm\", \"bg_image\": \"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80\", \"btn_text\": \"Забронировать\", \"btn_link\": \"/ru/services/transfers\"}"
+    }
+  ]
+}
+
+### 3.4. Tạo Section: SERVICES_GRID (Cấu hình danh mục dịch vụ)
+POST {{host}}/api/v1/admin/pages/1/sections
+Content-Type: application/json
+
+{
+  "sectionType": "SERVICES_GRID",
+  "sectionName": "Khối dịch vụ nổi bật",
+  "orderIndex": 2,
+  "status": "active",
+  "translations": [
+    {
+      "locale": "vi",
+      "contentData": "{\"title\": \"Dịch vụ của chúng tôi\", \"categories\": [\"tours\", \"transfers\", \"rentals\"], \"limit\": 6}"
+    },
+    {
+      "locale": "en",
+      "contentData": "{\"title\": \"Our Services\", \"categories\": [\"tours\", \"transfers\", \"rentals\"], \"limit\": 6}"
+    },
+    {
+      "locale": "ko",
+      "contentData": "{\"title\": \"우리의 서비스\", \"categories\": [\"tours\", \"transfers\", \"rentals\"], \"limit\": 6}"
+    },
+    {
+      "locale": "ru",
+      "contentData": "{\"title\": \"Наши услуги\", \"categories\": [\"tours\", \"transfers\", \"rentals\"], \"limit\": 6}"
+    }
+  ]
+}
+
+### 3.5. Tạo Section: FAQ_ACCORDION (Cấu hình câu hỏi thường gặp)
+POST {{host}}/api/v1/admin/pages/1/sections
+Content-Type: application/json
+
+{
+  "sectionType": "FAQ_ACCORDION",
+  "sectionName": "Khối câu hỏi thường gặp",
+  "orderIndex": 3,
+  "status": "active",
+  "translations": [
+    {
+      "locale": "vi",
+      "contentData": "{\"title\": \"Câu hỏi phổ biến\", \"faq_ids\": [10, 11, 12]}"
+    },
+    {
+      "locale": "en",
+      "contentData": "{\"title\": \"Frequently Asked Questions\", \"faq_ids\": [10, 11, 12]}"
+    },
+    {
+      "locale": "ko",
+      "contentData": "{\"title\": \"자주 묻는 질문\", \"faq_ids\": [10, 11, 12]}"
+    },
+    {
+      "locale": "ru",
+      "contentData": "{\"title\": \"Часто задаваемые вопросы\", \"faq_ids\": [10, 11, 12]}"
+    }
+  ]
+}
+
+### ====================================================================
+### 4. API KIỂM TRA PHÍA PUBLIC (USER VIEW)
+### ====================================================================
+
+### 4.1. Lấy dữ liệu động trang chủ (bao gồm SEO và các Sections đã map)
+GET {{host}}/api/v1/pages/home
+
+
+### ====================================================================
+### 5. QUẢN LÝ MEDIA (SEAWEEDFS S3 UPLOAD & DELETE)
+### ====================================================================
+
+### 5.1. Upload tệp lên SeaweedFS S3 (sử dụng tệp tin bất kỳ làm byte stream)
+POST {{host}}/api/v1/admin/media
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="test_upload.jpg"
+Content-Type: image/jpeg
+
+< ./build.gradle
+--WebAppBoundary
+Content-Disposition: form-data; name="altText"
+
+Beautiful Beach
+--WebAppBoundary
+Content-Disposition: form-data; name="locale"
+
+en
+--WebAppBoundary--
+
+### 5.2. Lấy thông tin tệp Media đã tải lên bằng ID (Ví dụ ID = 1)
+GET {{host}}/api/v1/admin/media/1
+
+### 5.3. Xóa tệp Media khỏi Database và SeaweedFS S3 (Ví dụ ID = 1)
+DELETE {{host}}/api/v1/admin/media/1
+
+
+### ====================================================================
+### 6. QUẢN LÝ FEEDBACKS (REVIEWS)
+### ====================================================================
+
+### 6.1. Tạo feedback mới (Tiếng Việt & Tiếng Anh)
+POST {{host}}/api/v1/admin/feedbacks
+Content-Type: application/json
+
+{
+  "rating": 5,
+  "author": "David L.",
+  "avatarBg": "bg-indigo-100",
+  "avatarText": "DL",
+  "route": "Hà Nội ➔ Nội Bài",
+  "showOnIndex": true,
+  "orderIndex": 1,
+  "translations": [
+    {
+      "locale": "vi",
+      "title": "Xe sạch sẽ, đi êm ái",
+      "description": "Dịch vụ tuyệt vời, xe Limousine rộng rãi thoải mái. Giá cả minh bạch không phát sinh thêm chi phí."
+    },
+    {
+      "locale": "en",
+      "title": "Clean car, smooth ride",
+      "description": "Excellent service, spacious and comfortable Limousine. Transparent pricing with no extra costs."
+    }
+  ]
+}
+
+### 6.2. Tạo feedback thứ hai
+POST {{host}}/api/v1/admin/feedbacks
+Content-Type: application/json
+
+{
+  "rating": 5,
+  "author": "Park M.",
+  "avatarBg": "bg-emerald-100",
+  "avatarText": "PM",
+  "route": "Sài Gòn ➔ Vũng Tàu",
+  "showOnIndex": true,
+  "orderIndex": 2,
+  "translations": [
+    {
+      "locale": "vi",
+      "title": "Thái độ tài xế rất tốt",
+      "description": "Xe rất sạch sẽ và thơm, tài xế lịch sự chạy xe cẩn thận. Giá cả phải chăng."
+    },
+    {
+      "locale": "en",
+      "title": "Very good driver attitude",
+      "description": "The car was clean and fresh, the driver polite and careful. Affordable pricing."
+    }
+  ]
+}
+
+### 6.3. Lấy danh sách feedbacks công khai (Public API)
+GET {{host}}/api/v1/feedbacks
+
+### 6.4. Lấy danh sách feedbacks quản trị (Admin API)
+GET {{host}}/api/v1/admin/feedbacks
+

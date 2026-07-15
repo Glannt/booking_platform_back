@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class ProvinceBookingDetail extends MasterEntity {
-    @Column(name = "booking_item_id", nullable = false)
+    @Column(name = "booking_item_id", nullable = true)
     private Long bookingItemId;
 
     @Column(name = "pickup_time")

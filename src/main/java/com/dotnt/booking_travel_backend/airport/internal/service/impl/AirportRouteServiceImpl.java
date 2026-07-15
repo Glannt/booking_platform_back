@@ -3,6 +3,7 @@ package com.dotnt.booking_travel_backend.airport.internal.service.impl;
 import com.dotnt.booking_travel_backend.airport.api.dtos.AirportRouteDto;
 import com.dotnt.booking_travel_backend.airport.internal.entity.AirportRoute;
 import com.dotnt.booking_travel_backend.airport.internal.repository.AirportRouteRepository;
+import com.dotnt.booking_travel_backend.airport.internal.repository.AirportRepository;
 import com.dotnt.booking_travel_backend.airport.internal.service.IAirportRouteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -10,24 +11,25 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AirportRouteServiceImpl implements IAirportRouteService {
     private final AirportRouteRepository repository;
+    private final AirportRepository airportRepository;
 
     @Override
     public AirportRouteDto create(AirportRouteDto dto) {
         AirportRoute r = AirportRoute.builder()
                 .code(dto.getCode())
-                .airportName(dto.getAirportName())
-                .pickupLocation(dto.getPickupLocation())
-                .dropoffLocation(dto.getDropoffLocation())
-                .distance(dto.getDistance())
-                .duration(dto.getDuration())
+                .name(dto.getName())
                 .active(dto.isActive())
                 .build();
+        if (dto.getAirportId() != null) {
+            r.setAirport(airportRepository.findById(dto.getAirportId()).orElse(null));
+        }
         AirportRoute saved = repository.save(r);
         return toDto(saved);
     }
@@ -39,6 +41,13 @@ public class AirportRouteServiceImpl implements IAirportRouteService {
     }
 
     @Override
+    public List<AirportRouteDto> listActiveByAirport(Long airportId) {
+        return repository.findByAirportIdAndActiveTrue(airportId).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public AirportRouteDto get(Long id) {
         return repository.findById(id).map(this::toDto).orElse(null);
     }
@@ -47,11 +56,10 @@ public class AirportRouteServiceImpl implements IAirportRouteService {
     public AirportRouteDto update(Long id, AirportRouteDto dto) {
         return repository.findById(id).map(r -> {
             r.setCode(dto.getCode());
-            r.setAirportName(dto.getAirportName());
-            r.setPickupLocation(dto.getPickupLocation());
-            r.setDropoffLocation(dto.getDropoffLocation());
-            r.setDistance(dto.getDistance());
-            r.setDuration(dto.getDuration());
+            r.setName(dto.getName());
+            if (dto.getAirportId() != null) {
+                r.setAirport(airportRepository.findById(dto.getAirportId()).orElse(null));
+            }
             r.setActive(dto.isActive());
             return toDto(repository.save(r));
         }).orElse(null);
@@ -66,11 +74,8 @@ public class AirportRouteServiceImpl implements IAirportRouteService {
         return AirportRouteDto.builder()
                 .id(r.getId())
                 .code(r.getCode())
-                .airportName(r.getAirportName())
-                .pickupLocation(r.getPickupLocation())
-                .dropoffLocation(r.getDropoffLocation())
-                .distance(r.getDistance())
-                .duration(r.getDuration())
+                .airportId(r.getAirport() != null ? r.getAirport().getId() : null)
+                .name(r.getName())
                 .active(r.isActive())
                 .build();
     }

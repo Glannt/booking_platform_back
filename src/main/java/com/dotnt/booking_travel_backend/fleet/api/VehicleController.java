@@ -8,16 +8,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/vehicles")
+@RequestMapping("/api/v1/vehicles")
 @RequiredArgsConstructor
 public class VehicleController {
 
     private final IVehicleService vehicleService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('VEHICLE_CREATE')")
     public ResponseEntity<VehicleDTO> create(@RequestBody CreateVehicleRequest request) {
         VehicleDTO created = vehicleService.createVehicle(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -37,6 +39,7 @@ public class VehicleController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('VEHICLE_UPDATE')")
     public ResponseEntity<VehicleDTO> update(@PathVariable Long id,
                                              @RequestBody CreateVehicleRequest request) {
         VehicleDTO updated = vehicleService.updateVehicle(id, request);
@@ -44,6 +47,7 @@ public class VehicleController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('VEHICLE_DELETE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         vehicleService.deleteVehicle(id);
         return ResponseEntity.noContent().build();

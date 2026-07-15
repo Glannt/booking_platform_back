@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,6 +16,7 @@ public class ProvinceRouteController {
     private final IProvinceRouteService service;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('INTERCITY_ROUTE_CREATE')")
     public ResponseEntity<ProvinceRouteDto> create(@RequestBody ProvinceRouteDto dto) {
         return ResponseEntity.ok(service.create(dto));
     }
@@ -31,12 +33,14 @@ public class ProvinceRouteController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('INTERCITY_ROUTE_UPDATE')")
     public ResponseEntity<ProvinceRouteDto> update(@PathVariable Long id, @RequestBody ProvinceRouteDto dto) {
         ProvinceRouteDto updated = service.update(id, dto);
         return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('INTERCITY_ROUTE_DELETE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();

@@ -5,6 +5,7 @@ import com.dotnt.booking_travel_backend.price.internal.entity.Price;
 import com.dotnt.booking_travel_backend.price.internal.repository.PriceRepository;
 import com.dotnt.booking_travel_backend.price.internal.service.IPriceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,7 @@ public class PriceServiceImpl implements IPriceService {
     private final PriceRepository repository;
 
     @Override
+    @Transactional
     public PriceDto create(PriceDto dto) {
         Price p = Price.builder()
                 .businessType(dto.getBusinessType())
@@ -51,6 +53,7 @@ public class PriceServiceImpl implements IPriceService {
     }
 
     @Override
+    @Transactional
     public PriceDto update(Long id, PriceDto dto) {
         return repository.findById(id).map(p -> {
             p.setBusinessType(dto.getBusinessType());
@@ -67,6 +70,7 @@ public class PriceServiceImpl implements IPriceService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
         repository.deleteById(id);
     }

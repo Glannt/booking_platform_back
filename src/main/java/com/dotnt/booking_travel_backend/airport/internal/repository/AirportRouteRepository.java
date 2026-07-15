@@ -6,5 +6,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AirportRouteRepository extends JpaRepository<AirportRoute, Long> {
+    java.util.List<AirportRoute> findByAirportIdAndActiveTrue(Long airportId);
+    boolean existsByAirportIdAndActiveTrue(Long airportId);
 }
 

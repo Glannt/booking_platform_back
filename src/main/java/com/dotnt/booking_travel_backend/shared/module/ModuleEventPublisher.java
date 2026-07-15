@@ -13,13 +13,14 @@ import java.util.concurrent.TimeUnit;
 public class ModuleEventPublisher {
     private final ApplicationEventPublisher publisher;
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public <T> T publishRequest(String requestType, Object payload, Class<T> responseClass) {
-        CompletableFuture<T> future = new CompletableFuture<>();
-        ModuleRequestEvent<T> ev = new ModuleRequestEvent<>(this, requestType, payload, future);
+        CompletableFuture future = new CompletableFuture();
+        ModuleRequestEvent ev = new ModuleRequestEvent(this, requestType, payload, future);
         publisher.publishEvent(ev);
         try {
             // wait up to 5 seconds
-            return future.get(5, TimeUnit.SECONDS);
+            return (T) future.get(5, TimeUnit.SECONDS);
         } catch (Exception e) {
             throw new RuntimeException("Module request timed out or failed: " + requestType, e);
         }

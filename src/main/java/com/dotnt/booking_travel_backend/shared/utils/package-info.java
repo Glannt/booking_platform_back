@@ -6,5 +6,8 @@
  * - PageableUtils: Pagination and sorting helper utilities
  * - ConversionUtils: Type conversion utilities
  */
+@org.springframework.modulith.NamedInterface("utils")
 package com.dotnt.booking_travel_backend.shared.utils;
+
+
 

@@ -1,0 +1,1 @@
+-- Empty schema file for tests to override main resources schema.sql

@@ -1,8 +1,9 @@
 package com.dotnt.booking_travel_backend.tour.api.dtos;
 
+import com.dotnt.booking_travel_backend.media.api.MediaDto;
 import lombok.*;
 
-import java.time.Instant;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -12,11 +13,15 @@ public class TourDto {
     private Long id;
     private int durationDays;
     private int durationNights;
-    private String meetingPoint;
-    private Instant startTime;
-    private Instant endTime;
     private int minGuest;
     private int maxGuest;
     private boolean active;
+    private Long tourCategoryId;
+    private Long thumbnailId;
+    private List<Long> imageIds;
+    private List<MediaDto> images;
+    private List<TourDayDto> days;
+    private List<TourOptionDto> options;
+    private List<TourTranslationDto> translations;
+    private List<TourPriceDto> prices;
 }
-

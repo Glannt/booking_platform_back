@@ -1,7 +1,6 @@
 package com.dotnt.booking_travel_backend.rental.internal.entity;
 
 import com.dotnt.booking_travel_backend.shared.entity.MasterEntity;
-import com.dotnt.booking_travel_backend.fleet.internal.entity.VehicleCategory;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,9 +17,8 @@ public class RentalPrice extends MasterEntity {
     @Column(name = "rental_id", nullable = false)
     private Long rentalId;
 
-    @ManyToOne
-    @JoinColumn(name = "vehicle_category_id")
-    private VehicleCategory vehicleCategory;
+    @Column(name = "vehicle_category_id")
+    private Long vehicleCategoryId;
 
     @Column(name = "currency", length = 10, nullable = false)
     private String currency;
@@ -31,4 +29,5 @@ public class RentalPrice extends MasterEntity {
     @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active;
 }
+
 

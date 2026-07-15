@@ -9,11 +9,8 @@ import lombok.*;
 public class AirportRouteDto {
     private Long id;
     private String code;
-    private String airportName;
-    private String pickupLocation;
-    private String dropoffLocation;
-    private Double distance;
-    private Integer duration;
+    private Long airportId;
+    private String name;
     private boolean active;
 }
 

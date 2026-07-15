@@ -7,6 +7,8 @@ import com.dotnt.booking_travel_backend.tour.internal.repository.TourDayActivity
 import com.dotnt.booking_travel_backend.tour.internal.repository.TourDayRepository;
 import com.dotnt.booking_travel_backend.tour.internal.service.ITourActivityService;
 import lombok.RequiredArgsConstructor;
+import com.dotnt.booking_travel_backend.tour.internal.mapper.TourMapper;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -19,8 +21,10 @@ import java.util.stream.Collectors;
 public class TourActivityServiceImpl implements ITourActivityService {
     private final TourDayActivityRepository activityRepository;
     private final TourDayRepository dayRepository;
+    private final TourMapper tourMapper;
 
     @Override
+    @Transactional
     public TourActivityDto create(Long tourDayId, TourActivityDto dto) {
         TourDay day = dayRepository.findById(tourDayId).orElseThrow(() -> new IllegalArgumentException("TourDay not found"));
         TourDayActivity a = TourDayActivity.builder()
@@ -44,6 +48,7 @@ public class TourActivityServiceImpl implements ITourActivityService {
     }
 
     @Override
+    @Transactional
     public TourActivityDto update(Long id, TourActivityDto dto) {
         return activityRepository.findById(id).map(a -> {
             a.setStartTime(dto.getStartTime());
@@ -54,18 +59,13 @@ public class TourActivityServiceImpl implements ITourActivityService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
         activityRepository.deleteById(id);
     }
 
     private TourActivityDto toDto(TourDayActivity a) {
-        return TourActivityDto.builder()
-                .id(a.getId())
-                .tourDayId(a.getTourDay().getId())
-                .startTime(a.getStartTime())
-                .endTime(a.getEndTime())
-                .location(a.getLocation())
-                .build();
+        return tourMapper.toDto(a);
     }
 }
 

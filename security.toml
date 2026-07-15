@@ -1,0 +1,15 @@
+[s3.allow_anonymous]
+enabled = true # Vẫn cho phép đọc anonymous nếu cần
+
+#[s3.authentication]
+#enabled = true
+#
+## Định nghĩa cặp key giống hệt trong file yaml của Spring Boot
+#[[s3.authentication.users]]
+#name = "spring_boot_user"
+#access_key = "any_key"
+#secret_key = "any_secret"
+#actions = ["Read", "Write", "List", "Tagging"]
+
+[jwt]
+filer_signing.key = "5211b9c9b0ce601ae977959ac59ed19e999407c75000efccf17f6f188433e7c4"
