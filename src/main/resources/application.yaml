@@ -53,11 +53,11 @@ springdoc:
 aws:
   s3:
     enabled: ${AWS_S3_ENABLED:false}
-    endpoint: ${AWS_S3_ENDPOINT:http://localhost:8333}
-    region: ${AWS_S3_REGION:us-east-1}
-    access-key: ${AWS_S3_ACCESS_KEY:dcdf5fa5c423817a0934cab20c2b89f2ef1a1c0b5973460b9d5525aedbff1132}
-    secret-key: ${AWS_S3_SECRET_KEY:776a6277921b94dfc88357297c8b575f59db33341a4e46479d201379b2503a55}
-    bucket-name: ${AWS_S3_BUCKET_NAME:booking-travel-bucket}
+    endpoint: ${AWS_S3_ENDPOINT}
+    region: ${AWS_S3_REGION}
+    access-key: ${AWS_S3_ACCESS_KEY}
+    secret-key: ${AWS_S3_SECRET_KEY}
+    bucket-name: ${AWS_S3_BUCKET_NAME}
 
 app:
   upload:
@@ -69,9 +69,9 @@ app:
     api-key: ${FLIGHT_TRACKING_API_KEY:}
 
 cloudinary:
-  cloud_name: ${CLOUDINARY_CLOUD_NAME:dpdte7bjh}
-  api_key: ${CLOUDINARY_API_KEY:949374147113246}
-  api_secret: ${CLOUDINARY_API_SECRET:Qx9-APsihOYbU25691atvlaPeoc}
+  cloud_name: ${CLOUDINARY_CLOUD_NAME}
+  api_key: ${CLOUDINARY_API_KEY}
+  api_secret: ${CLOUDINARY_API_SECRET}
   folder: ${CLOUDINARY_FOLDER:booking_travel}
 
 management:
