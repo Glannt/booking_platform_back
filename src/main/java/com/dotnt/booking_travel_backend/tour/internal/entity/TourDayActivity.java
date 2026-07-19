@@ -4,7 +4,7 @@ import com.dotnt.booking_travel_backend.shared.entity.MasterEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.Instant;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "tour_day_activities")
@@ -20,10 +20,10 @@ public class TourDayActivity extends MasterEntity {
     private TourDay tourDay;
 
     @Column(name = "start_time", nullable = false)
-    private Instant startTime;
+    private LocalTime startTime;
 
     @Column(name = "end_time", nullable = false)
-    private Instant endTime;
+    private LocalTime endTime;
 
     @Column(name = "location", nullable = false, length = 255)
     private String location;

@@ -1,5 +1,6 @@
 package com.dotnt.booking_travel_backend.user.internal.service;
 
+import com.dotnt.booking_travel_backend.shared.i18n.I18nHelper;
 import com.dotnt.booking_travel_backend.user.api.*;
 import com.dotnt.booking_travel_backend.user.internal.entity.*;
 import com.dotnt.booking_travel_backend.user.internal.repository.*;
@@ -29,7 +30,7 @@ public class AuthService {
     @Transactional
     public UserDto register(CreateUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalStateException("Email is already in use!");
+            throw new IllegalStateException(I18nHelper.msg("error.auth.email.exists"));
         }
 
         // SECURITY: Force CUSTOMER role on registration — never allow client-supplied role
@@ -56,14 +57,14 @@ public class AuthService {
     @Transactional
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+                .orElseThrow(() -> new IllegalArgumentException(I18nHelper.msg("error.auth.invalid.credentials")));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Invalid email or password");
+            throw new IllegalArgumentException(I18nHelper.msg("error.auth.invalid.credentials"));
         }
 
         if (!"active".equalsIgnoreCase(user.getStatus())) {
-            throw new IllegalArgumentException("User account is not active");
+            throw new IllegalArgumentException(I18nHelper.msg("error.auth.account.inactive"));
         }
 
         String accessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
@@ -89,11 +90,11 @@ public class AuthService {
     @Transactional
     public LoginResponse refresh(TokenRefreshRequest request) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(request.getRefreshToken())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
+                .orElseThrow(() -> new IllegalArgumentException(I18nHelper.msg("error.auth.refresh.invalid")));
 
         if (refreshToken.getExpiryDate().isBefore(LocalDateTime.now())) {
             refreshTokenRepository.delete(refreshToken);
-            throw new IllegalArgumentException("Refresh token was expired. Please make a new signin request");
+            throw new IllegalArgumentException(I18nHelper.msg("error.auth.refresh.expired"));
         }
 
         User user = refreshToken.getUser();
@@ -153,6 +154,40 @@ public class AuthService {
         return userRepository.findByEmail(email).map(this::toDto).orElse(null);
     }
 
+    @Transactional
+    public UserDto updateProfile(String email, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException(I18nHelper.msg("error.auth.user.notfound")));
+
+        if (request.getFullname() != null) {
+            if (request.getFullname().isBlank()) {
+                throw new IllegalArgumentException(I18nHelper.msg("error.auth.fullname.blank"));
+            }
+            user.setFullname(request.getFullname());
+        }
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone());
+        }
+        if (request.getKakaoTalkId() != null) {
+            user.setKakaoTalkId(request.getKakaoTalkId());
+        }
+        if (request.getZaloId() != null) {
+            user.setZaloId(request.getZaloId());
+        }
+
+        User savedUser = userRepository.save(user);
+        return toDto(savedUser);
+    }
+
+    @Transactional
+    public void changePassword(String email, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException(I18nHelper.msg("error.auth.user.notfound")));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
     private UserDto toDto(User user) {
         if (user == null) return null;
         return UserDto.builder()
@@ -162,6 +197,8 @@ public class AuthService {
                 .fullname(user.getFullname())
                 .role(user.getRole() != null ? user.getRole().name() : null)
                 .status(user.getStatus())
+                .kakaoTalkId(user.getKakaoTalkId())
+                .zaloId(user.getZaloId())
                 .build();
     }
 }

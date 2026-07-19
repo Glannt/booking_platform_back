@@ -6,6 +6,8 @@ import com.dotnt.booking_travel_backend.rental.internal.repository.RentalReposit
 import org.springframework.context.ApplicationEventPublisher;
 import com.dotnt.booking_travel_backend.rental.internal.service.IRentalService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -29,6 +31,7 @@ public class RentalServiceImpl implements IRentalService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "rentals", allEntries = true)
     public RentalDto create(RentalDto dto) {
         if (dto.getVehicleCategoryId() != null) {
             java.util.concurrent.CompletableFuture<Boolean> future = new java.util.concurrent.CompletableFuture<>();
@@ -58,18 +61,21 @@ public class RentalServiceImpl implements IRentalService {
     }
 
     @Override
+    @Cacheable(value = "rentals", key = "#pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<RentalDto> list(Pageable pageable) {
         Page<Rental> page = rentalRepository.findAll(pageable);
         return new PageImpl<>(page.getContent().stream().map(this::toDto).collect(Collectors.toList()), pageable, page.getTotalElements());
     }
 
     @Override
+    @Cacheable(value = "rentals", key = "#id")
     public RentalDto get(Long id) {
         return rentalRepository.findById(id).map(this::toDto).orElse(null);
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "rentals", allEntries = true)
     public RentalDto update(Long id, RentalDto dto) {
         return rentalRepository.findById(id).map(r -> {
             if (dto.getVehicleCategoryId() != null) {
@@ -99,6 +105,7 @@ public class RentalServiceImpl implements IRentalService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "rentals", allEntries = true)
     public void delete(Long id) {
         rentalRepository.deleteById(id);
     }

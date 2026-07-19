@@ -1,19 +1,24 @@
 package com.dotnt.booking_travel_backend.shared.service;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class SlidingWindowRateLimiter {
 
-    private final ConcurrentHashMap<String, Window> windows = new ConcurrentHashMap<>();
+    private final Cache<String, Window> windows = Caffeine.newBuilder()
+            .expireAfterWrite(1, TimeUnit.HOURS)
+            .maximumSize(50000)
+            .build();
 
     public boolean isAllowed(String key, int maxRequests, int windowSeconds) {
         long now = System.currentTimeMillis();
         long windowMs = windowSeconds * 1000L;
 
-        return windows.compute(key, (k, existing) -> {
+        Window result = windows.asMap().compute(key, (k, existing) -> {
             if (existing == null || now - existing.windowStart > windowMs) {
                 return new Window(now, 1);
             }
@@ -22,7 +27,9 @@ public class SlidingWindowRateLimiter {
                 return existing;
             }
             return existing; // deny
-        }).count <= maxRequests;
+        });
+
+        return result != null && result.count <= maxRequests;
     }
 
     private static class Window {

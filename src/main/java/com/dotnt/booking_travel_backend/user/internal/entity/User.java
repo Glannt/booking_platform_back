@@ -34,6 +34,9 @@ public class User extends MasterEntity {
     @Column(name = "kakao_talk_id")
     private String kakaoTalkId;
 
+    @Column(name = "zalo_id")
+    private String zaloId;
+
 
 
 }

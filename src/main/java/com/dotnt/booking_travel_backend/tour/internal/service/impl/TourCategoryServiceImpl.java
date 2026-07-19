@@ -6,6 +6,8 @@ import com.dotnt.booking_travel_backend.tour.internal.entity.TourCategory;
 import com.dotnt.booking_travel_backend.tour.internal.repository.TourCategoryRepository;
 import com.dotnt.booking_travel_backend.tour.internal.service.ITourCategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,12 +20,14 @@ public class TourCategoryServiceImpl implements ITourCategoryService {
     private final TourCategoryRepository tourCategoryRepository;
 
     @Override
+    @Cacheable(value = "tourCategories", key = "#pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<TourCategoryDTO> getAll(Pageable pageable) {
         return tourCategoryRepository.findAll(pageable)
                 .map(this::convertToDTO);
     }
 
     @Override
+    @Cacheable(value = "tourCategories", key = "#id")
     public TourCategoryDTO getById(Long id) {
         return tourCategoryRepository.findById(id)
                 .map(this::convertToDTO)
@@ -32,6 +36,7 @@ public class TourCategoryServiceImpl implements ITourCategoryService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "tourCategories", allEntries = true)
     public TourCategoryDTO create(CreateTourCategoryRequest request) {
         TourCategory category = TourCategory.builder()
                 .title(request.getTitle())
@@ -44,6 +49,7 @@ public class TourCategoryServiceImpl implements ITourCategoryService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "tourCategories", allEntries = true)
     public TourCategoryDTO update(Long id, CreateTourCategoryRequest request) {
         TourCategory category = tourCategoryRepository.findById(id).orElse(null);
         if (category != null) {
@@ -58,6 +64,7 @@ public class TourCategoryServiceImpl implements ITourCategoryService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "tourCategories", allEntries = true)
     public void delete(Long id) {
         tourCategoryRepository.deleteById(id);
     }

@@ -11,27 +11,27 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql
 
-  seaweedfs:
-    image: chrislusf/seaweedfs:latest
-    container_name: booking_travel_seaweedfs
-    ports:
-      - '9333:9333'
-      - '8333:8333'
-      - '8888:8888'
-    command: >
-      server
-      -s3
-      -s3.port=8333
-      -filer=true
-      -s3.config=/etc/seaweedfs/identity.json
-#      -security=/etc/seaweedfs/security.toml
-    volumes:
-      - seaweed_data:/data
-      - ./seaweedfs:/etc/seaweedfs
-      - ./security.toml:/etc/seaweedfs/security.toml
+#  seaweedfs:
+#    image: chrislusf/seaweedfs:latest
+#    container_name: booking_travel_seaweedfs
+#    ports:
+#      - '9333:9333'
+#      - '8333:8333'
+#      - '8888:8888'
+#    command: >
+#      server
+#      -s3
+#      -s3.port=8333
+#      -filer=true
+#      -s3.config=/etc/seaweedfs/identity.json
+##      -security=/etc/seaweedfs/security.toml
+#    volumes:
+#      - seaweed_data:/data
+#      - ./seaweedfs:/etc/seaweedfs
+#      - ./security.toml:/etc/seaweedfs/security.toml
 
 volumes:
   pgdata:
     driver: local
-  seaweed_data:
-    driver: local
+#  seaweed_data:
+#    driver: local

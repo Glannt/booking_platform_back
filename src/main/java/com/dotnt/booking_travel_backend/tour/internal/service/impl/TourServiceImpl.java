@@ -12,6 +12,8 @@ import com.dotnt.booking_travel_backend.shared.module.ModuleRequestEvent;
 import com.dotnt.booking_travel_backend.tour.internal.service.ITourService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -43,6 +45,7 @@ public class TourServiceImpl implements ITourService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "tours", allEntries = true)
     public TourDto createTour(CreateTourRequest request) {
         TourCategory category = null;
         if (request.getTourCategoryId() != null) {
@@ -178,6 +181,7 @@ public class TourServiceImpl implements ITourService {
     }
 
     @Override
+    @Cacheable(value = "tours", key = "#pageable.pageNumber + '_' + #pageable.pageSize + '_' + #search + '_' + #tourCategoryId")
     public Page<TourDto> getTours(Pageable pageable, String search, Long tourCategoryId) {
         Page<Tour> page;
         if (tourCategoryId != null) {
@@ -190,6 +194,7 @@ public class TourServiceImpl implements ITourService {
     }
 
     @Override
+    @Cacheable(value = "tours", key = "#id")
     public TourDto getTour(Long id) {
         return tourRepository.findById(id).map(t -> {
             TourDto dto = toDto(t);
@@ -261,6 +266,7 @@ public class TourServiceImpl implements ITourService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "tours", allEntries = true)
     public TourDto updateTour(Long id, TourDto tourDto) {
         return tourRepository.findById(id).map(t -> {
             if (tourDto.getTourCategoryId() != null) {
@@ -428,6 +434,7 @@ public class TourServiceImpl implements ITourService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "tours", allEntries = true)
     public void deleteTour(Long id) {
         tourRepository.deleteById(id);
     }

@@ -1,16 +1,20 @@
 package com.dotnt.booking_travel_backend.rental.internal.service.impl;
 
+import com.dotnt.booking_travel_backend.rental.api.dtos.IntercityDepartureTimeDto;
 import com.dotnt.booking_travel_backend.rental.api.dtos.IntercityRouteDto;
 import com.dotnt.booking_travel_backend.rental.api.dtos.IntercityRoutePriceDto;
 import com.dotnt.booking_travel_backend.rental.api.dtos.IntercityRouteTranslationDto;
 import com.dotnt.booking_travel_backend.rental.internal.entity.IntercityRoute;
 import com.dotnt.booking_travel_backend.rental.internal.entity.IntercityRoutePrice;
 import com.dotnt.booking_travel_backend.rental.internal.entity.IntercityRouteTranslation;
+import com.dotnt.booking_travel_backend.rental.internal.repository.IntercityDepartureTimeRepository;
 import com.dotnt.booking_travel_backend.rental.internal.repository.IntercityRoutePriceRepository;
 import com.dotnt.booking_travel_backend.rental.internal.repository.IntercityRouteRepository;
 import com.dotnt.booking_travel_backend.rental.internal.repository.IntercityRouteTranslationRepository;
 import com.dotnt.booking_travel_backend.rental.internal.service.IIntercityRouteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -28,9 +32,11 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
     private final IntercityRouteRepository routeRepository;
     private final IntercityRouteTranslationRepository translationRepository;
     private final IntercityRoutePriceRepository priceRepository;
+    private final IntercityDepartureTimeRepository departureTimeRepository;
 
     @Override
     @Transactional
+    @CacheEvict(value = "intercityRoutes", allEntries = true)
     public IntercityRouteDto create(IntercityRouteDto dto) {
         IntercityRoute route = IntercityRoute.builder()
                 .originCity(dto.getOriginCity())
@@ -38,6 +44,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                 .distanceKm(dto.getDistanceKm())
                 .estimatedHours(dto.getEstimatedHours())
                 .active(dto.isActive())
+                .hasDepartureTimes(dto.isHasDepartureTimes())
                 .build();
         route = routeRepository.save(route);
 
@@ -69,23 +76,27 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
     }
 
     @Override
+    @Cacheable(value = "intercityRoutes", key = "#pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<IntercityRouteDto> list(Pageable pageable) {
         Page<IntercityRoute> page = routeRepository.findAll(pageable);
         return new PageImpl<>(page.getContent().stream().map(this::toDto).collect(Collectors.toList()), pageable, page.getTotalElements());
     }
 
     @Override
+    @Cacheable(value = "intercityRoutes", key = "'active'")
     public List<IntercityRouteDto> listActive() {
         return routeRepository.findByActiveTrue().stream().map(this::toDto).collect(Collectors.toList());
     }
 
     @Override
+    @Cacheable(value = "intercityRoutes", key = "#id")
     public IntercityRouteDto get(Long id) {
         return routeRepository.findById(id).map(this::toDto).orElse(null);
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "intercityRoutes", allEntries = true)
     public IntercityRouteDto update(Long id, IntercityRouteDto dto) {
         return routeRepository.findById(id).map(route -> {
             route.setOriginCity(dto.getOriginCity());
@@ -93,6 +104,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
             route.setDistanceKm(dto.getDistanceKm());
             route.setEstimatedHours(dto.getEstimatedHours());
             route.setActive(dto.isActive());
+            route.setHasDepartureTimes(dto.isHasDepartureTimes());
             route = routeRepository.save(route);
 
             translationRepository.findByRouteId(id).forEach(translationRepository::delete);
@@ -127,6 +139,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "intercityRoutes", allEntries = true)
     public void delete(Long id) {
         priceRepository.findByRouteId(id).forEach(priceRepository::delete);
         translationRepository.findByRouteId(id).forEach(translationRepository::delete);
@@ -147,6 +160,12 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                         .currency(pr.getCurrency()).active(pr.isActive()).build())
                 .collect(Collectors.toList());
 
+        var departureTimes = departureTimeRepository.findByRouteIdOrderByOrderIndexAsc(route.getId()).stream()
+                .map(dt -> IntercityDepartureTimeDto.builder()
+                        .id(dt.getId()).routeId(route.getId()).departureTime(dt.getDepartureTime())
+                        .orderIndex(dt.getOrderIndex()).active(dt.isActive()).build())
+                .collect(Collectors.toList());
+
         return IntercityRouteDto.builder()
                 .id(route.getId())
                 .originCity(route.getOriginCity())
@@ -154,8 +173,10 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                 .distanceKm(route.getDistanceKm())
                 .estimatedHours(route.getEstimatedHours())
                 .active(route.isActive())
+                .hasDepartureTimes(route.isHasDepartureTimes())
                 .translations(translations)
                 .prices(prices)
+                .departureTimes(departureTimes)
                 .build();
     }
 }

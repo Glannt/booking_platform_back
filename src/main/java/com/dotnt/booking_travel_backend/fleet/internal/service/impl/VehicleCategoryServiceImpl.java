@@ -16,6 +16,8 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -47,6 +49,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                 .orElse(null);
     }
     @Override
+    @CacheEvict(value = "vehicleCategories", allEntries = true)
     public VehicleCategoryDTO createVehicleCategory(CreateVehicleCategoryRequest request) {
         if(request.code() == null || request.minSeat() == null || request.maxSeat() == null) {
             log.error("Invalid request data: {}", request);
@@ -107,6 +110,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
     }
 
     @Override
+    @Cacheable(value = "vehicleCategories", key = "#pageable.pageNumber + '_' + #pageable.pageSize + '_' + #search + '_' + #active")
     public Page<VehicleCategoryDTO> getVehicleCategories(Pageable pageable, String search, Boolean active) {
 
         Page<VehicleCategory> vehicleCategories = vehicleCategoryTranslationRepository.search(search, active != null ? active : true, pageable);
@@ -114,6 +118,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
     }
 
     @Override
+    @Cacheable(value = "vehicleCategories", key = "#id")
     public VehicleCategoryDTO getVehicleCategoryById(Long id) {
         VehicleCategory vehicleCategory = vehicleCategoryRepository.findById(id).orElse(null);
         if (vehicleCategory != null) {
@@ -146,6 +151,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "vehicleCategories", allEntries = true)
     public VehicleCategoryDTO updateVehicleCategory(Long id, VehicleCategoryDTO vehicleCategoryDTO) {
         try {
             // 1. Kiểm tra sự tồn tại của bảng cha
@@ -223,6 +229,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "vehicleCategories", allEntries = true)
     public void deleteVehicleCategory(Long id) {
         VehicleCategory vehicleCategory = vehicleCategoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Vehicle Category not found with id: " + id));

@@ -6,8 +6,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
+import org.springframework.modulith.Modulithic;
+import org.springframework.resilience.annotation.EnableResilientMethods;
 
 @SpringBootApplication
+@Modulithic(sharedModules = "shared")
+@EnableResilientMethods
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class BookingTravelBackendApplication {
 

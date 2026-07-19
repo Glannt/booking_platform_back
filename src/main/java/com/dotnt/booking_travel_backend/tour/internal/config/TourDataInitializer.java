@@ -11,7 +11,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -102,12 +102,12 @@ public class TourDataInitializer implements CommandLineRunner {
         tourDayTranslationRepository.save(TourDayTranslation.builder().tourDay(t1d1).locale("vi").name("Khám phá 3 Đảo Nha Trang").description("08:00 - 16:00").build());
         tourDayTranslationRepository.save(TourDayTranslation.builder().tourDay(t1d1).locale("en").name("Discover 3 Islands").description("08:00 - 16:00").build());
 
-        TourDayActivity t1Act1 = TourDayActivity.builder().tourDay(t1d1).startTime(Instant.parse("2026-07-08T08:00:00Z")).endTime(Instant.parse("2026-07-08T09:00:00Z")).location("Cảng Nha Trang").build();
+        TourDayActivity t1Act1 = TourDayActivity.builder().tourDay(t1d1).startTime(LocalTime.of(8, 0)).endTime(LocalTime.of(9, 0)).location("Cảng Nha Trang").build();
         tourDayActivityRepository.save(t1Act1);
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t1Act1).locale("vi").name("Đón khách và Lên Cano").description("Xe đón khách tại khách sạn trung tâm TP Nha Trang di chuyển xuống cảng.").build());
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t1Act1).locale("en").name("Pick up and Board Speedboat").description("Pick up guests from Nha Trang city center hotels to the port.").build());
 
-        TourDayActivity t1Act2 = TourDayActivity.builder().tourDay(t1d1).startTime(Instant.parse("2026-07-08T09:30:00Z")).endTime(Instant.parse("2026-07-08T11:30:00Z")).location("Bãi Tranh").build();
+        TourDayActivity t1Act2 = TourDayActivity.builder().tourDay(t1d1).startTime(LocalTime.of(9, 30)).endTime(LocalTime.of(11, 30)).location("Bãi Tranh").build();
         tourDayActivityRepository.save(t1Act2);
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t1Act2).locale("vi").name("Tự do tắm biển & Chụp ảnh").description("Quý khách tham quan chụp ảnh check-in và tắm biển Bãi Tranh.").build());
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t1Act2).locale("en").name("Free Swim & Photography").description("Enjoy swimming, relaxing and checking in at Bãi Tranh Beach.").build());
@@ -162,12 +162,12 @@ public class TourDataInitializer implements CommandLineRunner {
         tourDayTranslationRepository.save(TourDayTranslation.builder().tourDay(t2d1).locale("vi").name("Hành trình Hoàng Hôn Lãng Mạn").description("16:30 - 20:30").build());
         tourDayTranslationRepository.save(TourDayTranslation.builder().tourDay(t2d1).locale("en").name("Romantic Sunset Journey").description("16:30 - 20:30").build());
 
-        TourDayActivity t2Act1 = TourDayActivity.builder().tourDay(t2d1).startTime(Instant.parse("2026-07-08T16:30:00Z")).endTime(Instant.parse("2026-07-08T17:00:00Z")).location("Cảng Nha Trang").build();
+        TourDayActivity t2Act1 = TourDayActivity.builder().tourDay(t2d1).startTime(LocalTime.of(16, 30)).endTime(LocalTime.of(17, 0)).location("Cảng Nha Trang").build();
         tourDayActivityRepository.save(t2Act1);
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t2Act1).locale("vi").name("Lên du thuyền và Khởi hành").description("Chào đón khách lên tàu với nước uống trái cây và nhạc đón chào.").build());
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t2Act1).locale("en").name("Board Cruise & Depart").description("Welcome guests on board with fresh drinks and welcome music.").build());
 
-        TourDayActivity t2Act2 = TourDayActivity.builder().tourDay(t2d1).startTime(Instant.parse("2026-07-08T17:30:00Z")).endTime(Instant.parse("2026-07-08T20:30:00Z")).location("Du Thuyền").build();
+        TourDayActivity t2Act2 = TourDayActivity.builder().tourDay(t2d1).startTime(LocalTime.of(17, 30)).endTime(LocalTime.of(20, 30)).location("Du Thuyền").build();
         tourDayActivityRepository.save(t2Act2);
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t2Act2).locale("vi").name("Tiệc tối & Nghe nhạc Live").description("Thưởng thức tiệc buffet và ngắm nhìn hoàng hôn rực rỡ.").build());
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t2Act2).locale("en").name("Dinner & Live Music").description("Enjoy buffet dinner and witness the magnificent sunset over Nha Trang Bay.").build());

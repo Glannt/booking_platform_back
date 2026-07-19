@@ -3,6 +3,8 @@ package com.dotnt.booking_travel_backend.user.internal.service;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.*;
 import com.nimbusds.jwt.*;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -10,13 +12,25 @@ import java.text.ParseException;
 import java.util.Date;
 
 @Service
+@Slf4j
 public class JwtService {
 
-    @Value("${app.jwt.secret:default-secret-key-must-be-at-least-256-bits-long-to-be-secure-for-hmac-sha-256}")
+    @Value("${app.jwt.secret:}")
     private String secret;
 
-    @Value("${app.jwt.expiration-ms:86400000}") // Default 1 day
+    @Value("${app.jwt.expiration-ms:86400000}")
     private long jwtExpirationMs;
+
+    @PostConstruct
+    public void init() {
+        if (secret == null || secret.isBlank()) {
+            log.error("FATAL: app.jwt.secret is not set. JWT signing will fail. Set APP_JWT_SECRET environment variable.");
+            throw new IllegalStateException("app.jwt.secret must be configured via APP_JWT_SECRET environment variable");
+        }
+        if (secret.length() < 32) {
+            log.warn("WARNING: app.jwt.secret is shorter than 32 characters. This is insecure.");
+        }
+    }
 
     public String generateToken(String email, String role) {
         try {

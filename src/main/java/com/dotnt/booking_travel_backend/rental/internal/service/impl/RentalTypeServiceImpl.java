@@ -8,6 +8,8 @@ import com.dotnt.booking_travel_backend.rental.internal.repository.RentalTypeRep
 import com.dotnt.booking_travel_backend.rental.internal.repository.RentalTypeTranslationRepository;
 import com.dotnt.booking_travel_backend.rental.internal.service.IRentalTypeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -24,6 +26,7 @@ public class RentalTypeServiceImpl implements IRentalTypeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "rentalTypes", allEntries = true)
     public RentalTypeDto create(RentalTypeDto dto) {
         RentalType t = RentalType.builder().code(dto.getCode()).active(dto.isActive()).build();
         RentalType saved = repository.save(t);
@@ -40,18 +43,21 @@ public class RentalTypeServiceImpl implements IRentalTypeService {
     }
 
     @Override
+    @Cacheable(value = "rentalTypes", key = "#pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<RentalTypeDto> list(Pageable pageable) {
         Page<RentalType> page = repository.findAll(pageable);
         return new PageImpl<>(page.getContent().stream().map(this::toDto).collect(Collectors.toList()), pageable, page.getTotalElements());
     }
 
     @Override
+    @Cacheable(value = "rentalTypes", key = "#id")
     public RentalTypeDto get(Long id) {
         return repository.findById(id).map(this::toDto).orElse(null);
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "rentalTypes", allEntries = true)
     public RentalTypeDto update(Long id, RentalTypeDto dto) {
         return repository.findById(id).map(r -> {
             r.setCode(dto.getCode());
@@ -74,6 +80,7 @@ public class RentalTypeServiceImpl implements IRentalTypeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "rentalTypes", allEntries = true)
     public void delete(Long id) {
         translationRepository.findByRentalTypeId(id).forEach(translationRepository::delete);
         repository.deleteById(id);

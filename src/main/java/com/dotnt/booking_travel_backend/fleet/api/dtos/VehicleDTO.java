@@ -17,6 +17,7 @@ public class VehicleDTO {
     private int year;
     private String fuelType;
     private boolean active;
+    private boolean canRent;
     private int luggage;
     private String luggageUnit;
     private Long thumbnailId;

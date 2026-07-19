@@ -33,6 +33,9 @@ public class Vehicle extends MasterEntity {
     @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active;
 
+    @Column(name = "can_rent", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private boolean canRent;
+
     @Column(name = "luggage", nullable = true)
     private int luggage;
 

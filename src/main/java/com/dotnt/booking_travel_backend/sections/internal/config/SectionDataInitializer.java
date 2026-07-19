@@ -30,6 +30,9 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 seedSlideCard();
                 seedSlideReview();
                 seedInspiration();
+                seedBookingProcess();
+                seedSelfDriveBookingProcess();
+                seedRentCarRoutesHeroBanner();
                 log.info("Section initialization complete.");
             } catch (Exception e) {
                 log.error("Failed to initialize sections", e);
@@ -456,5 +459,147 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 .build());
 
         return section;
+    }
+
+    @Transactional
+    public void seedBookingProcess() {
+        if (sectionRepository.existsBySectionType("BOOKING_PROCESS")) {
+            log.info("BOOKING_PROCESS sections already exist, skipping.");
+            return;
+        }
+
+        Section section = Section.builder()
+                .sectionName("Booking Process - Rent Car")
+                .sectionType("BOOKING_PROCESS")
+                .pagePath("/rent-car")
+                .orderIndex(2)
+                .active(true)
+                .contentData("{\"steps\":[{\"step\":1,\"icon\":\"Phone\",\"title\":{\"vi\":\"Liên hệ & báo giá chính xác\",\"en\":\"Contact & Exact Quote\"},\"description\":{\"vi\":\"Liên hệ Hotline/Zalo: 0764971971 để báo giá theo ngày giờ, loại xe và điểm đón – trả. Có hỗ trợ định tuyến sân bay Cam Ranh.\",\"en\":\"Contact Hotline/Zalo: 0764971971 for exact quote based on date, time, vehicle type and pickup/dropoff points. Cam Ranh airport routing supported.\"}},{\"step\":2,\"icon\":\"CreditCard\",\"title\":{\"vi\":\"Xác nhận & đặt cọc 20%\",\"en\":\"Confirm & 20% Deposit\"},\"description\":{\"vi\":\"Xe riêng: cọc khi chốt lịch. Dcar: cọc sau khi bộ phận điều hành công ty xác nhận và cấp số ghế.\",\"en\":\"Private car: deposit upon schedule confirmation. Dcar: deposit after operations team confirms and assigns seat number.\"}},{\"step\":3,\"icon\":\"Car\",\"title\":{\"vi\":\"Gửi thông tin xe & tài xế\",\"en\":\"Send Vehicle & Driver Info\"},\"description\":{\"vi\":\"Xe riêng: gửi thông tin trước 30 phút. Dcar: tài xế liên hệ trước 30 phút.\",\"en\":\"Private car: info sent 30 minutes before. Dcar: driver contacts you 30 minutes before departure.\"}},{\"step\":4,\"icon\":\"Wallet\",\"title\":{\"vi\":\"Thanh toán\",\"en\":\"Payment\"},\"description\":{\"vi\":\"Thanh toán tiền mặt hoặc chuyển khoản khi đến nơi. Hỗ trợ hóa đơn VAT 8% khi yêu cầu.\",\"en\":\"Pay cash or bank transfer upon arrival. VAT 8% invoice available upon request.\"}},{\"step\":5,\"icon\":\"Handshake\",\"title\":{\"vi\":\"Hỗ trợ sau chuyến\",\"en\":\"Post-Trip Support\"},\"description\":{\"vi\":\"Sẵn sàng tiếp nhận phản hồi & cung cấp chứng từ khi cần.\",\"en\":\"Ready to receive feedback & provide documentation when needed.\"}}],\"notes\":{\"title\":{\"vi\":\"Lưu ý (áp dụng cho Dcar Limousine)\",\"en\":\"Notes (applies to Dcar Limousine)\"},\"items\":[{\"vi\":\"Vui lòng sử dụng đúng số ghế đã được cấp.\",\"en\":\"Please use the assigned seat number.\"},{\"vi\":\"Phí trung chuyển khách sạn/sân bay (nếu có) sẽ được thông báo trước.\",\"en\":\"Hotel/airport shuttle fee (if any) will be notified in advance.\"},{\"vi\":\"Giờ khởi hành cố định:\",\"en\":\"Fixed departure times:\"}],\"schedules\":[{\"direction\":{\"vi\":\"Nha Trang → Đà Lạt\",\"en\":\"Nha Trang → Da Lat\"},\"times\":[\"08:00\",\"11:00\",\"13:00\",\"17:00\"]},{\"direction\":{\"vi\":\"Đà Lạt → Nha Trang\",\"en\":\"Da Lat → Nha Trang\"},\"times\":[\"08:00\",\"13:00\",\"16:00\",\"17:00\"]}]}}")
+                .translations(new ArrayList<>())
+                .build();
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("vi")
+                .title("Quy trình đặt xe")
+                .subtitle("Minh Khoa Travel — Đơn giản, nhanh chóng, minh bạch")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("en")
+                .title("Booking Process")
+                .subtitle("Minh Khoa Travel — Simple, fast, transparent")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ko")
+                .title("예약 절차")
+                .subtitle("민 코아 트래블 — 간단하고 빠르고 투명하게")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ru")
+                .title("Процесс бронирования")
+                .subtitle("Минь Коа Трэвел — Просто, быстро, прозрачно")
+                .build());
+
+        sectionRepository.save(section);
+        log.info("Seeded BOOKING_PROCESS section.");
+    }
+
+    @Transactional
+    public void seedSelfDriveBookingProcess() {
+        if (sectionRepository.existsByPagePathAndSectionType("/self-drive", "BOOKING_PROCESS")) {
+            log.info("BOOKING_PROCESS for /self-drive already exists, skipping.");
+            return;
+        }
+
+        Section section = Section.builder()
+                .sectionName("Booking Process - Self Drive")
+                .sectionType("BOOKING_PROCESS")
+                .pagePath("/self-drive")
+                .orderIndex(2)
+                .active(true)
+                .contentData("{\"steps\":[{\"step\":1,\"icon\":\"Car\",\"title\":{\"vi\":\"Chọn xe & ngày\",\"en\":\"Choose car & date\"},\"description\":{\"vi\":\"Chọn phân khúc xe phù hợp, chọn ngày thuê và xem giá.\",\"en\":\"Choose suitable vehicle category, select rental dates and view pricing.\"}},{\"step\":2,\"icon\":\"FileText\",\"title\":{\"vi\":\"Gửi giấy tờ\",\"en\":\"Submit documents\"},\"description\":{\"vi\":\"Gửi CCCD và bằng lái xe. Hỗ trợ gửi trực tuyến.\",\"en\":\"Submit ID card and driver's license. Online submission supported.\"}},{\"step\":3,\"icon\":\"CreditCard\",\"title\":{\"vi\":\"Đặt cọc giữ xe\",\"en\":\"Deposit to secure\"},\"description\":{\"vi\":\"Đặt cọc theo quy định để giữ xe. Xác nhận qua Zalo/Hotline.\",\"en\":\"Pay deposit as required to secure vehicle. Confirmation via Zalo/Hotline.\"}},{\"step\":4,\"icon\":\"MapPin\",\"title\":{\"vi\":\"Nhận xe & tận hưởng\",\"en\":\"Receive car & enjoy\"},\"description\":{\"vi\":\"Nhận xe tại trung tâm, khách sạn hoặc sân bay. Kiểm tra xe trước khi nhận.\",\"en\":\"Receive car at center, hotel or airport. Inspect vehicle before pickup.\"}}]}")
+                .translations(new ArrayList<>())
+                .build();
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("vi")
+                .title("Quy trình thuê xe tự lái")
+                .subtitle("Minh Khoa Travel — Đơn giản, nhanh chóng, an toàn")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("en")
+                .title("Self-Drive Rental Process")
+                .subtitle("Minh Khoa Travel — Simple, fast, safe")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ko")
+                .title("셀프 드라이브 렌트 절차")
+                .subtitle("민 코아 트래블 — 간단하고 빠르고 안전하게")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ru")
+                .title("Процесс аренды авто")
+                .subtitle("Минь Коа Трэвел — Просто, быстро, безопасно")
+                .build());
+
+        sectionRepository.save(section);
+        log.info("Seeded BOOKING_PROCESS for /self-drive.");
+    }
+
+    @Transactional
+    public void seedRentCarRoutesHeroBanner() {
+        if (sectionRepository.existsByPagePathAndSectionType("/rent-car/routes", "HERO_BANNER")) {
+            log.info("HERO_BANNER for /rent-car/routes already exists, skipping.");
+            return;
+        }
+
+        Section section = Section.builder()
+                .sectionName("Hero Banner - Rent Car Routes")
+                .sectionType("HERO_BANNER")
+                .pagePath("/rent-car/routes")
+                .orderIndex(0)
+                .active(true)
+                .bgColor("#0f172a")
+                .textColor("#ffffff")
+                .cssClass("hero-rent-car-routes")
+                .images(null)
+                .translations(new ArrayList<>())
+                .build();
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("vi")
+                .title("Tất cả tuyến xe đi tỉnh")
+                .subtitle("Minh Khoa Travel")
+                .description("Danh sách đầy đủ các tuyến xe đi tỉnh từ Nha Trang. Xem giá, giờ khởi hành và loại xe.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("en")
+                .title("All Intercity Routes")
+                .subtitle("Minh Khoa Travel")
+                .description("Complete list of intercity routes from Nha Trang. View prices, departure times and vehicle types.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ko")
+                .title("모든 시외 노선")
+                .subtitle("민 코아 트래블")
+                .description("나트랑에서 출발하는 모든 시외 노선 목록. 가격, 출발 시간, 차종을 확인하세요.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ru")
+                .title("Все межгородние маршруты")
+                .subtitle("Минь Коа Трэвел")
+                .description("Полный список межгородних маршрутов из Нячанга. Смотрите цены, время отправления и типы автомобилей.")
+                .build());
+
+        sectionRepository.save(section);
+        log.info("Seeded HERO_BANNER for /rent-car/routes.");
     }
 }

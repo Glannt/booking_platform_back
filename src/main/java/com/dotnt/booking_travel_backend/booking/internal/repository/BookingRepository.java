@@ -12,4 +12,5 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByBookingCode(String bookingCode);
     Optional<Booking> findByIdempotencyKey(String idempotencyKey);
     List<Booking> findAllByDeletedAtIsNullOrderByCreatedAtDesc();
+    List<Booking> findAllByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long userId);
 }

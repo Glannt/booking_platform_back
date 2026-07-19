@@ -20,4 +20,6 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
     List<Section> findByPagePathOrderByOrderIndexAsc(String pagePath);
 
     boolean existsBySectionType(String sectionType);
+
+    boolean existsByPagePathAndSectionType(String pagePath, String sectionType);
 }

@@ -7,12 +7,15 @@ import com.dotnt.booking_travel_backend.media.api.MediaResponse;
 import com.dotnt.booking_travel_backend.media.internal.entity.Image;
 import com.dotnt.booking_travel_backend.media.internal.entity.ImageTranslation;
 import com.dotnt.booking_travel_backend.media.internal.repository.ImageRepository;
+import com.dotnt.booking_travel_backend.shared.i18n.I18nHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.resilience.annotation.ConcurrencyLimit;
+import org.springframework.resilience.annotation.Retryable;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -28,11 +31,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @Slf4j
 public class MediaServiceImpl implements MediaService {
+
+    private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/webp", "image/gif"
+    );
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
     private final ImageRepository imageRepository;
     private final S3Client s3Client;
@@ -63,9 +72,19 @@ public class MediaServiceImpl implements MediaService {
 
     @Override
     @Transactional
+    @Retryable(maxRetries = 2, delay = 1500)
+    @ConcurrencyLimit(10)
     public MediaResponse uploadImage(MultipartFile file, String altText, String locale) {
         if (file.isEmpty()) {
-            throw new IllegalArgumentException("Cannot upload empty file.");
+            throw new IllegalArgumentException(I18nHelper.msg("error.file.upload.empty"));
+        }
+
+        if (file.getContentType() == null || !ALLOWED_MIME_TYPES.contains(file.getContentType())) {
+            throw new IllegalArgumentException(I18nHelper.msg("error.file.upload.type", file.getContentType()));
+        }
+
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new IllegalArgumentException(I18nHelper.msg("error.file.upload.size"));
         }
 
         String originalFilename = file.getOriginalFilename();
@@ -194,6 +213,7 @@ public class MediaServiceImpl implements MediaService {
 
     @Override
     @Transactional
+    @Retryable(maxRetries = 2, delay = 1500)
     public void deleteImage(Long id) {
         Image image = imageRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Image not found with ID: " + id));

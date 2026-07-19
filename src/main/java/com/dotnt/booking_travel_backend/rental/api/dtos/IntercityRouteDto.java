@@ -16,6 +16,8 @@ public class IntercityRouteDto {
     private BigDecimal distanceKm;
     private BigDecimal estimatedHours;
     private boolean active;
+    private boolean hasDepartureTimes;
     private List<IntercityRouteTranslationDto> translations;
     private List<IntercityRoutePriceDto> prices;
+    private List<IntercityDepartureTimeDto> departureTimes;
 }

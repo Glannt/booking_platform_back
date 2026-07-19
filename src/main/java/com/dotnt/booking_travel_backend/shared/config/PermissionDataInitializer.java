@@ -108,6 +108,15 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
             "ROLE_VIEW"
     );
 
+    private static final List<String> MODERATOR_PERMISSIONS = List.of(
+            "BOOKING_VIEW_ALL", "BOOKING_UPDATE",
+            "TOUR_UPDATE",
+            "VEHICLE_UPDATE",
+            "INTERCITY_ROUTE_UPDATE",
+            "MEDIA_CREATE",
+            "FEEDBACK_UPDATE"
+    );
+
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
         new Thread(() -> {
@@ -141,6 +150,7 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
     public void seedRolePermissions() {
         assignPermissionsToRole("ADMIN", ADMIN_PERMISSIONS);
         assignPermissionsToRole("STAFF", STAFF_PERMISSIONS);
+        assignPermissionsToRole("MODERATOR", MODERATOR_PERMISSIONS);
         log.info("Role permission mappings seeded.");
     }
 

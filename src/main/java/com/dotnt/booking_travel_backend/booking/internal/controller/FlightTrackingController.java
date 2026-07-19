@@ -7,16 +7,28 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.client.RestClient;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Optional;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @RestController
 @RequestMapping("/api/v1/flights")
 @RequiredArgsConstructor
 public class FlightTrackingController {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private final RestClient restClient = RestClient.create();
+
     private final FlightTrackingRepository repository;
+    private final ObjectMapper objectMapper;
+
+    @Value("${app.flight.api-key:}")
+    private String apiKey;
 
     @GetMapping("/track/{flightNumber}")
     @SuccessResponse("Flight status tracked successfully!")
@@ -31,11 +43,88 @@ public class FlightTrackingController {
                 return ResponseEntity.ok(tracking);
             }
             // Update cache
-            return ResponseEntity.ok(updateMockFlightTracking(tracking, cleanedNumber, now));
+            return ResponseEntity.ok(fetchOrMockFlightTracking(tracking, cleanedNumber, now));
         } else {
             FlightTracking tracking = new FlightTracking();
             tracking.setFlightNumber(cleanedNumber);
-            return ResponseEntity.ok(updateMockFlightTracking(tracking, cleanedNumber, now));
+            return ResponseEntity.ok(fetchOrMockFlightTracking(tracking, cleanedNumber, now));
+        }
+    }
+
+    private FlightTracking fetchOrMockFlightTracking(FlightTracking tracking, String flightNumber, LocalDateTime now) {
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            return updateMockFlightTracking(tracking, flightNumber, now);
+        }
+
+        try {
+            String url = "http://api.aviationstack.com/v1/flights?access_key=" + apiKey.trim() + "&flight_iata=" + flightNumber;
+            String jsonResponse = restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(String.class);
+
+            JsonNode root = objectMapper.readTree(jsonResponse);
+            JsonNode data = root.path("data");
+            if (data.isArray() && data.size() > 0) {
+                JsonNode firstFlight = data.get(0);
+                
+                // Parse airline name
+                String airlineName = firstFlight.path("airline").path("name").asText("Unknown Airline");
+                tracking.setAirlineName(airlineName);
+
+                // Parse departure airport
+                String depAirport = firstFlight.path("departure").path("airport").asText("");
+                String depIata = firstFlight.path("departure").path("iata").asText("");
+                if (!depIata.isEmpty()) {
+                    tracking.setDepartureAirport(depIata + (depAirport.isEmpty() ? "" : " (" + depAirport + ")"));
+                } else {
+                    tracking.setDepartureAirport(depAirport);
+                }
+
+                // Parse arrival airport
+                String arrAirport = firstFlight.path("arrival").path("airport").asText("");
+                String arrIata = firstFlight.path("arrival").path("iata").asText("");
+                if (!arrIata.isEmpty()) {
+                    tracking.setArrivalAirport(arrIata + (arrAirport.isEmpty() ? "" : " (" + arrAirport + ")"));
+                } else {
+                    tracking.setArrivalAirport(arrAirport);
+                }
+
+                // Parse times
+                tracking.setScheduledDeparture(parseDateTime(firstFlight.path("departure").path("scheduled").asText(null)));
+                tracking.setScheduledArrival(parseDateTime(firstFlight.path("arrival").path("scheduled").asText(null)));
+                tracking.setActualDeparture(parseDateTime(firstFlight.path("departure").path("actual").asText(null)));
+                tracking.setActualArrival(parseDateTime(firstFlight.path("arrival").path("actual").asText(null)));
+
+                // Parse status
+                String status = firstFlight.path("flight_status").asText("Scheduled");
+                if (status != null && !status.isEmpty()) {
+                    status = Character.toUpperCase(status.charAt(0)) + status.substring(1);
+                }
+                tracking.setStatus(status);
+                tracking.setLastCheckedAt(now);
+
+                return repository.save(tracking);
+            }
+        } catch (Exception e) {
+            System.err.println("Error calling Aviationstack API: " + e.getMessage());
+        }
+
+        return updateMockFlightTracking(tracking, flightNumber, now);
+    }
+
+    private LocalDateTime parseDateTime(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty() || dateStr.equalsIgnoreCase("null")) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(dateStr).toLocalDateTime();
+        } catch (Exception e) {
+            try {
+                return LocalDateTime.parse(dateStr);
+            } catch (Exception ex) {
+                return null;
+            }
         }
     }
 
@@ -64,8 +153,7 @@ public class FlightTrackingController {
         tracking.setScheduledArrival(scheduledArr);
 
         // Mock actual status
-        Random random = new Random();
-        int statusSelect = random.nextInt(3);
+        int statusSelect = SECURE_RANDOM.nextInt(3);
         if (statusSelect == 0) {
             tracking.setStatus("Scheduled");
             tracking.setActualDeparture(null);

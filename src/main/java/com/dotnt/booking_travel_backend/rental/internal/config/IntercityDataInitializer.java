@@ -20,6 +20,7 @@ public class IntercityDataInitializer implements CommandLineRunner {
     private final IntercityRouteRepository routeRepository;
     private final IntercityRouteTranslationRepository translationRepository;
     private final IntercityRoutePriceRepository priceRepository;
+    private final IntercityDepartureTimeRepository departureTimeRepository;
     private final IntercitySeasonalSurchargeRepository surchargeRepository;
     private final RentalTypeRepository rentalTypeRepository;
     private final RentalTypeTranslationRepository rentalTypeTranslationRepository;
@@ -35,6 +36,7 @@ public class IntercityDataInitializer implements CommandLineRunner {
         seedRentalTypes();
         seedSelfDriveRentals();
         seedIntercityRoutes();
+        seedDepartureTimes();
         seedSeasonalSurcharges();
 
         log.info("Intercity + self-drive data seeded.");
@@ -96,28 +98,28 @@ public class IntercityDataInitializer implements CommandLineRunner {
     }
 
     private void seedIntercityRoutes() {
-        seedRoute("Nha Trang", "Đà Lạt", "135", "3.5",
+        seedRoute("Nha Trang", "Đà Lạt", "135", "3.5", true,
                 "Nha Trang ⇌ Đà Lạt", "Nha Trang ⇌ Da Lat", "나트랑 ⇌ 달랏", "Ня Чанг ⇌ Далат",
                 new long[]{1200000, 1500000, 2000000},
                 new long[]{1800000, 2400000, 3200000});
 
-        seedRoute("Nha Trang", "Mũi Né", "155", "4",
+        seedRoute("Nha Trang", "Mũi Né", "155", "4", false,
                 "Nha Trang ⇌ Mũi Né", "Nha Trang ⇌ Mui Ne", "나트랑 ⇌ 무이네", "Ня Чанг ⇌ Муйне",
                 new long[]{1400000, 1700000, 2300000},
                 new long[]{2200000, 2800000, 3800000});
 
-        seedRoute("Nha Trang", "Phan Rang", "100", "2.5",
+        seedRoute("Nha Trang", "Phan Rang", "100", "2.5", false,
                 "Nha Trang ⇌ Phan Rang", "Nha Trang ⇌ Phan Rang", "나트랑 ⇌ 판랑", "Ня Чанг ⇌ Фанранг",
                 new long[]{900000, 1200000, 1700000},
                 new long[]{1600000, 2200000, 3000000});
 
-        seedRoute("Nha Trang", "Buôn Ma Thuột", "260", "5.5",
+        seedRoute("Nha Trang", "Buôn Ma Thuột", "260", "5.5", false,
                 "Nha Trang ⇌ Buôn Ma Thuột", "Nha Trang ⇌ Buon Ma Thuot", "나트랑 ⇌ 봄마투옷", "Ня Чанг ⇌ Бонматьют",
                 new long[]{1600000, 1900000, 2500000},
                 new long[]{2600000, 3200000, 4200000});
     }
 
-    private void seedRoute(String origin, String dest, String dist, String hours,
+    private void seedRoute(String origin, String dest, String dist, String hours, boolean hasDepartureTimes,
                            String viName, String enName, String koName, String ruName,
                            long[] oneWayPrices, long[] roundTripPrices) {
         IntercityRoute route = IntercityRoute.builder()
@@ -126,6 +128,7 @@ public class IntercityDataInitializer implements CommandLineRunner {
                 .distanceKm(new BigDecimal(dist))
                 .estimatedHours(new BigDecimal(hours))
                 .active(true)
+                .hasDepartureTimes(hasDepartureTimes)
                 .build();
         route = routeRepository.save(route);
 
@@ -167,6 +170,39 @@ public class IntercityDataInitializer implements CommandLineRunner {
                 .startDate(java.time.LocalDate.of(2026, 6, 1))
                 .endDate(java.time.LocalDate.of(2026, 8, 31))
                 .surchargePercent(new BigDecimal("10"))
+                .active(true)
+                .build());
+    }
+
+    private void seedDepartureTimes() {
+        if (departureTimeRepository.count() > 0) return;
+
+        List<IntercityRoute> routes = routeRepository.findByActiveTrue();
+        for (IntercityRoute route : routes) {
+            if (!route.isHasDepartureTimes()) continue;
+
+            boolean isNhaTrangToDaLat = "Nha Trang".equals(route.getOriginCity()) && "Đà Lạt".equals(route.getDestinationCity());
+            boolean isDaLatToNhaTrang = "Đà Lạt".equals(route.getOriginCity()) && "Nha Trang".equals(route.getDestinationCity());
+
+            if (isNhaTrangToDaLat) {
+                saveDepartureTime(route, "08:00", 1);
+                saveDepartureTime(route, "11:00", 2);
+                saveDepartureTime(route, "13:00", 3);
+                saveDepartureTime(route, "17:00", 4);
+            } else if (isDaLatToNhaTrang) {
+                saveDepartureTime(route, "08:00", 1);
+                saveDepartureTime(route, "13:00", 2);
+                saveDepartureTime(route, "16:00", 3);
+                saveDepartureTime(route, "17:00", 4);
+            }
+        }
+    }
+
+    private void saveDepartureTime(IntercityRoute route, String time, int orderIndex) {
+        departureTimeRepository.save(IntercityDepartureTime.builder()
+                .route(route)
+                .departureTime(time)
+                .orderIndex(orderIndex)
                 .active(true)
                 .build());
     }

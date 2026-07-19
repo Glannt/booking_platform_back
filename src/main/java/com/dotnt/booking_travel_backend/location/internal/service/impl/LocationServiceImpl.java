@@ -9,6 +9,7 @@ import com.dotnt.booking_travel_backend.location.internal.repository.LocationRep
 import com.dotnt.booking_travel_backend.location.internal.repository.LocationTranslationRepository;
 import com.dotnt.booking_travel_backend.location.internal.service.LocationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +53,7 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "locations", key = "#locale")
     public List<LocationDto> listActive(String locale) {
         return locationRepository.findByActiveTrue().stream()
                 .map(loc -> toDto(loc, locale))
@@ -60,6 +62,7 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "locations", key = "#id + '_' + #locale")
     public LocationDto get(Long id, String locale) {
         return locationRepository.findById(id)
                 .map(loc -> toDto(loc, locale))

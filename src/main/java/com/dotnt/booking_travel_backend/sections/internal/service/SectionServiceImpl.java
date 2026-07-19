@@ -11,6 +11,8 @@ import com.dotnt.booking_travel_backend.sections.internal.entity.SectionTranslat
 import com.dotnt.booking_travel_backend.sections.internal.repository.SectionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,7 @@ public class SectionServiceImpl implements SectionService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "sections", key = "#pagePath + '_' + #locale")
     public List<SectionDto> getActiveByPagePath(String pagePath, String locale) {
         List<Section> sections = sectionRepository.findActiveByPagePath(pagePath, LocalDateTime.now());
         return sections.stream().map(s -> mapToDto(s, locale)).toList();
@@ -36,6 +39,7 @@ public class SectionServiceImpl implements SectionService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "sections", key = "#pagePath + '_all'")
     public List<SectionDto> getAllByPagePath(String pagePath) {
         List<Section> sections = sectionRepository.findByPagePathOrderByOrderIndexAsc(pagePath);
         return sections.stream().map(s -> mapToDto(s, null)).toList();
@@ -43,6 +47,7 @@ public class SectionServiceImpl implements SectionService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "sections", key = "#id")
     public SectionDto getById(Long id) {
         Section section = sectionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Section not found: " + id));
@@ -51,6 +56,7 @@ public class SectionServiceImpl implements SectionService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "sections", allEntries = true)
     public SectionDto create(CreateSectionRequest request) {
         Section section = Section.builder()
                 .sectionName(request.getSectionName())
@@ -98,6 +104,7 @@ public class SectionServiceImpl implements SectionService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "sections", allEntries = true)
     public SectionDto update(Long id, CreateSectionRequest request) {
         Section section = sectionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Section not found: " + id));
@@ -149,6 +156,7 @@ public class SectionServiceImpl implements SectionService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "sections", allEntries = true)
     public void delete(Long id) {
         Section section = sectionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Section not found: " + id));

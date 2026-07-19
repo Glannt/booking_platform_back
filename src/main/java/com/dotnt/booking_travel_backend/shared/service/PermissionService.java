@@ -47,7 +47,7 @@ public class PermissionService {
     @Transactional(readOnly = true)
     public Map<String, List<String>> getAllRolePermissions() {
         Map<String, List<String>> result = new LinkedHashMap<>();
-        for (String role : List.of("ADMIN", "STAFF", "CUSTOMER")) {
+        for (String role : List.of("ADMIN", "STAFF", "MODERATOR", "CUSTOMER")) {
             result.put(role, getPermissionsForRole(role));
         }
         return result;

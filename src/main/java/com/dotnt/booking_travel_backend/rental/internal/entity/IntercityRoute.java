@@ -32,6 +32,10 @@ public class IntercityRoute extends MasterEntity {
     @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active;
 
+    @Column(name = "has_departure_times", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    @Builder.Default
+    private boolean hasDepartureTimes = false;
+
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<IntercityRouteTranslation> translations = new ArrayList<>();
@@ -39,4 +43,8 @@ public class IntercityRoute extends MasterEntity {
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<IntercityRoutePrice> prices = new ArrayList<>();
+
+    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<IntercityDepartureTime> departureTimes = new ArrayList<>();
 }

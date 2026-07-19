@@ -5,6 +5,8 @@ import com.dotnt.booking_travel_backend.language.api.LanguageDto;
 import com.dotnt.booking_travel_backend.language.internal.entity.Language;
 import com.dotnt.booking_travel_backend.language.internal.repository.LanguageRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +20,7 @@ public class LanguageServiceImpl implements LanguageService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "languages", allEntries = true)
     public LanguageDto createLanguage(CreateLanguageRequest request) {
         if (languageRepository.findByCode(request.getCode()).isPresent()) {
             throw new IllegalArgumentException("Language code already exists: " + request.getCode());
@@ -48,6 +51,7 @@ public class LanguageServiceImpl implements LanguageService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "languages", key = "'active'")
     public List<LanguageDto> getActiveLanguages() {
         return languageRepository.findAllByStatusOrderByOrderIndexAsc("active").stream()
                 .map(this::mapToDto)
@@ -56,6 +60,7 @@ public class LanguageServiceImpl implements LanguageService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "languages", key = "'all'")
     public List<LanguageDto> getAllLanguages() {
         return languageRepository.findAll().stream()
                 .map(this::mapToDto)

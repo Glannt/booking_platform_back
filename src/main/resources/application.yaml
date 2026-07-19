@@ -1,4 +1,9 @@
 spring:
+  threads:
+    virtual:
+      enabled: true
+  config:
+    import: "optional:file:.env[.properties]"
   docker:
     compose:
       enabled: false
@@ -22,13 +27,17 @@ spring:
     host: ${SPRING_MAIL_HOST:smtp.gmail.com}
     port: ${SPRING_MAIL_PORT:587}
     username: ${SPRING_MAIL_USERNAME:tongnguyenthanhdo@gmail.com}
-    password: ${SPRING_MAIL_PASSWORD:sres rups vymy sxne}
+    password: ${SPRING_MAIL_PASSWORD}
     properties:
       mail:
         SMTP:
           auth: true
           STARTTLS:
             enable: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 mailer:
   service: gmail
@@ -56,9 +65,22 @@ app:
   jwt:
     secret: ${APP_JWT_SECRET:default-secret-key-must-be-at-least-256-bits-long-to-be-secure-for-hmac-sha-256}
     expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
+  flight:
+    api-key: ${FLIGHT_TRACKING_API_KEY:}
 
 cloudinary:
   cloud_name: ${CLOUDINARY_CLOUD_NAME:dpdte7bjh}
   api_key: ${CLOUDINARY_API_KEY:949374147113246}
   api_secret: ${CLOUDINARY_API_SECRET:Qx9-APsihOYbU25691atvlaPeoc}
   folder: ${CLOUDINARY_FOLDER:booking_travel}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus"
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true

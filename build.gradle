@@ -30,6 +30,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-webclient'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.4'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
     // Source: https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
     implementation 'org.springframework.boot:spring-boot-starter-mail'
@@ -51,6 +54,7 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'org.springframework.modulith:spring-modulith-actuator'
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     // ponytail: observability-core causes NPE in FormattableType.of() when scanning shared.module types
     // runtimeOnly 'org.springframework.modulith:spring-modulith-observability-core'
     // Source: https://mvnrepository.com/artifact/com.cloudinary/cloudinary-http5

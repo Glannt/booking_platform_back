@@ -33,25 +33,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        String jwt = null;
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwt = authHeader.substring(7);
+        } else {
+            // Try to extract from HTTP-only cookies
+            if (request.getCookies() != null) {
+                for (var cookie : request.getCookies()) {
+                    if ("accessToken".equals(cookie.getName())) {
+                        jwt = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (jwt == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        final String finalJwt = jwt;
         final String userEmail;
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (blacklistedTokenRepository.existsByToken(finalJwt)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
-
-        if (blacklistedTokenRepository.existsByToken(jwt)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        if (jwtService.validateToken(jwt)) {
-            userEmail = jwtService.getEmailFromToken(jwt);
-            String role = jwtService.getRoleFromToken(jwt);
+        if (jwtService.validateToken(finalJwt)) {
+            userEmail = jwtService.getEmailFromToken(finalJwt);
+            String role = jwtService.getRoleFromToken(finalJwt);
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();

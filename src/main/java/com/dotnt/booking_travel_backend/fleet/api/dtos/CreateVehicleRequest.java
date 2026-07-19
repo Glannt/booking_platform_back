@@ -6,6 +6,7 @@ public record CreateVehicleRequest(
         Integer year,
         String fuelType,
         Boolean active,
+        Boolean canRent,
         Long vehicleCategoryId,
         Integer luggage,
         String luggageUnit,

@@ -11,6 +11,8 @@ import com.dotnt.booking_travel_backend.media.internal.entity.Image;
 import com.dotnt.booking_travel_backend.media.internal.repository.ImageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ public class VehicleServiceImpl implements IVehicleService {
     private final ImageRepository imageRepository;
 
     @Override
+    @CacheEvict(value = "vehicles", allEntries = true)
     public VehicleDTO createVehicle(CreateVehicleRequest request) {
         try {
             if (request.brand() == null
@@ -41,6 +44,7 @@ public class VehicleServiceImpl implements IVehicleService {
                     .year(request.year())
                     .fuelType(request.fuelType() != null ? request.fuelType() : "gasoline")
                     .active(request.active() != null ? request.active() : true)
+                    .canRent(request.canRent() != null ? request.canRent() : true)
                     .luggage(request.luggage() != null ? request.luggage() : 0)
                     .luggageUnit(request.luggageUnit())
                     .thumbnailId(request.thumbnailId())
@@ -63,6 +67,7 @@ public class VehicleServiceImpl implements IVehicleService {
     }
 
     @Override
+    @Cacheable(value = "vehicles", key = "#pageable.pageNumber + '_' + #pageable.pageSize + '_' + #keyword")
     public Page<VehicleDTO> getVehicles(Pageable pageable, String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return vehicleRepository.findAll(pageable).map(this::toDto);
@@ -73,11 +78,13 @@ public class VehicleServiceImpl implements IVehicleService {
     }
 
     @Override
+    @Cacheable(value = "vehicles", key = "#id")
     public VehicleDTO getVehicle(Long id) {
         return vehicleRepository.findById(id).map(this::toDto).orElse(null);
     }
 
     @Override
+    @CacheEvict(value = "vehicles", allEntries = true)
     public VehicleDTO updateVehicle(Long id, CreateVehicleRequest request) {
         return vehicleRepository.findById(id).map(existing -> {
             if (request.brand() != null) existing.setBrand(request.brand());
@@ -85,6 +92,7 @@ public class VehicleServiceImpl implements IVehicleService {
             if (request.year() != null) existing.setYear(request.year());
             if (request.fuelType() != null) existing.setFuelType(request.fuelType());
             if (request.active() != null) existing.setActive(request.active());
+            if (request.canRent() != null) existing.setCanRent(request.canRent());
             if (request.luggage() != null) existing.setLuggage(request.luggage());
             if (request.luggageUnit() != null) existing.setLuggageUnit(request.luggageUnit());
             if (request.thumbnailId() != null) existing.setThumbnailId(request.thumbnailId());
@@ -102,10 +110,18 @@ public class VehicleServiceImpl implements IVehicleService {
     }
 
     @Override
+    @CacheEvict(value = "vehicles", allEntries = true)
     public void deleteVehicle(Long id) {
         if (vehicleRepository.existsById(id)) {
             vehicleRepository.deleteById(id);
         }
+    }
+
+    @Override
+    @Cacheable(value = "vehicles", key = "'rentable_' + #categoryId")
+    public List<VehicleDTO> getRentableVehiclesByCategory(Long categoryId) {
+        return vehicleRepository.findByCategoryIdAndCanRentTrueAndActiveTrue(categoryId)
+                .stream().map(this::toDto).toList();
     }
 
     private VehicleDTO toDto(Vehicle v) {
@@ -136,6 +152,7 @@ public class VehicleServiceImpl implements IVehicleService {
                 .year(v.getYear())
                 .fuelType(v.getFuelType())
                 .active(v.isActive())
+                .canRent(v.isCanRent())
                 .luggage(v.getLuggage())
                 .luggageUnit(v.getLuggageUnit())
                 .thumbnailId(v.getThumbnailId())

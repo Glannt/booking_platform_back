@@ -17,8 +17,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.resilience.annotation.ConcurrencyLimit;
 
 import java.math.BigDecimal;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -39,10 +42,11 @@ public class BookingServiceImpl implements BookingService {
     private final BookingMapper bookingMapper;
     private final TourBookingService tourBookingService;
     private final MailService mailService;
-    private static final Random RANDOM = new Random();
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
     @Transactional
+    @ConcurrencyLimit(20)
     public BookingDto createBooking(CreateBookingRequest request) {
         // Idempotency Check
         if (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank()) {
@@ -475,9 +479,17 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.save(booking);
     }
 
+    @Override
+    public List<BookingDto> getMyBookings(Long userId) {
+        return bookingRepository.findAllByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(bookingMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
     private String generateBookingCode() {
         String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        int randNum = 100000 + RANDOM.nextInt(900000);
+        int randNum = 100000 + SECURE_RANDOM.nextInt(900000);
         return "BK-" + dateStr + "-" + randNum;
     }
 }
