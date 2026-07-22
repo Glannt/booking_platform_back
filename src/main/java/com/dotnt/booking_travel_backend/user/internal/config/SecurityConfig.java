@@ -73,6 +73,9 @@ public class SecurityConfig {
                                 "/api/v1/sections/**",
                                 "/api/v1/intercity-routes/**",
                                 "/api/v1/locations/**",
+                                "/api/v1/rentals/**",
+                                "/api/v1/rental-types/**",
+                                "/api/v1/contact-settings/**",
                                 "/api/v1/auth/whoami"
                         ).permitAll()
                         // Allow guest/public booking creation
