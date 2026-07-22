@@ -98,6 +98,7 @@ public class UserService {
                 .filter(u -> u.getDeletedAt() == null)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setDeletedAt(LocalDateTime.now());
+        user.setStatus("inactive");
         userRepository.save(user);
     }
 

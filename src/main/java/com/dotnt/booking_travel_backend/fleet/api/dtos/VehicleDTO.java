@@ -20,6 +20,7 @@ public class VehicleDTO {
     private boolean canRent;
     private int luggage;
     private String luggageUnit;
+    private Integer luggageWeight;
     private Long thumbnailId;
     private String thumbnailUrl;
     private List<Long> imageIds;

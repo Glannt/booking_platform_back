@@ -10,6 +10,7 @@ public record CreateVehicleRequest(
         Long vehicleCategoryId,
         Integer luggage,
         String luggageUnit,
+        Integer luggageWeight,
         Long thumbnailId,
         java.util.List<Long> imageIds
 ) {

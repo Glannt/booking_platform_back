@@ -12,8 +12,8 @@ public record CreateVehicleCategoryRequest(
         Integer minLuggage,
         Integer maxLuggage,
         String unitLuggage,
-        boolean active,
-        boolean isDefault,
+        Boolean active,
+        Boolean isDefault,
         Long thumbnailId,
         @NotEmpty List<VehicleCategoryTranslationDTO> translations
 ) {

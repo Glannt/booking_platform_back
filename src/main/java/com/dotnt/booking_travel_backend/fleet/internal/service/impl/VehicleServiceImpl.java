@@ -47,6 +47,7 @@ public class VehicleServiceImpl implements IVehicleService {
                     .canRent(request.canRent() != null ? request.canRent() : true)
                     .luggage(request.luggage() != null ? request.luggage() : 0)
                     .luggageUnit(request.luggageUnit())
+                    .luggageWeight(request.luggageWeight())
                     .thumbnailId(request.thumbnailId())
                     .category(vehicleCategoryRepository.findById(request.vehicleCategoryId())
                             .orElseThrow(() -> new IllegalArgumentException("Invalid vehicle category ID.")))
@@ -95,6 +96,7 @@ public class VehicleServiceImpl implements IVehicleService {
             if (request.canRent() != null) existing.setCanRent(request.canRent());
             if (request.luggage() != null) existing.setLuggage(request.luggage());
             if (request.luggageUnit() != null) existing.setLuggageUnit(request.luggageUnit());
+            if (request.luggageWeight() != null) existing.setLuggageWeight(request.luggageWeight());
             if (request.thumbnailId() != null) existing.setThumbnailId(request.thumbnailId());
             if (request.imageIds() != null) {
                 List<Image> images = imageRepository.findAllById(request.imageIds());
@@ -155,6 +157,7 @@ public class VehicleServiceImpl implements IVehicleService {
                 .canRent(v.isCanRent())
                 .luggage(v.getLuggage())
                 .luggageUnit(v.getLuggageUnit())
+                .luggageWeight(v.getLuggageWeight())
                 .thumbnailId(v.getThumbnailId())
                 .thumbnailUrl(thumbnailUrl)
                 .imageIds(imageIds)

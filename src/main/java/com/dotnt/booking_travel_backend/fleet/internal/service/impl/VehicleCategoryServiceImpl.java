@@ -66,8 +66,8 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
             .minLuggage(request.minLuggage())
             .maxLuggage(request.maxLuggage())
             .unitLuggage(request.unitLuggage())
-            .active(request.active())
-            .isDefault(request.isDefault())
+            .active(request.active() != null ? request.active() : true)
+            .isDefault(request.isDefault() != null ? request.isDefault() : false)
             .thumbnailId(request.thumbnailId())
             .build();
         vehicleCategoryRepository.save(vehicleCategory);
@@ -159,13 +159,17 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                     .orElseThrow(() -> new EntityNotFoundException("Vehicle Category not found with id: " + id));
 
             // 2. Cập nhật thông tin bảng cha (chỉ set khi dữ liệu thay đổi hoặc có giá trị mới)
-            existingVehicleCategory.setActive(vehicleCategoryDTO.isActive());
+            if (vehicleCategoryDTO.getActive() != null) {
+                existingVehicleCategory.setActive(vehicleCategoryDTO.getActive());
+            }
             existingVehicleCategory.setMinSeat(vehicleCategoryDTO.getMinSeat());
             existingVehicleCategory.setMaxSeat(vehicleCategoryDTO.getMaxSeat());
             existingVehicleCategory.setMinLuggage(vehicleCategoryDTO.getMinLuggage());
             existingVehicleCategory.setMaxLuggage(vehicleCategoryDTO.getMaxLuggage());
             existingVehicleCategory.setUnitLuggage(vehicleCategoryDTO.getUnitLuggage());
-            existingVehicleCategory.setDefault(vehicleCategoryDTO.isDefault());
+            if (vehicleCategoryDTO.getIsDefault() != null) {
+                existingVehicleCategory.setDefault(vehicleCategoryDTO.getIsDefault());
+            }
             if (vehicleCategoryDTO.getThumbnailId() != null || vehicleCategoryDTO.getThumbnailUrl() == null) {
                 existingVehicleCategory.setThumbnailId(vehicleCategoryDTO.getThumbnailId());
             }

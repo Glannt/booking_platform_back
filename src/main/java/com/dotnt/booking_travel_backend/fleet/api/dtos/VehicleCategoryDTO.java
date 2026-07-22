@@ -17,8 +17,8 @@ public class VehicleCategoryDTO {
     private Integer minLuggage;
     private Integer maxLuggage;
     private String unitLuggage;
-    private boolean active;
-    private boolean isDefault;
+    private Boolean active;
+    private Boolean isDefault;
     private Long thumbnailId;
     private String thumbnailUrl;
     private List<VehicleCategoryTranslationDTO> translations;

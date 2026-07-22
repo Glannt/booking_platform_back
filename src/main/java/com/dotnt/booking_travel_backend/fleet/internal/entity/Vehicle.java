@@ -42,6 +42,9 @@ public class Vehicle extends MasterEntity {
     @Column(name = "luggage_unit", nullable = true, length = 50)
     private String luggageUnit;
 
+    @Column(name = "luggage_weight", nullable = true)
+    private Integer luggageWeight;
+
     @Column(name = "thumbnail_id", nullable = true)
     private Long thumbnailId;
 

@@ -10,7 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/rental-types")
+@RequestMapping("/api/v1/admin/rental-types")
 @RequiredArgsConstructor
 public class RentalTypeController {
     private final IRentalTypeService service;
