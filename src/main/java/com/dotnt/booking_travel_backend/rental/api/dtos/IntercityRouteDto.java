@@ -15,8 +15,15 @@ public class IntercityRouteDto {
     private String destinationCity;
     private BigDecimal distanceKm;
     private BigDecimal estimatedHours;
-    private boolean active;
-    private boolean hasDepartureTimes;
+    private BigDecimal originLat;
+    private BigDecimal originLng;
+    private BigDecimal destinationLat;
+    private BigDecimal destinationLng;
+    private Boolean active;
+    private Boolean hasDepartureTimes;
+    private Long thumbnailId;
+    private String thumbnailUrl;
+    private List<Long> imageIds;
     private List<IntercityRouteTranslationDto> translations;
     private List<IntercityRoutePriceDto> prices;
     private List<IntercityDepartureTimeDto> departureTimes;

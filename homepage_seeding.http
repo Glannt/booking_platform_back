@@ -422,3 +422,58 @@ GET {{host}}/api/v1/feedbacks
 ### 6.4. Lấy danh sách feedbacks quản trị (Admin API)
 GET {{host}}/api/v1/admin/feedbacks
 
+
+### ====================================================================
+### 7. SECTION DATA (NEW API — /api/v1/sections)
+### ====================================================================
+
+### 7.1. Tạo HERO_BANNER cho /self-drive (dùng section API mới, không qua page)
+POST {{host}}/api/v1/sections
+Content-Type: application/json
+
+{
+  "sectionName": "Hero Banner - Self Drive",
+  "sectionType": "HERO_BANNER",
+  "pagePath": "/self-drive",
+  "orderIndex": 0,
+  "active": true,
+  "bgColor": "#1a1a2e",
+  "textColor": "#ffffff",
+  "cssClass": "hero-self-drive",
+  "contentData": "{\"badges\":[{\"text\":{\"vi\":\"Xe 5 chỗ từ 500k/ngày\",\"en\":\"5-seat from 500k/day\"},\"textColor\":\"#ffffff\",\"bgColor\":\"#3b82f6\"},{\"text\":{\"vi\":\"Xe 7 chỗ từ 700k/ngày\",\"en\":\"7-seat from 700k/day\"},\"textColor\":\"#ffffff\",\"bgColor\":\"#22c55e\"}]}",
+  "translations": [
+    {
+      "locale": "vi",
+      "title": "Thuê Xe Tự Lái Nha Trang",
+      "subtitle": "Minh Khoa Travel",
+      "description": "Xe đời mới — Thủ tục nhanh — Hợp đồng rõ ràng — Hỗ trợ 24/7. Giao/nhận xe tại trung tâm, khách sạn, bến xe hoặc sân bay Cam Ranh.",
+      "btnText": "Liên hệ ngay",
+      "btnLink": "tel:0764971971"
+    },
+    {
+      "locale": "en",
+      "title": "Self-Drive Car Rental Nha Trang",
+      "subtitle": "Minh Khoa Travel",
+      "description": "Modern cars – Quick procedure – Transparent contract – 24/7 support. Pickup/delivery at central, hotels, stations, or Cam Ranh Airport.",
+      "btnText": "Contact now",
+      "btnLink": "tel:0764971971"
+    },
+    {
+      "locale": "ko",
+      "title": "나트랑 셀프 드라이브 렌트카",
+      "subtitle": "민 코아 트래블",
+      "description": "최신 차량 – 빠른 절차 – 투명한 계약 – 24/7 지원. 중앙, 호텔, 역, 깜란 공항에서 픽업/딜리버리 가능.",
+      "btnText": "문의하기",
+      "btnLink": "tel:0764971971"
+    },
+    {
+      "locale": "ru",
+      "title": "Аренда авто в Нячанге",
+      "subtitle": "Минь Коа Трэвел",
+      "description": "Современные авто – Быстрые процедуры – Прозрачный договор – Поддержка 24/7. Забор/доставка в центре, отелях, вокзалах или аэропорту Камрань.",
+      "btnText": "Связаться",
+      "btnLink": "tel:0764971971"
+    }
+  ]
+}
+

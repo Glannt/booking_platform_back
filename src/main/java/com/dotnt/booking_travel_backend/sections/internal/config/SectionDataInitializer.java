@@ -26,7 +26,11 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
     public void onApplicationEvent(ApplicationReadyEvent event) {
         new Thread(() -> {
             try {
-                seedHeroBanners();
+                seedHomepageHeroBanner();
+                seedToursHeroBanner();
+                seedSelfDriveHeroBanner();
+                seedAirportTransferHeroBanner();
+                seedRentCarHeroBanner();
                 seedSlideCard();
                 seedSlideReview();
                 seedInspiration();
@@ -41,24 +45,53 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
     }
 
     @Transactional
-    public void seedHeroBanners() {
-        if (sectionRepository.count() > 0) {
-            log.info("Sections already exist, skipping hero banner seed.");
+    public void seedHomepageHeroBanner() {
+        if (sectionRepository.existsByPagePathAndSectionType("/", "HERO_BANNER")) {
+            log.info("HERO_BANNER for / already exists, skipping.");
             return;
         }
+        sectionRepository.save(buildHomepageHeroBanner());
+        log.info("Seeded HERO_BANNER for /.");
+    }
 
-        List<Section> banners = List.of(
-            buildHomepageHeroBanner(),
-            buildToursHeroBanner(),
-            buildSelfDriveHeroBanner(),
-            buildAirportTransferHeroBanner(),
-            buildRentCarHeroBanner()
-        );
-
-        for (Section banner : banners) {
-            sectionRepository.save(banner);
+    @Transactional
+    public void seedToursHeroBanner() {
+        if (sectionRepository.existsByPagePathAndSectionType("/tours", "HERO_BANNER")) {
+            log.info("HERO_BANNER for /tours already exists, skipping.");
+            return;
         }
-        log.info("Seeded {} hero banner sections.", banners.size());
+        sectionRepository.save(buildToursHeroBanner());
+        log.info("Seeded HERO_BANNER for /tours.");
+    }
+
+    @Transactional
+    public void seedSelfDriveHeroBanner() {
+        if (sectionRepository.existsByPagePathAndSectionType("/self-drive", "HERO_BANNER")) {
+            log.info("HERO_BANNER for /self-drive already exists, skipping.");
+            return;
+        }
+        sectionRepository.save(buildSelfDriveHeroBanner());
+        log.info("Seeded HERO_BANNER for /self-drive.");
+    }
+
+    @Transactional
+    public void seedAirportTransferHeroBanner() {
+        if (sectionRepository.existsByPagePathAndSectionType("/airport-transfer", "HERO_BANNER")) {
+            log.info("HERO_BANNER for /airport-transfer already exists, skipping.");
+            return;
+        }
+        sectionRepository.save(buildAirportTransferHeroBanner());
+        log.info("Seeded HERO_BANNER for /airport-transfer.");
+    }
+
+    @Transactional
+    public void seedRentCarHeroBanner() {
+        if (sectionRepository.existsByPagePathAndSectionType("/rent-car", "HERO_BANNER")) {
+            log.info("HERO_BANNER for /rent-car already exists, skipping.");
+            return;
+        }
+        sectionRepository.save(buildRentCarHeroBanner());
+        log.info("Seeded HERO_BANNER for /rent-car.");
     }
 
     @Transactional
@@ -313,6 +346,7 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 .textColor("#ffffff")
                 .cssClass("hero-self-drive")
                 .images(null)
+                .contentData("{\"badges\":[{\"text\":{\"vi\":\"Xe 5 chỗ từ 500k/ngày\",\"en\":\"5-seat from 500k/day\"},\"textColor\":\"#ffffff\",\"bgColor\":\"#3b82f6\"},{\"text\":{\"vi\":\"Xe 7 chỗ từ 700k/ngày\",\"en\":\"7-seat from 700k/day\"},\"textColor\":\"#ffffff\",\"bgColor\":\"#22c55e\"}]}")
                 .translations(new ArrayList<>())
                 .build();
 
@@ -419,21 +453,22 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 .textColor("#ffffff")
                 .cssClass("hero-rent-car")
                 .images(null)
+                .contentData("{\"badges\":[{\"text\":\"Minh Khoa Travel\",\"textColor\":\"#C9A227\",\"bgColor\":\"rgba(255,255,255,0.1)\",\"iconUrl\":\"\"}]}")
                 .translations(new ArrayList<>())
                 .build();
 
         section.getTranslations().add(SectionTranslation.builder()
                 .section(section).locale("vi")
-                .title("Thuê Xe Có Tài Xế")
+                .title("Thuê Xe Có Tài Xế Đi Tỉnh")
                 .subtitle("Minh Khoa Travel")
-                .description("Xe riêng 4–45 chỗ — Đưa đón tận nơi — Giá tốt — Tài xế chuyên tuyến. Trải nghiệm du lịch Nha Trang tiện lợi và an toàn.")
+                .description("Xe riêng 4–45 chỗ – Đưa đón tận nơi – Giá tốt – Tài xế chuyên tuyến. Trải nghiệm du lịch Nha Trang tiện lợi và an toàn.")
                 .btnText("Đặt xe ngay")
                 .btnLink("tel:0764971971")
                 .build());
 
         section.getTranslations().add(SectionTranslation.builder()
                 .section(section).locale("en")
-                .title("Private Car Rental with Driver")
+                .title("Private Car Rental with Driver for Intercity Trips")
                 .subtitle("Minh Khoa Travel")
                 .description("Private cars 4–45 seats – Door-to-door transfer – Best prices – Professional drivers. Convenient and safe Nha Trang travel.")
                 .btnText("Book now")
@@ -442,7 +477,7 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
 
         section.getTranslations().add(SectionTranslation.builder()
                 .section(section).locale("ko")
-                .title("기사 포함 차량 렌트")
+                .title("시외 이동 기사 포함 차량 렌트")
                 .subtitle("민 코아 트래블")
                 .description("프라이빗 차량 4–45석 – 문까지 배송 – 최저가 – 전문 기사. 편안하고 안전한 나트랑 여행.")
                 .btnText("지금 예약")
@@ -451,7 +486,7 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
 
         section.getTranslations().add(SectionTranslation.builder()
                 .section(section).locale("ru")
-                .title("Аренда автомобиля с водителем")
+                .title("Аренда автомобиля с водителем для междугородних поездок")
                 .subtitle("Минь Коа Трэвел")
                 .description("Частные автомобили 4–45 мест – Доставка от двери до двери – Лучшие цены – Профессиональные водители.")
                 .btnText("Забронировать")

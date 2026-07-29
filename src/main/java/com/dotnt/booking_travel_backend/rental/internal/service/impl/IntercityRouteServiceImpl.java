@@ -12,6 +12,8 @@ import com.dotnt.booking_travel_backend.rental.internal.repository.IntercityRout
 import com.dotnt.booking_travel_backend.rental.internal.repository.IntercityRouteRepository;
 import com.dotnt.booking_travel_backend.rental.internal.repository.IntercityRouteTranslationRepository;
 import com.dotnt.booking_travel_backend.rental.internal.service.IIntercityRouteService;
+import com.dotnt.booking_travel_backend.media.internal.entity.Image;
+import com.dotnt.booking_travel_backend.media.internal.repository.ImageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -33,18 +35,38 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
     private final IntercityRouteTranslationRepository translationRepository;
     private final IntercityRoutePriceRepository priceRepository;
     private final IntercityDepartureTimeRepository departureTimeRepository;
+    private final ImageRepository imageRepository;
+
+    private String resolveThumbnailUrl(Long thumbnailId) {
+        if (thumbnailId == null) return null;
+        return imageRepository.findById(thumbnailId)
+                .map(Image::getFilePath)
+                .orElse(null);
+    }
 
     @Override
     @Transactional
     @CacheEvict(value = "intercityRoutes", allEntries = true)
     public IntercityRouteDto create(IntercityRouteDto dto) {
+        List<Image> routeImages = new ArrayList<>();
+        if (dto.getImageIds() != null && !dto.getImageIds().isEmpty()) {
+            routeImages = imageRepository.findAllById(dto.getImageIds());
+        }
+
         IntercityRoute route = IntercityRoute.builder()
                 .originCity(dto.getOriginCity())
                 .destinationCity(dto.getDestinationCity())
                 .distanceKm(dto.getDistanceKm())
                 .estimatedHours(dto.getEstimatedHours())
-                .active(dto.isActive())
-                .hasDepartureTimes(dto.isHasDepartureTimes())
+                .originLat(dto.getOriginLat())
+                .originLng(dto.getOriginLng())
+                .destinationLat(dto.getDestinationLat())
+                .destinationLng(dto.getDestinationLng())
+                .active(Boolean.TRUE.equals(dto.getActive()))
+                .hasDepartureTimes(Boolean.TRUE.equals(dto.getHasDepartureTimes()))
+                .thumbnailId(dto.getThumbnailId())
+                .thumbnailUrl(dto.getThumbnailUrl())
+                .images(routeImages)
                 .build();
         route = routeRepository.save(route);
 
@@ -103,11 +125,21 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
             route.setDestinationCity(dto.getDestinationCity());
             route.setDistanceKm(dto.getDistanceKm());
             route.setEstimatedHours(dto.getEstimatedHours());
-            route.setActive(dto.isActive());
-            route.setHasDepartureTimes(dto.isHasDepartureTimes());
+            route.setOriginLat(dto.getOriginLat());
+            route.setOriginLng(dto.getOriginLng());
+            route.setDestinationLat(dto.getDestinationLat());
+            route.setDestinationLng(dto.getDestinationLng());
+            route.setActive(dto.getActive() != null ? dto.getActive() : route.isActive());
+            route.setHasDepartureTimes(dto.getHasDepartureTimes() != null ? dto.getHasDepartureTimes() : route.isHasDepartureTimes());
+            route.setThumbnailId(dto.getThumbnailId());
+            route.setThumbnailUrl(dto.getThumbnailUrl());
+            if (dto.getImageIds() != null) {
+                route.setImages(imageRepository.findAllById(dto.getImageIds()));
+            }
             route = routeRepository.save(route);
 
             translationRepository.findByRouteId(id).forEach(translationRepository::delete);
+            translationRepository.flush();
             if (dto.getTranslations() != null) {
                 for (var tr : dto.getTranslations()) {
                     translationRepository.save(IntercityRouteTranslation.builder()
@@ -120,6 +152,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
             }
 
             priceRepository.findByRouteId(id).forEach(priceRepository::delete);
+            priceRepository.flush();
             if (dto.getPrices() != null) {
                 for (var pr : dto.getPrices()) {
                     priceRepository.save(IntercityRoutePrice.builder()
@@ -166,14 +199,25 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                         .orderIndex(dt.getOrderIndex()).active(dt.isActive()).build())
                 .collect(Collectors.toList());
 
+        List<Long> imageIds = route.getImages() != null 
+                ? route.getImages().stream().map(Image::getId).collect(Collectors.toList()) 
+                : new ArrayList<>();
+
         return IntercityRouteDto.builder()
                 .id(route.getId())
                 .originCity(route.getOriginCity())
                 .destinationCity(route.getDestinationCity())
                 .distanceKm(route.getDistanceKm())
                 .estimatedHours(route.getEstimatedHours())
+                .originLat(route.getOriginLat())
+                .originLng(route.getOriginLng())
+                .destinationLat(route.getDestinationLat())
+                .destinationLng(route.getDestinationLng())
                 .active(route.isActive())
                 .hasDepartureTimes(route.isHasDepartureTimes())
+                .thumbnailId(route.getThumbnailId())
+                .thumbnailUrl(resolveThumbnailUrl(route.getThumbnailId()))
+                .imageIds(imageIds)
                 .translations(translations)
                 .prices(prices)
                 .departureTimes(departureTimes)

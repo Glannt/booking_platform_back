@@ -58,6 +58,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/actuator/**"
                         ).permitAll()
+                        // Flight tracking history — admin/moderator/staff only
+                        .requestMatchers(HttpMethod.GET, "/api/v1/flights/history").hasAnyRole("ADMIN", "STAFF", "MODERATOR")
                         // Public read endpoints
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/airports/**",
@@ -69,7 +71,7 @@ public class SecurityConfig {
                                 "/api/v1/vehicle-categories/**",
                                 "/api/v1/feedbacks/**",
                                 "/api/v1/languages/**",
-                                "/api/v1/flights/**",
+                                "/api/v1/flights/track/**",
                                 "/api/v1/sections/**",
                                 "/api/v1/intercity-routes/**",
                                 "/api/v1/locations/**",

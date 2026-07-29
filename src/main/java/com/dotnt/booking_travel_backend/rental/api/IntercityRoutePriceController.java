@@ -3,6 +3,7 @@ package com.dotnt.booking_travel_backend.rental.api;
 import com.dotnt.booking_travel_backend.rental.api.dtos.IntercityRoutePriceDto;
 import com.dotnt.booking_travel_backend.rental.internal.repository.IntercityRoutePriceRepository;
 import com.dotnt.booking_travel_backend.rental.internal.entity.IntercityRoutePrice;
+import com.dotnt.booking_travel_backend.rental.internal.entity.IntercityRoute;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,11 +27,22 @@ public class IntercityRoutePriceController {
         return ResponseEntity.ok(prices);
     }
 
+    @GetMapping
+    public ResponseEntity<List<IntercityRoutePriceDto>> list() {
+        List<IntercityRoutePriceDto> prices = priceRepository.findAll().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(prices);
+    }
+
     @PostMapping
     @PreAuthorize("hasAuthority('INTERCITY_PRICE_CREATE')")
     public ResponseEntity<IntercityRoutePriceDto> create(@RequestBody IntercityRoutePriceDto dto) {
+        IntercityRoute route = new IntercityRoute();
+        route.setId(dto.getRouteId());
+
         IntercityRoutePrice price = IntercityRoutePrice.builder()
-                .route(null)
+                .route(route)
                 .vehicleCategoryId(dto.getVehicleCategoryId())
                 .oneWayAmount(dto.getOneWayAmount())
                 .roundTripAmount(dto.getRoundTripAmount())

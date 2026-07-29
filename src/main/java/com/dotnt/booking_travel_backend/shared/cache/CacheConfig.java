@@ -29,6 +29,14 @@ public class CacheConfig {
                 .expireAfterWrite(expireAfterWrite, TimeUnit.MINUTES)
                 .recordStats()
         );
+
+        manager.registerCustomCache("location_search", Caffeine.newBuilder()
+                .initialCapacity(50)
+                .maximumSize(500)
+                .expireAfterWrite(5, TimeUnit.MINUTES)
+                .recordStats()
+                .build());
+
         return manager;
     }
 }

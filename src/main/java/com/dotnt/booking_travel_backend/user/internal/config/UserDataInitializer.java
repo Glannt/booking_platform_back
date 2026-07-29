@@ -16,61 +16,97 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@Order(5)
+@Order(15)
 public class UserDataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${SEED_ADMIN_PASSWORD:admin123}")
+    @Value("${seed.admin.email}")
+    private String adminEmail;
+
+    @Value("${seed.admin.password}")
     private String adminPassword;
 
-    @Value("${SEED_STAFF_PASSWORD:staff123}")
-    private String staffPassword;
+    @Value("${seed.admin.phone}")
+    private String adminPhone;
 
-    @Value("${SEED_CUSTOMER_PASSWORD:customer123}")
-    private String customerPassword;
+    @Value("${seed.admin.fullname}")
+    private String adminFullname;
 
-    @Value("${SEED_MODERATOR_PASSWORD:moderator123}")
+    @Value("${seed.moderator.email}")
+    private String moderatorEmail;
+
+    @Value("${seed.moderator.password}")
     private String moderatorPassword;
 
+    @Value("${seed.moderator.phone}")
+    private String moderatorPhone;
+
+    @Value("${seed.moderator.fullname}")
+    private String moderatorFullname;
+
+    @Value("${seed.staff.email}")
+    private String staffEmail;
+
+    @Value("${seed.staff.password}")
+    private String staffPassword;
+
+    @Value("${seed.staff.phone}")
+    private String staffPhone;
+
+    @Value("${seed.staff.fullname}")
+    private String staffFullname;
+
+    @Value("${seed.customer.email}")
+    private String customerEmail;
+
+    @Value("${seed.customer.password}")
+    private String customerPassword;
+
+    @Value("${seed.customer.phone}")
+    private String customerPhone;
+
+    @Value("${seed.customer.fullname}")
+    private String customerFullname;
+
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         if (userRepository.count() == 0) {
             log.info("Seeding default users...");
 
             User admin = User.builder()
-                    .email("admin@gmail.com")
-                    .phone("0987654321")
+                    .email(adminEmail)
+                    .phone(adminPhone)
                     .password(passwordEncoder.encode(adminPassword))
-                    .fullname("System Admin")
+                    .fullname(adminFullname)
                     .role(Role.ADMIN)
                     .status("active")
                     .build();
 
             User staff = User.builder()
-                    .email("staff@gmail.com")
-                    .phone("0987654322")
+                    .email(staffEmail)
+                    .phone(staffPhone)
                     .password(passwordEncoder.encode(staffPassword))
-                    .fullname("Staff Member")
+                    .fullname(staffFullname)
                     .role(Role.STAFF)
                     .status("active")
                     .build();
 
             User customer = User.builder()
-                    .email("customer@gmail.com")
-                    .phone("0987654323")
+                    .email(customerEmail)
+                    .phone(customerPhone)
                     .password(passwordEncoder.encode(customerPassword))
-                    .fullname("Standard Customer")
+                    .fullname(customerFullname)
                     .role(Role.CUSTOMER)
                     .status("active")
                     .build();
 
             User moderator = User.builder()
-                    .email("moderator@gmail.com")
-                    .phone("0987654324")
+                    .email(moderatorEmail)
+                    .phone(moderatorPhone)
                     .password(passwordEncoder.encode(moderatorPassword))
-                    .fullname("Moderator User")
+                    .fullname(moderatorFullname)
                     .role(Role.MODERATOR)
                     .status("active")
                     .build();

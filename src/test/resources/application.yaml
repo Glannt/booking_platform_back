@@ -60,3 +60,28 @@ app:
   jwt:
     secret: ${APP_JWT_SECRET:default-secret-key-must-be-at-least-256-bits-long-to-be-secure-for-hmac-sha-256}
     expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
+  currency:
+    api-base-url: http://localhost:9999/mock
+    api-key: test-key
+
+seed:
+  admin:
+    email: admin@test.com
+    password: pass
+    phone: "0000000000"
+    fullname: Test Admin
+  moderator:
+    email: mod@test.com
+    password: pass
+    phone: "0000000001"
+    fullname: Test Mod
+  staff:
+    email: staff@test.com
+    password: pass
+    phone: "0000000002"
+    fullname: Test Staff
+  customer:
+    email: customer@test.com
+    password: pass
+    phone: "0000000003"
+    fullname: Test Customer

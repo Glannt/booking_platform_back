@@ -99,27 +99,32 @@ public class IntercityDataInitializer implements CommandLineRunner {
 
     private void seedIntercityRoutes() {
         seedRoute("Nha Trang", "Đà Lạt", "135", "3.5", true,
+                new BigDecimal("12.24507"), new BigDecimal("109.1943"), new BigDecimal("11.940419"), new BigDecimal("108.458313"),
                 "Nha Trang ⇌ Đà Lạt", "Nha Trang ⇌ Da Lat", "나트랑 ⇌ 달랏", "Ня Чанг ⇌ Далат",
                 new long[]{1200000, 1500000, 2000000},
                 new long[]{1800000, 2400000, 3200000});
 
         seedRoute("Nha Trang", "Mũi Né", "155", "4", false,
+                new BigDecimal("12.24507"), new BigDecimal("109.1943"), new BigDecimal("10.9333"), new BigDecimal("108.2833"),
                 "Nha Trang ⇌ Mũi Né", "Nha Trang ⇌ Mui Ne", "나트랑 ⇌ 무이네", "Ня Чанг ⇌ Муйне",
                 new long[]{1400000, 1700000, 2300000},
                 new long[]{2200000, 2800000, 3800000});
 
         seedRoute("Nha Trang", "Phan Rang", "100", "2.5", false,
+                new BigDecimal("12.24507"), new BigDecimal("109.1943"), new BigDecimal("11.5667"), new BigDecimal("108.9833"),
                 "Nha Trang ⇌ Phan Rang", "Nha Trang ⇌ Phan Rang", "나트랑 ⇌ 판랑", "Ня Чанг ⇌ Фанранг",
                 new long[]{900000, 1200000, 1700000},
                 new long[]{1600000, 2200000, 3000000});
 
         seedRoute("Nha Trang", "Buôn Ma Thuột", "260", "5.5", false,
+                new BigDecimal("12.24507"), new BigDecimal("109.1943"), new BigDecimal("12.6833"), new BigDecimal("108.0500"),
                 "Nha Trang ⇌ Buôn Ma Thuột", "Nha Trang ⇌ Buon Ma Thuot", "나트랑 ⇌ 봄마투옷", "Ня Чанг ⇌ Бонматьют",
                 new long[]{1600000, 1900000, 2500000},
                 new long[]{2600000, 3200000, 4200000});
     }
 
     private void seedRoute(String origin, String dest, String dist, String hours, boolean hasDepartureTimes,
+                           BigDecimal originLat, BigDecimal originLng, BigDecimal destLat, BigDecimal destLng,
                            String viName, String enName, String koName, String ruName,
                            long[] oneWayPrices, long[] roundTripPrices) {
         IntercityRoute route = IntercityRoute.builder()
@@ -127,6 +132,10 @@ public class IntercityDataInitializer implements CommandLineRunner {
                 .destinationCity(dest)
                 .distanceKm(new BigDecimal(dist))
                 .estimatedHours(new BigDecimal(hours))
+                .originLat(originLat)
+                .originLng(originLng)
+                .destinationLat(destLat)
+                .destinationLng(destLng)
                 .active(true)
                 .hasDepartureTimes(hasDepartureTimes)
                 .build();

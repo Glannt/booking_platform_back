@@ -33,7 +33,7 @@ public class MailService {
         helper.setFrom(mailerProperties.getFrom());
         helper.setTo(to);
         helper.setSubject(subject);
-        helper.setText(html);
+        helper.setText(html, true);
 
         mailSender.send(message);
     }

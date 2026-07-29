@@ -12,7 +12,7 @@ public class ContactSettingService {
 
     private final ContactSettingRepository repository;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ContactSetting getContactSetting() {
         return repository.findAll().stream()
                 .findFirst()

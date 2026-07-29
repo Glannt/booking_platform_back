@@ -30,14 +30,20 @@ spring:
     password: ${SPRING_MAIL_PASSWORD}
     properties:
       mail:
-        SMTP:
+        smtp:
           auth: true
-          STARTTLS:
+          starttls:
             enable: true
+            require: true
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+    encoding:
+      charset: UTF-8
+      force: true
+      force-request: true
+      force-response: true
 
 mailer:
   service: gmail
@@ -67,6 +73,34 @@ app:
     expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
   flight:
     api-key: ${FLIGHT_TRACKING_API_KEY:}
+  opensky:
+    client-id: ${OPENSKY_CLIENT_ID:}
+    client-secret: ${OPENSKY_CLIENT_SECRET:}
+  currency:
+    api-base-url: ${CURRENCY_API_BASE_URL}
+    api-key: ${CURRENCY_API_KEY}
+
+seed:
+  admin:
+    email: ${SEED_ADMIN_EMAIL}
+    password: ${SEED_ADMIN_PASSWORD}
+    phone: ${SEED_ADMIN_PHONE}
+    fullname: ${SEED_ADMIN_FULLNAME}
+  moderator:
+    email: ${SEED_MODERATOR_EMAIL}
+    password: ${SEED_MODERATOR_PASSWORD}
+    phone: ${SEED_MODERATOR_PHONE}
+    fullname: ${SEED_MODERATOR_FULLNAME}
+  staff:
+    email: ${SEED_STAFF_EMAIL}
+    password: ${SEED_STAFF_PASSWORD}
+    phone: ${SEED_STAFF_PHONE}
+    fullname: ${SEED_STAFF_FULLNAME}
+  customer:
+    email: ${SEED_CUSTOMER_EMAIL}
+    password: ${SEED_CUSTOMER_PASSWORD}
+    phone: ${SEED_CUSTOMER_PHONE}
+    fullname: ${SEED_CUSTOMER_FULLNAME}
 
 cloudinary:
   cloud_name: ${CLOUDINARY_CLOUD_NAME}
