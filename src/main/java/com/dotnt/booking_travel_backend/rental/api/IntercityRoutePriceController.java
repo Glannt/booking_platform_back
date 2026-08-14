@@ -44,8 +44,7 @@ public class IntercityRoutePriceController {
         IntercityRoutePrice price = IntercityRoutePrice.builder()
                 .route(route)
                 .vehicleCategoryId(dto.getVehicleCategoryId())
-                .oneWayAmount(dto.getOneWayAmount())
-                .roundTripAmount(dto.getRoundTripAmount())
+                .perKmAmount(dto.getPerKmAmount())
                 .currency(dto.getCurrency() != null ? dto.getCurrency() : "VND")
                 .active(dto.isActive())
                 .build();
@@ -58,8 +57,7 @@ public class IntercityRoutePriceController {
     public ResponseEntity<IntercityRoutePriceDto> update(@PathVariable Long id, @RequestBody IntercityRoutePriceDto dto) {
         return priceRepository.findById(id).map(price -> {
             price.setVehicleCategoryId(dto.getVehicleCategoryId());
-            price.setOneWayAmount(dto.getOneWayAmount());
-            price.setRoundTripAmount(dto.getRoundTripAmount());
+            price.setPerKmAmount(dto.getPerKmAmount());
             price.setCurrency(dto.getCurrency());
             price.setActive(dto.isActive());
             return ResponseEntity.ok(toDto(priceRepository.save(price)));
@@ -78,8 +76,7 @@ public class IntercityRoutePriceController {
                 .id(p.getId())
                 .routeId(p.getRoute() != null ? p.getRoute().getId() : null)
                 .vehicleCategoryId(p.getVehicleCategoryId())
-                .oneWayAmount(p.getOneWayAmount())
-                .roundTripAmount(p.getRoundTripAmount())
+                .perKmAmount(p.getPerKmAmount())
                 .currency(p.getCurrency())
                 .active(p.isActive())
                 .build();

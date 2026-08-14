@@ -32,9 +32,10 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
             Map.entry("AIRPORT_ROUTE_CREATE", "Create airport routes"),
             Map.entry("AIRPORT_ROUTE_UPDATE", "Update airport routes"),
             Map.entry("AIRPORT_ROUTE_DELETE", "Delete airport routes"),
-            Map.entry("SURCHARGE_CREATE", "Create surcharge rules"),
-            Map.entry("SURCHARGE_UPDATE", "Update surcharge rules"),
-            Map.entry("SURCHARGE_DELETE", "Delete surcharge rules"),
+            Map.entry("SURCHARGE_RULE_CREATE", "Create surcharge rules"),
+            Map.entry("SURCHARGE_RULE_UPDATE", "Update surcharge rules"),
+            Map.entry("SURCHARGE_RULE_DELETE", "Delete surcharge rules"),
+            Map.entry("SURCHARGE_MAPPING_MANAGE", "Manage module surcharge mappings"),
 
             // Tour
             Map.entry("TOUR_CREATE", "Create tours"),
@@ -59,9 +60,6 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
             Map.entry("INTERCITY_PRICE_CREATE", "Create intercity prices"),
             Map.entry("INTERCITY_PRICE_UPDATE", "Update intercity prices"),
             Map.entry("INTERCITY_PRICE_DELETE", "Delete intercity prices"),
-            Map.entry("INTERCITY_SURCHARGE_CREATE", "Create intercity surcharges"),
-            Map.entry("INTERCITY_SURCHARGE_UPDATE", "Update intercity surcharges"),
-            Map.entry("INTERCITY_SURCHARGE_DELETE", "Delete intercity surcharges"),
 
             // Booking
             Map.entry("BOOKING_VIEW_ALL", "View all bookings"),

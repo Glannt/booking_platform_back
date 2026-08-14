@@ -174,6 +174,9 @@ public class AuthService {
         if (request.getZaloId() != null) {
             user.setZaloId(request.getZaloId());
         }
+        if (request.getWhatsapp() != null) {
+            user.setWhatsapp(request.getWhatsapp());
+        }
 
         User savedUser = userRepository.save(user);
         return toDto(savedUser);
@@ -199,6 +202,7 @@ public class AuthService {
                 .status(user.getStatus())
                 .kakaoTalkId(user.getKakaoTalkId())
                 .zaloId(user.getZaloId())
+                .whatsapp(user.getWhatsapp())
                 .build();
     }
 }

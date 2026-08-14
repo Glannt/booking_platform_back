@@ -35,6 +35,12 @@ public class CreateAirportTransferBookingRequest {
     private String returnPickupAddress;
     private String returnDropoffAddress;
 
+    private Long routeId;
+    private BigDecimal actualKm;
+
     @DecimalMin("0.0") private BigDecimal basePrice;
     @NotNull @DecimalMin("0.0") private BigDecimal totalPrice;
+
+    private Integer passengerCount;
+    private BigDecimal luggageWeight;
 }

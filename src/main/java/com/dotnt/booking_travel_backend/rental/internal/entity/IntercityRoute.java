@@ -57,6 +57,12 @@ public class IntercityRoute extends MasterEntity {
     @Column(name = "destination_lng", precision = 10, scale = 7)
     private BigDecimal destinationLng;
 
+    @Column(name = "origin_name", length = 255)
+    private String originName;
+
+    @Column(name = "destination_name", length = 255)
+    private String destinationName;
+
     @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active;
 

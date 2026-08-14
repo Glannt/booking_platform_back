@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <div th:replace="~{email/fragments :: styles}"></div>
+    <title>Yêu cầu đặt tour du lịch</title>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div th:replace="~{email/fragments :: header('Minh Khoa Travel', 'Yêu cầu đặt Tour Du lịch mới')}"></div>
+
+        <div class="content-body">
+            <!-- Customer Info -->
+            <div th:replace="~{email/fragments :: customerInfo(${booking})}"></div>
+
+            <!-- Booking Details -->
+            <h3 class="section-title">🗺️ Chi tiết Tour Du lịch</h3>
+            <div class="detail-card">
+                <div class="detail-title" th:text="${tourName != null ? tourName : 'Tour Du lịch'}">
+                    Tour du lịch Nha Trang
+                </div>
+
+                <div class="detail-row" th:if="${detail.startTime != null}">
+                    <span class="detail-row-label">Ngày khởi hành: </span>
+                    <span class="detail-row-value" th:text="${#instants.format(detail.startTime, 'dd/MM/yyyy', 'UTC')}">13/08/2026</span>
+                </div>
+                <div class="detail-row" th:if="${detail.startTime != null}">
+                    <span class="detail-row-label">Giờ khởi hành: </span>
+                    <span class="detail-row-value" th:text="${#instants.format(detail.startTime, 'HH:mm', 'UTC')}">08:00</span>
+                </div>
+                <div class="detail-row" th:if="${detail.endTime != null}">
+                    <span class="detail-row-label">Ngày kết thúc: </span>
+                    <span class="detail-row-value" th:text="${#instants.format(detail.endTime, 'dd/MM/yyyy', 'UTC')}">15/08/2026</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-row-label">Số khách: </span>
+                    <span class="detail-row-value"><strong th:text="${detail.guestCount + ' người'}">2 người</strong></span>
+                </div>
+                <div class="detail-row" th:if="${detail.meetingPoint != null and !detail.meetingPoint.isEmpty()}">
+                    <span class="detail-row-label">Điểm đón: </span>
+                    <span class="detail-row-value" th:text="${detail.meetingPoint}">Khách sạn tại Nha Trang</span>
+                </div>
+                <div class="detail-row" th:if="${vehicleCategoryName != null}">
+                    <span class="detail-row-label">Loại xe đăng ký: </span>
+                    <span class="detail-row-value" th:text="${vehicleCategoryName}">4 chỗ</span>
+                </div>
+            </div>
+
+            <!-- Pricing Table -->
+            <h3 class="section-title">💳 Chi tiết thanh toán</h3>
+            <table class="price-table">
+                <thead>
+                    <tr>
+                        <th>Mô tả dịch vụ</th>
+                        <th style="text-align: right; width: 120px;">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            Đặt tour: <span th:text="${tourName != null ? tourName : 'Tour du lịch'}"></span> 
+                            (Số lượng: <span th:text="${detail.guestCount}">1</span> người)
+                        </td>
+                        <td style="text-align: right;" th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">2,000,000 VND</td>
+                    </tr>
+                    <tr style="font-weight: bold;">
+                        <td style="text-align: right; border-top: 2px solid #e8eaed;">Tổng cộng:</td>
+                        <td style="text-align: right; border-top: 2px solid #e8eaed;" class="price-total" th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">2,000,000 VND</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div th:replace="~{email/fragments :: footer}"></div>
+    </div>
+</body>
+</html>

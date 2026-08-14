@@ -36,6 +36,9 @@ public class VehicleCategory extends MasterEntity {
     @Column(name = "unit_luggage", nullable = true, length = 50)
     private String unitLuggage;
 
+    @Column(name = "luggage_weight", nullable = true)
+    private Integer luggageWeight;
+
     @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active;
 

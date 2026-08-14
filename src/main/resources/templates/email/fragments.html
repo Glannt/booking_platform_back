@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="styles">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            background-color: #f1f5f9;
+            -webkit-font-smoothing: antialiased;
+        }
+        .email-wrapper {
+            width: 100%;
+            background-color: #f1f5f9;
+            padding: 30px 10px;
+            box-sizing: border-box;
+        }
+        .email-container {
+            max-width: 620px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            border: 1px solid #e2e8f0;
+        }
+        .header-brand {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
+            padding: 32px 24px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .header-logo-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .header-title {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+        }
+        .header-subtitle {
+            margin: 6px 0 0 0;
+            font-size: 13px;
+            color: #bfdbfe;
+            font-weight: 400;
+        }
+        .status-banner {
+            background-color: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 14px 18px;
+            margin: 20px 24px 0 24px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .status-banner-title {
+            color: #b45309;
+            font-weight: 700;
+            font-size: 14px;
+            margin: 0 0 4px 0;
+        }
+        .status-banner-desc {
+            color: #92400e;
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.5;
+        }
+        .content-body {
+            padding: 24px;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 24px 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 1.5px solid #f1f5f9;
+        }
+        .section-header:first-of-type {
+            margin-top: 0;
+        }
+        .card-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .info-table td {
+            padding: 7px 0;
+            vertical-align: top;
+            font-size: 13px;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #64748b;
+            width: 140px;
+        }
+        .info-value {
+            color: #0f172a;
+            font-weight: 500;
+        }
+        .booking-code-pill {
+            display: inline-block;
+            background: #eff6ff;
+            color: #2563eb;
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            padding: 3px 10px;
+            border-radius: 6px;
+            border: 1px solid #bfdbfe;
+        }
+        .itinerary-step {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 14px;
+        }
+        .itinerary-step:last-child {
+            margin-bottom: 0;
+        }
+        .itinerary-dot {
+            position: absolute;
+            left: 0;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .dot-pickup {
+            background-color: #2563eb;
+            box-shadow: 0 0 0 3px #dbeafe;
+        }
+        .dot-dropoff {
+            background-color: #10b981;
+            box-shadow: 0 0 0 3px #d1fae5;
+        }
+        .itinerary-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 2px;
+        }
+        .itinerary-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .price-table th {
+            background-color: #f8fafc;
+            color: #475569;
+            text-align: left;
+            padding: 12px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .price-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
+            color: #1e293b;
+        }
+        .price-table tr:last-child td {
+            border-bottom: none;
+        }
+        .price-total-row {
+            background-color: #faf5ff;
+            font-weight: bold;
+        }
+        .price-total-amount {
+            font-size: 18px;
+            font-weight: 800;
+            color: #ea580c;
+        }
+        .tips-box {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #166534;
+            line-height: 1.6;
+        }
+        .footer {
+            background-color: #0f172a;
+            padding: 28px 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+            line-height: 1.7;
+        }
+        .footer-brand {
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .footer-link {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+        .badge-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-oneway {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+        .badge-roundtrip {
+            background-color: #dcfce7;
+            color: #15803d;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header fragment -->
+    <div th:fragment="header(title, subtitle)" class="header-brand">
+        <div class="header-logo-badge">Minh Khoa Travel</div>
+        <h1 class="header-title" th:text="${title}">Xác Nhận Đặt Chuyến</h1>
+        <p class="header-subtitle" th:text="${subtitle}">Dịch vụ đưa đón sân bay & vận chuyển du lịch chuyên nghiệp</p>
+    </div>
+
+    <!-- Customer details fragment -->
+    <div th:fragment="customerInfo(booking)" class="card-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            <span style="font-weight: 700; font-size: 14px; color: #0f172a;">👤 Thông tin khách hàng</span>
+            <span class="booking-code-pill" th:text="${booking.bookingCode}">BK-123456</span>
+        </div>
+        <table class="info-table">
+            <tr>
+                <td class="info-label">Họ và tên:</td>
+                <td class="info-value"><strong th:text="${booking.customerName}">Nguyễn Văn A</strong></td>
+            </tr>
+            <tr>
+                <td class="info-label">Số điện thoại:</td>
+                <td class="info-value">
+                    <a th:href="${'tel:' + booking.customerPhone}" style="color: #2563eb; text-decoration: none; font-weight: 600;" th:text="${booking.customerPhone}">0987654321</a>
+                </td>
+            </tr>
+            <tr>
+                <td class="info-label">Email:</td>
+                <td class="info-value" th:text="${booking.customerEmail}">khachhang@gmail.com</td>
+            </tr>
+            <tr th:if="${booking.contactChannel != null and booking.contactId != null and !booking.contactId.isEmpty()}">
+                <td class="info-label">Kênh liên hệ phụ:</td>
+                <td class="info-value">
+                    <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;" th:text="${booking.contactChannel.toUpperCase() + ': ' + booking.contactId}">ZALO: 0987654321</span>
+                </td>
+            </tr>
+            <tr th:if="${booking.customerNotes != null and !booking.customerNotes.isEmpty()}">
+                <td class="info-label">Ghi chú từ khách:</td>
+                <td class="info-value" style="color: #475569; font-style: italic;" th:text="${booking.customerNotes}">Ghi chú của khách hàng</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Footer fragment -->
+    <div th:fragment="footer" class="footer">
+        <div class="footer-brand">CÔNG TY TNHH MINH KHOA TRAVEL</div>
+        <div>📍 Nha Trang, Khánh Hòa, Việt Nam</div>
+        <div>📞 Hotline 24/7: <strong style="color: #ffffff;">0987.654.321</strong> | ✉️ Email: <a href="mailto:tongnguyenthanhdo@gmail.com" class="footer-link">tongnguyenthanhdo@gmail.com</a></div>
+        <div style="margin-top: 15px; font-size: 11px; color: #64748b; border-top: 1px solid #334155; padding-top: 12px;">
+            Đây là email tự động gửi xác nhận yêu cầu đặt dịch vụ từ hệ thống Minh Khoa Travel.<br>
+            Nhân viên CSKH sẽ liên hệ lại với Quý khách trước giờ khởi hành.
+        </div>
+    </div>
+
+</body>
+</html>

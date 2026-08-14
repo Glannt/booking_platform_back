@@ -53,10 +53,4 @@ public class AirportTransferController {
     public ResponseEntity<List<AirportTransferPrice>> getByRoute(@PathVariable Long routeId) {
         return ResponseEntity.ok(repository.findByAirportRouteId(routeId));
     }
-
-    @GetMapping("/by-route/{routeId}/service-type/{serviceType}")
-    public ResponseEntity<List<AirportTransferPrice>> getByRouteAndServiceType(
-            @PathVariable Long routeId, @PathVariable String serviceType) {
-        return ResponseEntity.ok(repository.findByAirportRouteIdAndServiceType(routeId, serviceType));
-    }
 }

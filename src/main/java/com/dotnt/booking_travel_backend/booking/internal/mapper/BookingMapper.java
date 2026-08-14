@@ -20,6 +20,9 @@ public class BookingMapper {
     private final ObjectMapper objectMapper;
     private final com.dotnt.booking_travel_backend.tour.internal.repository.TourBookingDetailRepository tourBookingDetailRepository;
     private final com.dotnt.booking_travel_backend.airport.internal.repository.AirportBookingDetailRepository airportBookingDetailRepository;
+    private final com.dotnt.booking_travel_backend.rental.internal.repository.IntercityBookingDetailRepository intercityBookingDetailRepository;
+    private final com.dotnt.booking_travel_backend.rental.internal.repository.SelfDriveBookingDetailRepository selfDriveBookingDetailRepository;
+    private final com.dotnt.booking_travel_backend.tour.api.TourBookingService tourBookingService;
 
     public BookingDto toDto(Booking booking) {
         if (booking == null) {
@@ -72,6 +75,21 @@ public class BookingMapper {
                     endDate = java.time.LocalDateTime.ofInstant(detail.getEndTime(), java.time.ZoneOffset.UTC);
                 }
                 pickupLocation = detail.getMeetingPoint();
+
+                String tourName = "Tour du lịch";
+                if (dynamicDetails != null) {
+                    try {
+                        java.util.Map<String, Object> ad = objectMapper.readValue(
+                                dynamicDetails, 
+                                new TypeReference<java.util.Map<String, Object>>() {}
+                        );
+                        if (ad.containsKey("tourId") && ad.get("tourId") != null) {
+                            Long tourId = Long.valueOf(ad.get("tourId").toString());
+                            tourName = tourBookingService.getTourName(tourId);
+                        }
+                    } catch (Exception ignored) {}
+                }
+                serviceNameMap = Map.of("vi", tourName, "en", tourName);
             }
         } else if (item.getAirportTransferBookingDetailId() != null) {
             var detail = airportBookingDetailRepository.findById(item.getAirportTransferBookingDetailId()).orElse(null);
@@ -80,6 +98,7 @@ public class BookingMapper {
                 pickupLocation = detail.getOutboundPickupAddress();
                 dropoffLocation = detail.getOutboundDropoffAddress();
                 flightNumber = detail.getOutboundFlightNumber();
+                serviceNameMap = Map.of("vi", "Trung chuyển sân bay", "en", "Airport Transfer");
 
                 // Pack all airport detail fields into dynamicDetails as JSON for frontend
                 java.util.Map<String, Object> ad = new java.util.LinkedHashMap<>();
@@ -106,6 +125,36 @@ public class BookingMapper {
                 } catch (Exception e) {
                     dynamicDetails = item.getDynamicDetails();
                 }
+            }
+        } else if (item.getIntercityBookingDetailId() != null) {
+            var detail = intercityBookingDetailRepository.findById(item.getIntercityBookingDetailId()).orElse(null);
+            if (detail != null) {
+                if (detail.getDepartureDate() != null) {
+                    startDate = detail.getDepartureDate().atTime(
+                            detail.getDepartureTime() != null ? detail.getDepartureTime() : java.time.LocalTime.MIDNIGHT
+                    );
+                }
+                if (detail.getReturnDate() != null) {
+                    endDate = detail.getReturnDate().atTime(
+                            detail.getReturnTime() != null ? detail.getReturnTime() : java.time.LocalTime.MIDNIGHT
+                    );
+                }
+                pickupLocation = detail.getPickupAddress();
+                dropoffLocation = detail.getDropoffAddress();
+                serviceNameMap = Map.of("vi", "Thuê xe đi tỉnh", "en", "Inter-provincial Rent");
+            }
+        } else if (item.getSelfDriveBookingDetailId() != null) {
+            var detail = selfDriveBookingDetailRepository.findById(item.getSelfDriveBookingDetailId()).orElse(null);
+            if (detail != null) {
+                if (detail.getStartDate() != null) {
+                    startDate = detail.getStartDate().atStartOfDay();
+                }
+                if (detail.getEndDate() != null) {
+                    endDate = detail.getEndDate().atStartOfDay();
+                }
+                pickupLocation = detail.getPickupLocation();
+                dropoffLocation = detail.getDropoffLocation();
+                serviceNameMap = Map.of("vi", "Thuê xe tự lái", "en", "Self-drive Rent");
             }
         }
 

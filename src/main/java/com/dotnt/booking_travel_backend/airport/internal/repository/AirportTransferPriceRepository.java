@@ -10,9 +10,7 @@ import java.util.Optional;
 @Repository
 public interface AirportTransferPriceRepository extends JpaRepository<AirportTransferPrice, Long> {
     List<AirportTransferPrice> findByAirportRouteId(Long airportRouteId);
-    List<AirportTransferPrice> findByAirportRouteIdAndServiceType(Long airportRouteId, String serviceType);
-    Optional<AirportTransferPrice> findByAirportRouteIdAndVehicleCategoryIdAndServiceType(
-        Long airportRouteId, Long vehicleCategoryId, String serviceType);
+    Optional<AirportTransferPrice> findByAirportRouteIdAndVehicleCategoryId(Long airportRouteId, Long vehicleCategoryId);
     boolean existsByAirportRouteId(Long airportRouteId);
     boolean existsByVehicleCategoryId(Long vehicleCategoryId);
 }

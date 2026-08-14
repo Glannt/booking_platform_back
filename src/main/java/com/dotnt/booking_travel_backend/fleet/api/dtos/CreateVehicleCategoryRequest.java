@@ -12,6 +12,7 @@ public record CreateVehicleCategoryRequest(
         Integer minLuggage,
         Integer maxLuggage,
         String unitLuggage,
+        Integer luggageWeight,
         Boolean active,
         Boolean isDefault,
         Long thumbnailId,

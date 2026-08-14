@@ -13,6 +13,9 @@ public class AirportDto {
     private String code;
     private String name;
     private String location;
+    private Double latitude;
+    private Double longitude;
     private boolean active;
+    private boolean isDefault;
     private List<AirportTranslationDto> translations;
 }

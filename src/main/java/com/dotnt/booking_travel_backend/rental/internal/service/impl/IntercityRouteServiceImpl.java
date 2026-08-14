@@ -86,8 +86,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                 priceRepository.save(IntercityRoutePrice.builder()
                         .route(route)
                         .vehicleCategoryId(pr.getVehicleCategoryId())
-                        .oneWayAmount(pr.getOneWayAmount())
-                        .roundTripAmount(pr.getRoundTripAmount())
+                        .perKmAmount(pr.getPerKmAmount())
                         .currency(pr.getCurrency() != null ? pr.getCurrency() : "VND")
                         .active(pr.isActive())
                         .build());
@@ -158,8 +157,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                     priceRepository.save(IntercityRoutePrice.builder()
                             .route(route)
                             .vehicleCategoryId(pr.getVehicleCategoryId())
-                            .oneWayAmount(pr.getOneWayAmount())
-                            .roundTripAmount(pr.getRoundTripAmount())
+                            .perKmAmount(pr.getPerKmAmount())
                             .currency(pr.getCurrency() != null ? pr.getCurrency() : "VND")
                             .active(pr.isActive())
                             .build());
@@ -189,7 +187,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
         var prices = priceRepository.findByRouteId(route.getId()).stream()
                 .map(pr -> IntercityRoutePriceDto.builder()
                         .id(pr.getId()).routeId(route.getId()).vehicleCategoryId(pr.getVehicleCategoryId())
-                        .oneWayAmount(pr.getOneWayAmount()).roundTripAmount(pr.getRoundTripAmount())
+                        .perKmAmount(pr.getPerKmAmount())
                         .currency(pr.getCurrency()).active(pr.isActive()).build())
                 .collect(Collectors.toList());
 

@@ -73,15 +73,18 @@ public class SecurityConfig {
                                 "/api/v1/languages/**",
                                 "/api/v1/flights/track/**",
                                 "/api/v1/sections/**",
-                                "/api/v1/intercity-routes/**",
+                                 "/api/v1/intercity-routes/**",
+                                 "/api/v1/intercity-route-prices/**",
                                 "/api/v1/locations/**",
                                 "/api/v1/rentals/**",
                                 "/api/v1/rental-types/**",
                                 "/api/v1/contact-settings/**",
+                                "/api/v1/surcharge/public/**",
+                                "/api/v1/surcharges/public/**",
                                 "/api/v1/auth/whoami"
                         ).permitAll()
-                        // Allow guest/public booking creation
-                        .requestMatchers(HttpMethod.POST, "/api/v1/bookings").permitAll()
+                        // Allow guest/public booking and surcharge calculation
+                        .requestMatchers(HttpMethod.POST, "/api/v1/bookings", "/api/v1/surcharge/public/calculate").permitAll()
                         // Require authentication for other requests
                         .anyRequest().authenticated()
                 )

@@ -31,7 +31,10 @@ public class AirportServiceImpl implements IAirportService {
                 .code(dto.getCode())
                 .name(dto.getName())
                 .location(dto.getLocation())
+                .latitude(dto.getLatitude())
+                .longitude(dto.getLongitude())
                 .active(dto.isActive())
+                .isDefault(dto.isDefault())
                 .translations(new ArrayList<>())
                 .build();
         Airport saved = repository.save(a);
@@ -78,7 +81,10 @@ public class AirportServiceImpl implements IAirportService {
             a.setCode(dto.getCode());
             a.setName(dto.getName());
             a.setLocation(dto.getLocation());
+            a.setLatitude(dto.getLatitude());
+            a.setLongitude(dto.getLongitude());
             a.setActive(dto.isActive());
+            a.setDefault(dto.isDefault());
 
             if (dto.getTranslations() != null) {
                 a.getTranslations().clear();
@@ -117,7 +123,10 @@ public class AirportServiceImpl implements IAirportService {
                 .code(a.getCode())
                 .name(a.getName())
                 .location(a.getLocation())
+                .latitude(a.getLatitude())
+                .longitude(a.getLongitude())
                 .active(a.isActive())
+                .isDefault(a.isDefault())
                 .translations(translations)
                 .build();
     }

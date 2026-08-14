@@ -16,4 +16,8 @@ public interface TourBookingService {
     boolean isTour(Long serviceId);
 
     void updateBookingItemId(Long tourBookingDetailId, Long bookingItemId);
+
+    String getTourName(Long tourId);
+
+    java.util.Map<String, Object> getTourBookingEmailVariables(Long detailId);
 }

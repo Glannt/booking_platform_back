@@ -27,6 +27,7 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
         new Thread(() -> {
             try {
                 seedHomepageHeroBanner();
+                seedHomepageFeatures();
                 seedToursHeroBanner();
                 seedSelfDriveHeroBanner();
                 seedAirportTransferHeroBanner();
@@ -36,6 +37,7 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 seedInspiration();
                 seedBookingProcess();
                 seedSelfDriveBookingProcess();
+                seedSelfDriveIntro();
                 seedRentCarRoutesHeroBanner();
                 log.info("Section initialization complete.");
             } catch (Exception e) {
@@ -52,6 +54,47 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
         }
         sectionRepository.save(buildHomepageHeroBanner());
         log.info("Seeded HERO_BANNER for /.");
+    }
+
+    @Transactional
+    public void seedHomepageFeatures() {
+        if (sectionRepository.existsByPagePathAndSectionType("/", "FEATURES")) {
+            log.info("FEATURES section for / already exists, skipping.");
+            return;
+        }
+
+        Section section = Section.builder()
+                .sectionName("Homepage Features")
+                .sectionType("FEATURES")
+                .pagePath("/")
+                .orderIndex(1)
+                .active(true)
+                .contentData("{\"features\":[{\"icon\":\"ShieldCheck\",\"styles\":{\"iconBg\":\"bg-blue-50 dark:bg-blue-950/30\",\"iconColor\":\"text-blue-600 dark:text-blue-400\",\"titleColor\":\"text-slate-800 dark:text-slate-200\",\"descColor\":\"text-slate-500 dark:text-slate-400\"},\"title\":{\"vi\":\"Thanh toán An toàn\",\"en\":\"Secure Booking\",\"ko\":\"안전한 결제\",\"ru\":\"Безопасная оплата\"},\"description\":{\"vi\":\"Thanh toán online bảo mật, xác nhận chuyến đi ngay lập tức.\",\"en\":\"Secure online payment, instant booking confirmation.\",\"ko\":\"안전한 online 결제, 즉각적인 예약 확인.\",\"ru\":\"Безопасная онлайн-оплата, мгновенное подтверждение бронирования.\"}},{\"icon\":\"UserCheck\",\"styles\":{\"iconBg\":\"bg-emerald-50 dark:bg-emerald-950/30\",\"iconColor\":\"text-emerald-600 dark:text-emerald-400\",\"titleColor\":\"text-slate-800 dark:text-slate-200\",\"descColor\":\"text-slate-500 dark:text-slate-400\"},\"title\":{\"vi\":\"Tài xế Chuyên nghiệp\",\"en\":\"Professional Drivers\",\"ko\":\"전문 드라이버\",\"ru\":\"Профессиональные водители\"},\"description\":{\"vi\":\"Đội ngũ lái xe giàu kinh nghiệm, lịch sự và nói tiếng Anh.\",\"en\":\"Experienced, polite, and English-speaking drivers.\",\"ko\":\"경험 많고 예의 바르며 영어를 구사하는 드라이버 팀.\",\"ru\":\"Опытные, вежливые и англоговорящие водители.\"}},{\"icon\":\"Car\",\"styles\":{\"iconBg\":\"bg-amber-50 dark:bg-amber-950/30\",\"iconColor\":\"text-amber-600 dark:text-amber-400\",\"titleColor\":\"text-slate-800 dark:text-slate-200\",\"descColor\":\"text-slate-500 dark:text-slate-400\"},\"title\":{\"vi\":\"Xe Đời mới hiện đại\",\"en\":\"Modern Fleet\",\"ko\":\"최신 현대식 차량\",\"ru\":\"Современный автопарк\"},\"description\":{\"vi\":\"Đa dạng dòng xe từ 4-45 chỗ, sạch sẽ và tiện nghi.\",\"en\":\"Diverse fleet from 4 to 45 seats, clean and fully equipped.\",\"ko\":\"4-45인승의 다양한 차량, 청결함 및 편의시설 제공.\",\"ru\":\"Разнообразный автопарк от 4 до 45 мест, чистый и комфортабельный.\"}},{\"icon\":\"Headset\",\"styles\":{\"iconBg\":\"bg-purple-50 dark:bg-purple-950/30\",\"iconColor\":\"text-purple-600 dark:text-purple-400\",\"titleColor\":\"text-slate-800 dark:text-slate-200\",\"descColor\":\"text-slate-500 dark:text-slate-400\"},\"title\":{\"vi\":\"Hỗ trợ 24/7\",\"en\":\"24/7 Support\",\"ko\":\"24/7 지원\",\"ru\":\"Поддержка 24/7\"},\"description\":{\"vi\":\"Luôn sẵn sàng hỗ trợ bạn trên mọi hành trình của mình.\",\"en\":\"Always ready to assist you on every journey.\",\"ko\":\"모든 여정에서 항상 귀하를 도울 준비가 되어 있습니다.\",\"ru\":\"Всегда готовы помочь вам в любой поездке.\"}}]}")
+                .translations(new java.util.ArrayList<>())
+                .build();
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("vi")
+                .title("Tại sao chọn Minh Khoa Travel?")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("en")
+                .title("Why choose Minh Khoa Travel?")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ko")
+                .title("왜 민 코아 트래블을 선택해야 할까요?")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ru")
+                .title("Почему выбирают Минь Коа Трэвел?")
+                .build());
+
+        sectionRepository.save(section);
+        log.info("Seeded FEATURES section for /.");
     }
 
     @Transactional
@@ -584,6 +627,54 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
 
         sectionRepository.save(section);
         log.info("Seeded BOOKING_PROCESS for /self-drive.");
+    }
+
+    @Transactional
+    public void seedSelfDriveIntro() {
+        if (sectionRepository.existsByPagePathAndSectionType("/self-drive", "FEATURES")) {
+            log.info("FEATURES for /self-drive already exists, skipping.");
+            return;
+        }
+
+        Section section = Section.builder()
+                .sectionName("Giới thiệu thuê xe tự lái")
+                .sectionType("FEATURES")
+                .pagePath("/self-drive")
+                .orderIndex(1)
+                .active(true)
+                .translations(new ArrayList<>())
+                .build();
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("vi")
+                .title("Dịch vụ thuê xe tự lái Nha Trang")
+                .subtitle("Minh Khoa Travel — Uy tín & Chất lượng")
+                .description("Dịch vụ thuê xe tự lái Nha Trang của Minh Khoa Travel được nhiều khách hàng tin tưởng bởi xe đời mới, hợp đồng minh bạch và hỗ trợ 24/7. Chúng tôi giao xe tận nơi tại trung tâm thành phố, khách sạn hoặc sân bay Cam Ranh, giúp bạn chủ động trong lịch trình và tiết kiệm chi phí di chuyển.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("en")
+                .title("Nha Trang Self-Drive Car Rental")
+                .subtitle("Minh Khoa Travel — Reliable & Quality")
+                .description("Minh Khoa Travel self-drive rental services in Nha Trang are trusted by clients due to clean modern fleets, transparent rental contracts, and 24/7 customer support. We support delivery directly to hotels, central city points, or Cam Ranh Airport, giving you full command of your itinerary.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ko")
+                .title("나트랑 셀프 드라이브 렌트카")
+                .subtitle("민 코아 트래블 — 신뢰와 품질")
+                .description("민 코아 트레블의 나트랑 자차 렌트 서비스는 깨끗한 최신 차량, 투명한 계약 및 24/7 고객 지원으로 고객들의 신뢰를 받고 있습니다. 호텔, 시내 중심, 깜란 공항까지 직접 배달하여 일정을 자유롭게 관리하고 교통비를 절약할 수 있습니다.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ru")
+                .title("Аренда авто в Нячанге")
+                .subtitle("Минь Коа Трэвел — Надежность и качество")
+                .description("Услуги аренды авто без водителя в Нячанге от Minh Khoa Travel заслужили доверие клиентов благодаря современным чистым авто, прозрачным договорам и поддержке 24/7. Мы доставляем авто прямо в отели, центр города hoặc аэропорту Камрань, давая вам полный контроль над маршрутом.")
+                .build());
+
+        sectionRepository.save(section);
+        log.info("Seeded FEATURES/Intro section for /self-drive.");
     }
 
     @Transactional

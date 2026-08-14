@@ -25,6 +25,13 @@ public class AirportRouteServiceImpl implements IAirportRouteService {
         AirportRoute r = AirportRoute.builder()
                 .code(dto.getCode())
                 .name(dto.getName())
+                .distanceKm(dto.getDistanceKm())
+                .originName(dto.getOriginName())
+                .destinationName(dto.getDestinationName())
+                .originLat(dto.getOriginLat())
+                .originLng(dto.getOriginLng())
+                .destinationLat(dto.getDestinationLat())
+                .destinationLng(dto.getDestinationLng())
                 .active(dto.isActive())
                 .build();
         if (dto.getAirportId() != null) {
@@ -57,6 +64,13 @@ public class AirportRouteServiceImpl implements IAirportRouteService {
         return repository.findById(id).map(r -> {
             r.setCode(dto.getCode());
             r.setName(dto.getName());
+            r.setDistanceKm(dto.getDistanceKm());
+            r.setOriginName(dto.getOriginName());
+            r.setDestinationName(dto.getDestinationName());
+            r.setOriginLat(dto.getOriginLat());
+            r.setOriginLng(dto.getOriginLng());
+            r.setDestinationLat(dto.getDestinationLat());
+            r.setDestinationLng(dto.getDestinationLng());
             if (dto.getAirportId() != null) {
                 r.setAirport(airportRepository.findById(dto.getAirportId()).orElse(null));
             }
@@ -76,6 +90,13 @@ public class AirportRouteServiceImpl implements IAirportRouteService {
                 .code(r.getCode())
                 .airportId(r.getAirport() != null ? r.getAirport().getId() : null)
                 .name(r.getName())
+                .distanceKm(r.getDistanceKm())
+                .originName(r.getOriginName())
+                .destinationName(r.getDestinationName())
+                .originLat(r.getOriginLat())
+                .originLng(r.getOriginLng())
+                .destinationLat(r.getDestinationLat())
+                .destinationLng(r.getDestinationLng())
                 .active(r.isActive())
                 .build();
     }

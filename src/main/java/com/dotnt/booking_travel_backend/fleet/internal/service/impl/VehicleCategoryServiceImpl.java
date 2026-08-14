@@ -66,6 +66,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
             .minLuggage(request.minLuggage())
             .maxLuggage(request.maxLuggage())
             .unitLuggage(request.unitLuggage())
+            .luggageWeight(request.luggageWeight())
             .active(request.active() != null ? request.active() : true)
             .isDefault(request.isDefault() != null ? request.isDefault() : false)
             .thumbnailId(request.thumbnailId())
@@ -90,6 +91,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                 .minLuggage(vehicleCategory.getMinLuggage())
                 .maxLuggage(vehicleCategory.getMaxLuggage())
                 .unitLuggage(vehicleCategory.getUnitLuggage())
+                .luggageWeight(vehicleCategory.getLuggageWeight())
                 .active(vehicleCategory.isActive())
                 .isDefault(vehicleCategory.isDefault())
                 .thumbnailId(vehicleCategory.getThumbnailId())
@@ -139,6 +141,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                     .minLuggage(vehicleCategory.getMinLuggage())
                     .maxLuggage(vehicleCategory.getMaxLuggage())
                     .unitLuggage(vehicleCategory.getUnitLuggage())
+                    .luggageWeight(vehicleCategory.getLuggageWeight())
                     .active(vehicleCategory.isActive())
                     .isDefault(vehicleCategory.isDefault())
                     .thumbnailId(vehicleCategory.getThumbnailId())
@@ -167,6 +170,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
             existingVehicleCategory.setMinLuggage(vehicleCategoryDTO.getMinLuggage());
             existingVehicleCategory.setMaxLuggage(vehicleCategoryDTO.getMaxLuggage());
             existingVehicleCategory.setUnitLuggage(vehicleCategoryDTO.getUnitLuggage());
+            existingVehicleCategory.setLuggageWeight(vehicleCategoryDTO.getLuggageWeight());
             if (vehicleCategoryDTO.getIsDefault() != null) {
                 existingVehicleCategory.setDefault(vehicleCategoryDTO.getIsDefault());
             }
@@ -250,6 +254,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                 .minLuggage(vehicleCategory.getMinLuggage())
                 .maxLuggage(vehicleCategory.getMaxLuggage())
                 .unitLuggage(vehicleCategory.getUnitLuggage())
+                .luggageWeight(vehicleCategory.getLuggageWeight())
                 .active(vehicleCategory.isActive())
                 .isDefault(vehicleCategory.isDefault())
                 .thumbnailId(vehicleCategory.getThumbnailId())

@@ -85,8 +85,16 @@ public class AirportBookingDetail extends MasterEntity {
     @Column(name = "base_price", precision = 15, scale = 2)
     private BigDecimal basePrice;
 
-    @Column(name = "night_surcharge", precision = 15, scale = 2)
-    private BigDecimal nightSurcharge;
+    @Column(name = "surcharge_amount", precision = 15, scale = 2)
+    private BigDecimal surchargeAmount;
+
+    public BigDecimal getNightSurcharge() {
+        return surchargeAmount;
+    }
+
+    public void setNightSurcharge(BigDecimal nightSurcharge) {
+        this.surchargeAmount = nightSurcharge;
+    }
 
     @Column(name = "total_price", precision = 15, scale = 2)
     private BigDecimal totalPrice;

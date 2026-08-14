@@ -19,6 +19,8 @@ public class IntercityRouteDto {
     private BigDecimal originLng;
     private BigDecimal destinationLat;
     private BigDecimal destinationLng;
+    private String originName;
+    private String destinationName;
     private Boolean active;
     private Boolean hasDepartureTimes;
     private Long thumbnailId;

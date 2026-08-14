@@ -11,4 +11,5 @@ public class UpdateProfileRequest {
     private String phone;
     private String kakaoTalkId;
     private String zaloId;
+    private String whatsapp;
 }

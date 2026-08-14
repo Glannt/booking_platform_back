@@ -2,6 +2,8 @@ package com.dotnt.booking_travel_backend.airport.api.dtos;
 
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -11,6 +13,13 @@ public class AirportRouteDto {
     private String code;
     private Long airportId;
     private String name;
+    private BigDecimal distanceKm;
+    private String originName;
+    private String destinationName;
+    private BigDecimal originLat;
+    private BigDecimal originLng;
+    private BigDecimal destinationLat;
+    private BigDecimal destinationLng;
     private boolean active;
 }
 

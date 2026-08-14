@@ -112,6 +112,7 @@ public class UserService {
                 .status(user.getStatus())
                 .kakaoTalkId(user.getKakaoTalkId())
                 .zaloId(user.getZaloId())
+                .whatsapp(user.getWhatsapp())
                 .build();
     }
 }

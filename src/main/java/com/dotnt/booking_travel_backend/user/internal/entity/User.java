@@ -37,6 +37,9 @@ public class User extends MasterEntity {
     @Column(name = "zalo_id")
     private String zaloId;
 
+    @Column(name = "whatsapp")
+    private String whatsapp;
+
 
 
 }

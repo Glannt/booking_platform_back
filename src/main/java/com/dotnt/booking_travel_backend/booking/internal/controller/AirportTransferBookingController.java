@@ -40,9 +40,13 @@ public class AirportTransferBookingController {
         ad.put("returnFlightNumber", req.getReturnFlightNumber());
         ad.put("returnPickupAddress", req.getReturnPickupAddress());
         ad.put("returnDropoffAddress", req.getReturnDropoffAddress());
+        ad.put("routeId", req.getRouteId());
+        ad.put("actualKm", req.getActualKm());
         ad.put("basePrice", req.getBasePrice());
         ad.put("totalPrice", req.getTotalPrice());
         ad.put("vehicleCategoryId", req.getVehicleCategoryId());
+        ad.put("passengerCount", req.getPassengerCount());
+        ad.put("luggageWeight", req.getLuggageWeight());
 
         String dynamicDetails = objectMapper.writeValueAsString(ad);
 
@@ -57,7 +61,7 @@ public class AirportTransferBookingController {
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(101L)
                         .serviceOptionId(req.getVehicleCategoryId())
-                        .quantity(1)
+                        .quantity(req.getPassengerCount() != null ? req.getPassengerCount() : 1)
                         .unitPrice(req.getTotalPrice())
                         .startDate(req.getOutboundPickupTime())
                         .endDate(req.getReturnPickupTime())

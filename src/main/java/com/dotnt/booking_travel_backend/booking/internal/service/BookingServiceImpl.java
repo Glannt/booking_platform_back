@@ -9,25 +9,25 @@ import com.dotnt.booking_travel_backend.booking.internal.repository.BookingRepos
 import com.dotnt.booking_travel_backend.tour.api.TourBookingService;
 import com.dotnt.booking_travel_backend.shared.mailer.MailService;
 import com.dotnt.booking_travel_backend.shared.module.ModuleEventPublisher;
-import com.dotnt.booking_travel_backend.airport.internal.entity.AirportBookingDetail;
-import com.dotnt.booking_travel_backend.rental.internal.entity.IntercityBookingDetail;
-import com.dotnt.booking_travel_backend.rental.internal.entity.SelfDriveBookingDetail;
-import com.dotnt.booking_travel_backend.fleet.internal.entity.VehicleCategory;
+import com.dotnt.booking_travel_backend.user.api.UserFacade;
+import com.dotnt.booking_travel_backend.fleet.api.FleetFacade;
+import com.dotnt.booking_travel_backend.airport.api.AirportFacade;
+import com.dotnt.booking_travel_backend.rental.api.RentalFacade;
 import lombok.RequiredArgsConstructor;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.resilience.annotation.ConcurrencyLimit;
 
 import java.math.BigDecimal;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service("bookingService")
@@ -42,6 +42,11 @@ public class BookingServiceImpl implements BookingService {
     private final BookingMapper bookingMapper;
     private final TourBookingService tourBookingService;
     private final MailService mailService;
+    private final BookingEmailBuilder bookingEmailBuilder;
+    private final UserFacade userFacade;
+    private final FleetFacade fleetFacade;
+    private final AirportFacade airportFacade;
+    private final RentalFacade rentalFacade;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
@@ -57,11 +62,33 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
+        Long resolvedUserId = request.getUserId();
+        if (resolvedUserId == null) {
+            try {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null && auth.getPrincipal() instanceof String email && !"anonymousUser".equals(email)) {
+                    resolvedUserId = userFacade.findUserIdByEmail(email);
+                }
+            } catch (Exception e) {
+                log.warn("Failed resolving userId from SecurityContext: {}", e.getMessage());
+            }
+        }
+
+        // Fallback: If userId is still null, but customerEmail belongs to a registered account, link them!
+        if (resolvedUserId == null && request.getCustomerEmail() != null) {
+            try {
+                resolvedUserId = userFacade.findUserIdByEmail(request.getCustomerEmail());
+            } catch (Exception e) {
+                log.warn("Failed resolving userId from customerEmail fallback: {}", e.getMessage());
+            }
+        }
+
         String bookingCode = generateBookingCode();
+        log.info("user Id booking : {}", resolvedUserId);
 
         Booking booking = Booking.builder()
                 .bookingCode(bookingCode)
-                .userId(request.getUserId())
+                .userId(resolvedUserId)
                 .customerName(request.getCustomerName())
                 .customerEmail(request.getCustomerEmail())
                 .customerPhone(request.getCustomerPhone())
@@ -90,16 +117,18 @@ public class BookingServiceImpl implements BookingService {
                 Long intercityBookingDetailId = null;
                 Long selfDriveBookingDetailId = null;
                 boolean isTour = tourBookingService.isTour(itemReq.getServiceId());
-                boolean isAirport = moduleEventPublisher.publishRequest("airport.transferPrice.existsById", itemReq.getServiceId(), Boolean.class)
+                boolean isAirport = airportFacade.existsTransferPriceById(itemReq.getServiceId())
                         || (itemReq.getServiceId() != null && itemReq.getServiceId().equals(101L));
                 boolean isIntercity = itemReq.getServiceId() != null && itemReq.getServiceId().equals(102L);
                 boolean isSelfDrive = itemReq.getServiceId() != null && itemReq.getServiceId().equals(103L);
 
                 if (isTour) {
                     if (itemReq.getServiceOptionId() != null) {
-                        VehicleCategory category = moduleEventPublisher.publishRequest("fleet.vehicleCategory.findById", itemReq.getServiceOptionId(), VehicleCategory.class);
-                        if (category != null && category.getMaxSeat() != null && quantity > category.getMaxSeat()) {
-                            throw new IllegalArgumentException("The number of guests (" + quantity + ") exceeds the vehicle's maximum seat capacity (" + category.getMaxSeat() + " seats)!");
+                        Integer maxSeat = fleetFacade.getVehicleCategoryMaxSeat(itemReq.getServiceOptionId());
+                        if (maxSeat != null && quantity > maxSeat) {
+                            throw new IllegalArgumentException("The number of guests (" + quantity
+                                    + ") exceeds the vehicle's maximum seat capacity (" + maxSeat
+                                    + " seats)!");
                         }
                     }
 
@@ -117,43 +146,46 @@ public class BookingServiceImpl implements BookingService {
                             itemReq.getPickupLocation(),
                             request.getCustomerNotes(),
                             startTime,
-                            endTime
-                     );
+                            endTime);
                 } else if (isAirport) {
                     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
                     java.util.Map<String, Object> ad = new java.util.HashMap<>();
                     try {
                         if (itemReq.getDynamicDetails() != null && !itemReq.getDynamicDetails().isBlank()) {
-                            ad = om.readValue(itemReq.getDynamicDetails(), new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+                            ad = om.readValue(itemReq.getDynamicDetails(),
+                                    new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
+                                    });
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
 
                     String tripType = ad.getOrDefault("tripType", "ONE_WAY").toString();
                     String outboundDirection = ad.getOrDefault("outboundDirection", "FROM_AIRPORT").toString();
-
                     java.time.LocalDateTime outboundPickupTime = itemReq.getStartDate();
-                    java.time.LocalDate outboundDate = outboundPickupTime != null ? outboundPickupTime.toLocalDate() : null;
-                    if (ad.containsKey("outboundDate") && ad.get("outboundDate") != null) {
-                        try { outboundDate = java.time.LocalDate.parse(ad.get("outboundDate").toString()); } catch (Exception ignored) {}
-                    }
-
-                    String returnDirection = ad.get("returnDirection") != null ? ad.get("returnDirection").toString() : null;
                     java.time.LocalDate returnDate = null;
                     if (ad.containsKey("returnDate") && ad.get("returnDate") != null) {
-                        try { returnDate = java.time.LocalDate.parse(ad.get("returnDate").toString()); } catch (Exception ignored) {}
+                        try {
+                            returnDate = java.time.LocalDate.parse(ad.get("returnDate").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     java.time.LocalDateTime returnPickupTime = null;
                     if (ad.containsKey("returnPickupTime") && ad.get("returnPickupTime") != null) {
-                        try { returnPickupTime = java.time.LocalDateTime.parse(ad.get("returnPickupTime").toString()); } catch (Exception ignored) {}
+                        try {
+                            returnPickupTime = java.time.LocalDateTime.parse(ad.get("returnPickupTime").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
-
                     if (returnPickupTime == null && itemReq.getEndDate() != null && "ROUND_TRIP".equals(tripType)) {
                         returnPickupTime = itemReq.getEndDate();
                     }
 
                     Long vehicleCategoryId = null;
                     if (ad.containsKey("vehicleCategoryId") && ad.get("vehicleCategoryId") != null) {
-                        try { vehicleCategoryId = Long.valueOf(ad.get("vehicleCategoryId").toString()); } catch (Exception ignored) {}
+                        try {
+                            vehicleCategoryId = Long.valueOf(ad.get("vehicleCategoryId").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     if (vehicleCategoryId == null && itemReq.getServiceId() != null) {
                         vehicleCategoryId = itemReq.getServiceId();
@@ -161,171 +193,207 @@ public class BookingServiceImpl implements BookingService {
 
                     java.math.BigDecimal basePrice = null;
                     if (ad.containsKey("basePrice") && ad.get("basePrice") != null) {
-                        try { basePrice = new java.math.BigDecimal(ad.get("basePrice").toString()); } catch (Exception ignored) {}
+                        try {
+                            basePrice = new java.math.BigDecimal(ad.get("basePrice").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     java.math.BigDecimal totalPrice = null;
                     if (ad.containsKey("totalPrice") && ad.get("totalPrice") != null) {
-                        try { totalPrice = new java.math.BigDecimal(ad.get("totalPrice").toString()); } catch (Exception ignored) {}
+                        try {
+                            totalPrice = new java.math.BigDecimal(ad.get("totalPrice").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
-                    String currency = ad.getOrDefault("currency", "VND").toString();
 
-                    AirportBookingDetail detail = AirportBookingDetail.builder()
-                            .tripType(tripType)
-                            .routeId(null)
-                            .vehicleCategoryId(vehicleCategoryId)
-                            .outboundDirection(outboundDirection)
-                            .outboundDate(outboundDate)
-                            .outboundPickupTime(outboundPickupTime)
-                            .outboundFlightNumber(itemReq.getFlightNumber())
-                            .outboundPickupAddress(itemReq.getPickupLocation())
-                            .outboundDropoffAddress(ad.get("outboundDropoffAddress") != null ? ad.get("outboundDropoffAddress").toString() : null)
-                            .returnDirection(returnDirection)
-                            .returnDate(returnDate)
-                            .returnPickupTime(returnPickupTime)
-                            .returnFlightNumber(ad.get("returnFlightNumber") != null ? ad.get("returnFlightNumber").toString() : null)
-                            .returnPickupAddress(ad.get("returnPickupAddress") != null ? ad.get("returnPickupAddress").toString() : null)
-                            .returnDropoffAddress(ad.get("returnDropoffAddress") != null ? ad.get("returnDropoffAddress").toString() : null)
-                            .basePrice(basePrice)
-                            .totalPrice(totalPrice)
-                            .currency(currency)
-                            .passenger(quantity)
-                            .note(request.getCustomerNotes())
-                            .build();
-                    detail = moduleEventPublisher.publishRequest("airport.bookingDetail.save", detail, AirportBookingDetail.class);
-                    airportTransferBookingDetailId = detail.getId();
+                    Long routeId = null;
+                    if (ad.containsKey("routeId") && ad.get("routeId") != null) {
+                        try {
+                            routeId = Long.valueOf(ad.get("routeId").toString());
+                        } catch (Exception ignored) {
+                        }
+                    }
+
+                    String outboundPickupAddress = itemReq.getPickupLocation();
+                    String outboundDropoffAddress = ad.get("outboundDropoffAddress") != null ? ad.get("outboundDropoffAddress").toString() : null;
+                    String returnFlightNumber = ad.get("returnFlightNumber") != null ? ad.get("returnFlightNumber").toString() : null;
+                    String returnPickupAddress = ad.get("returnPickupAddress") != null ? ad.get("returnPickupAddress").toString() : null;
+                    String returnDropoffAddress = ad.get("returnDropoffAddress") != null ? ad.get("returnDropoffAddress").toString() : null;
+
+                    BigDecimal actualKm = null;
+                    if (ad.containsKey("actualKm") && ad.get("actualKm") != null) {
+                        try {
+                            actualKm = new java.math.BigDecimal(ad.get("actualKm").toString());
+                        } catch (Exception ignored) {
+                        }
+                    }
+
+
+                    airportTransferBookingDetailId = airportFacade.createAirportBookingDetail(
+                            vehicleCategoryId,
+                            routeId,
+                            tripType,
+                            outboundDirection,
+                            outboundPickupTime,
+                            itemReq.getFlightNumber(),
+                            outboundPickupAddress,
+                            outboundDropoffAddress,
+                            ad.get("returnDirection") != null ? ad.get("returnDirection").toString() : null,
+                            returnDate,
+                            returnPickupTime,
+                            returnFlightNumber,
+                            returnPickupAddress,
+                            returnDropoffAddress,
+                            itemUnitPrice,
+                            basePrice,
+                            totalPrice,
+                            request.getCustomerNotes(),
+                            actualKm
+                    );
                 } else if (isIntercity) {
                     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
                     java.util.Map<String, Object> ad = new java.util.HashMap<>();
                     try {
                         if (itemReq.getDynamicDetails() != null && !itemReq.getDynamicDetails().isBlank()) {
-                            ad = om.readValue(itemReq.getDynamicDetails(), new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+                            ad = om.readValue(itemReq.getDynamicDetails(),
+                                    new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
+                                    });
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
 
                     Long routeId = null;
                     if (ad.containsKey("routeId") && ad.get("routeId") != null) {
-                        try { routeId = Long.valueOf(ad.get("routeId").toString()); } catch (Exception ignored) {}
+                        try {
+                            routeId = Long.valueOf(ad.get("routeId").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     Long vehicleCategoryId = null;
                     if (ad.containsKey("vehicleCategoryId") && ad.get("vehicleCategoryId") != null) {
-                        try { vehicleCategoryId = Long.valueOf(ad.get("vehicleCategoryId").toString()); } catch (Exception ignored) {}
+                        try {
+                            vehicleCategoryId = Long.valueOf(ad.get("vehicleCategoryId").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     String tripType = ad.getOrDefault("tripType", "ONE_WAY").toString();
                     java.time.LocalDate departureDate = null;
                     if (ad.containsKey("departureDate") && ad.get("departureDate") != null) {
-                        try { departureDate = java.time.LocalDate.parse(ad.get("departureDate").toString()); } catch (Exception ignored) {}
+                        try {
+                            departureDate = java.time.LocalDate.parse(ad.get("departureDate").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     java.time.LocalTime departureTime = null;
                     if (ad.containsKey("departureTime") && ad.get("departureTime") != null) {
-                        try { departureTime = java.time.LocalTime.parse(ad.get("departureTime").toString()); } catch (Exception ignored) {}
+                        try {
+                            departureTime = java.time.LocalTime.parse(ad.get("departureTime").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     java.time.LocalDate returnDate = null;
                     if (ad.containsKey("returnDate") && ad.get("returnDate") != null) {
-                        try { returnDate = java.time.LocalDate.parse(ad.get("returnDate").toString()); } catch (Exception ignored) {}
+                        try {
+                            returnDate = java.time.LocalDate.parse(ad.get("returnDate").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     java.math.BigDecimal basePrice = null;
                     if (ad.containsKey("basePrice") && ad.get("basePrice") != null) {
-                        try { basePrice = new java.math.BigDecimal(ad.get("basePrice").toString()); } catch (Exception ignored) {}
+                        try {
+                            basePrice = new java.math.BigDecimal(ad.get("basePrice").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     java.math.BigDecimal totalPrice = null;
                     if (ad.containsKey("totalPrice") && ad.get("totalPrice") != null) {
-                        try { totalPrice = new java.math.BigDecimal(ad.get("totalPrice").toString()); } catch (Exception ignored) {}
+                        try {
+                            totalPrice = new java.math.BigDecimal(ad.get("totalPrice").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
 
-                    IntercityBookingDetail detail = IntercityBookingDetail.builder()
-                            .routeId(routeId)
-                            .vehicleCategoryId(vehicleCategoryId)
-                            .tripType(tripType)
-                            .pickupAddress(itemReq.getPickupLocation())
-                            .dropoffAddress(ad.get("dropoffAddress") != null ? ad.get("dropoffAddress").toString() : null)
-                            .departureDate(departureDate)
-                            .departureTime(departureTime)
-                            .returnDate(returnDate)
-                            .passengerCount(quantity)
-                            .note(request.getCustomerNotes())
-                            .basePrice(basePrice)
-                            .surchargeAmount(java.math.BigDecimal.ZERO)
-                            .totalPrice(totalPrice)
-                            .currency("VND")
-                            .status("PENDING")
-                            .build();
-                    detail = moduleEventPublisher.publishRequest("rental.intercityBookingDetail.save", detail, IntercityBookingDetail.class);
-                    intercityBookingDetailId = detail.getId();
+                    LocalDateTime departureDateTime = null;
+                    if (departureDate != null && departureTime != null) {
+                        departureDateTime = LocalDateTime.of(departureDate, departureTime);
+                    } else if (itemReq.getStartDate() != null) {
+                        departureDateTime = itemReq.getStartDate();
+                    }
+
+                    String dropoffAddress = ad.get("dropoffAddress") != null ? ad.get("dropoffAddress").toString() : null;
+
+                    intercityBookingDetailId = rentalFacade.createIntercityBookingDetail(
+                            vehicleCategoryId,
+                            routeId,
+                            tripType,
+                            departureDateTime,
+                            returnDate,
+                            itemUnitPrice,
+                            basePrice,
+                            totalPrice,
+                            itemReq.getPickupLocation(),
+                            dropoffAddress,
+                            request.getCustomerNotes()
+                    );
                 } else if (isSelfDrive) {
                     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
                     java.util.Map<String, Object> ad = new java.util.HashMap<>();
                     try {
                         if (itemReq.getDynamicDetails() != null && !itemReq.getDynamicDetails().isBlank()) {
-                            ad = om.readValue(itemReq.getDynamicDetails(), new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+                            ad = om.readValue(itemReq.getDynamicDetails(),
+                                    new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
+                                    });
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
 
                     Long vehicleCategoryId = null;
                     if (ad.containsKey("vehicleCategoryId") && ad.get("vehicleCategoryId") != null) {
-                        try { vehicleCategoryId = Long.valueOf(ad.get("vehicleCategoryId").toString()); } catch (Exception ignored) {}
+                        try {
+                            vehicleCategoryId = Long.valueOf(ad.get("vehicleCategoryId").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     java.time.LocalDate startDate = null;
                     if (ad.containsKey("startDate") && ad.get("startDate") != null) {
-                        try { startDate = java.time.LocalDate.parse(ad.get("startDate").toString()); } catch (Exception ignored) {}
+                        try {
+                            startDate = java.time.LocalDate.parse(ad.get("startDate").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     java.time.LocalDate endDate = null;
                     if (ad.containsKey("endDate") && ad.get("endDate") != null) {
-                        try { endDate = java.time.LocalDate.parse(ad.get("endDate").toString()); } catch (Exception ignored) {}
-                    }
-                    int rentalDays = 1;
-                    if (startDate != null && endDate != null) {
-                        rentalDays = (int) java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
+                        try {
+                            endDate = java.time.LocalDate.parse(ad.get("endDate").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     java.math.BigDecimal basePrice = null;
                     if (ad.containsKey("basePrice") && ad.get("basePrice") != null) {
-                        try { basePrice = new java.math.BigDecimal(ad.get("basePrice").toString()); } catch (Exception ignored) {}
+                        try {
+                            basePrice = new java.math.BigDecimal(ad.get("basePrice").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
                     java.math.BigDecimal totalPrice = null;
                     if (ad.containsKey("totalPrice") && ad.get("totalPrice") != null) {
-                        try { totalPrice = new java.math.BigDecimal(ad.get("totalPrice").toString()); } catch (Exception ignored) {}
+                        try {
+                            totalPrice = new java.math.BigDecimal(ad.get("totalPrice").toString());
+                        } catch (Exception ignored) {
+                        }
                     }
 
-                    SelfDriveBookingDetail detail = SelfDriveBookingDetail.builder()
-                            .vehicleCategoryId(vehicleCategoryId)
-                            .startDate(startDate)
-                            .endDate(endDate)
-                            .rentalDays(rentalDays)
-                            .pickupLocation(itemReq.getPickupLocation())
-                            .dropoffLocation(ad.get("dropoffLocation") != null ? ad.get("dropoffLocation").toString() : null)
-                            .basePrice(basePrice)
-                            .deposit(java.math.BigDecimal.ZERO)
-                            .totalPrice(totalPrice)
-                            .currency("VND")
-                            .note(request.getCustomerNotes())
-                            .depositStatus("PENDING")
-                            .status("PENDING")
-                            .build();
-                    detail = moduleEventPublisher.publishRequest("rental.selfDriveBookingDetail.save", detail, SelfDriveBookingDetail.class);
-                    selfDriveBookingDetailId = detail.getId();
-                } else {
-                    // ponytail: service module removed — skip service/option validation for now
-                    // com.dotnt.booking_travel_backend.service.internal.entity.Service service = moduleEventPublisher.publishRequest("service.findById", itemReq.getServiceId(), com.dotnt.booking_travel_backend.service.internal.entity.Service.class);
-                    // if (service == null) {
-                    //     throw new IllegalArgumentException("Service not found with ID: " + itemReq.getServiceId());
-                    // }
-                    //
-                    // ServiceOption option = moduleEventPublisher.publishRequest("service.option.findById", itemReq.getServiceOptionId(), ServiceOption.class);
-                    // if (option == null) {
-                    //     throw new IllegalArgumentException("Service Option not found with ID: " + itemReq.getServiceOptionId());
-                    // }
-                    //
-                    // if (option.getService() == null || !option.getService().getId().equals(service.getId())) {
-                    //     throw new IllegalArgumentException("Service Option ID " + itemReq.getServiceOptionId() + " does not belong to Service ID " + service.getId());
-                    // }
-                    //
-                    // if (option.getSeatCapacity() != null && quantity > option.getSeatCapacity()) {
-                    //     throw new IllegalArgumentException("The number of guests (" + quantity + ") exceeds the service option's seat capacity (" + option.getSeatCapacity() + " seats)!");
-                    // }
-                    //
-                    // if (itemUnitPrice.compareTo(BigDecimal.ZERO) == 0 && option.getPrice() != null) {
-                    //     itemUnitPrice = option.getPrice();
-                    //     itemTotalPrice = itemUnitPrice;
-                    // }
+                    String dropoffLocation = ad.get("dropoffLocation") != null ? ad.get("dropoffLocation").toString() : null;
+
+                    selfDriveBookingDetailId = rentalFacade.createSelfDriveBookingDetail(
+                            vehicleCategoryId,
+                            startDate,
+                            endDate,
+                            basePrice,
+                            totalPrice,
+                            itemReq.getPickupLocation(),
+                            dropoffLocation
+                    );
                 }
 
                 BookingItem item = BookingItem.builder()
@@ -346,23 +414,11 @@ public class BookingServiceImpl implements BookingService {
                 if (isTour && tourBookingDetailId != null) {
                     tourBookingService.updateBookingItemId(tourBookingDetailId, item.getId());
                 } else if (isAirport && airportTransferBookingDetailId != null) {
-                    AirportBookingDetail detail = moduleEventPublisher.publishRequest("airport.bookingDetail.findById", airportTransferBookingDetailId, AirportBookingDetail.class);
-                    if (detail != null) {
-                        detail.setBookingItemId(item.getId());
-                        moduleEventPublisher.publishRequest("airport.bookingDetail.save", detail, AirportBookingDetail.class);
-                    }
+                    airportFacade.updateAirportBookingItemId(airportTransferBookingDetailId, item.getId());
                 } else if (isIntercity && intercityBookingDetailId != null) {
-                    IntercityBookingDetail detail = moduleEventPublisher.publishRequest("rental.intercityBookingDetail.findById", intercityBookingDetailId, IntercityBookingDetail.class);
-                    if (detail != null) {
-                        detail.setBookingItemId(item.getId());
-                        moduleEventPublisher.publishRequest("rental.intercityBookingDetail.save", detail, IntercityBookingDetail.class);
-                    }
+                    rentalFacade.updateIntercityBookingItemId(intercityBookingDetailId, item.getId());
                 } else if (isSelfDrive && selfDriveBookingDetailId != null) {
-                    SelfDriveBookingDetail detail = moduleEventPublisher.publishRequest("rental.selfDriveBookingDetail.findById", selfDriveBookingDetailId, SelfDriveBookingDetail.class);
-                    if (detail != null) {
-                        detail.setBookingItemId(item.getId());
-                        moduleEventPublisher.publishRequest("rental.selfDriveBookingDetail.save", detail, SelfDriveBookingDetail.class);
-                    }
+                    rentalFacade.updateSelfDriveBookingItemId(selfDriveBookingDetailId, item.getId());
                 }
             }
         }
@@ -378,49 +434,11 @@ public class BookingServiceImpl implements BookingService {
 
     private void sendBookingEmail(Booking booking) {
         try {
-            StringBuilder itemsHtml = new StringBuilder();
-            for (BookingItem item : booking.getItems()) {
-                itemsHtml.append("<tr>")
-                        .append("<td style='padding: 8px; border: 1px solid #ddd;'>").append(item.getDynamicDetails() != null ? item.getDynamicDetails() : "Dịch vụ").append("</td>")
-                        .append("<td style='padding: 8px; border: 1px solid #ddd; text-align: center;'>").append(item.getQuantity()).append("</td>")
-                        .append("<td style='padding: 8px; border: 1px solid #ddd; text-align: right;'>").append(item.getUnitPrice()).append(" VND</td>")
-                        .append("<td style='padding: 8px; border: 1px solid #ddd; text-align: right;'>").append(item.getTotalPrice()).append(" VND</td>")
-                        .append("</tr>");
-            }
-
-            String contactInfo = "Không có";
-            if (booking.getContactChannel() != null && booking.getContactId() != null) {
-                contactInfo = booking.getContactChannel().toUpperCase() + " (" + booking.getContactId() + ")";
-            }
-
-            String htmlContent = "<html><body>" +
-                    "<h2>Yêu cầu đặt dịch vụ mới</h2>" +
-                    "<p><strong>Mã đặt chỗ:</strong> " + booking.getBookingCode() + "</p>" +
-                    "<p><strong>Khách hàng:</strong> " + booking.getCustomerName() + "</p>" +
-                    "<p><strong>Số điện thoại:</strong> " + booking.getCustomerPhone() + "</p>" +
-                    "<p><strong>Email:</strong> " + booking.getCustomerEmail() + "</p>" +
-                    "<p><strong>Kênh liên hệ phụ:</strong> " + contactInfo + "</p>" +
-                    "<p><strong>Ghi chú:</strong> " + (booking.getCustomerNotes() != null ? booking.getCustomerNotes() : "") + "</p>" +
-                    "<table style='width: 100%; border-collapse: collapse; margin-top: 15px;'>" +
-                    "<thead><tr style='background-color: #f2f2f2;'>" +
-                    "<th style='padding: 8px; border: 1px solid #ddd; text-align: left;'>Dịch vụ</th>" +
-                    "<th style='padding: 8px; border: 1px solid #ddd;'>Số lượng</th>" +
-                    "<th style='padding: 8px; border: 1px solid #ddd; text-align: right;'>Đơn giá</th>" +
-                    "<th style='padding: 8px; border: 1px solid #ddd; text-align: right;'>Thành tiền</th>" +
-                    "</tr></thead>" +
-                    "<tbody>" + itemsHtml.toString() + "</tbody>" +
-                    "<tfoot><tr style='font-weight: bold;'>" +
-                    "<td colspan='3' style='padding: 8px; border: 1px solid #ddd; text-align: right;'>Tổng cộng:</td>" +
-                    "<td style='padding: 8px; border: 1px solid #ddd; text-align: right; color: #ff9800;'>" + booking.getTotalAmount() + " VND</td>" +
-                    "</tr></tfoot>" +
-                    "</table>" +
-                    "</body></html>";
-
+            String htmlContent = bookingEmailBuilder.buildEmailHtml(booking);
             mailService.send(
                     "tongnguyenthanhdo@gmail.com",
                     "[Minh Khoa Travel] Yêu cầu đặt dịch vụ mới - " + booking.getBookingCode(),
-                    htmlContent
-            );
+                    htmlContent);
             log.info("Sent booking email confirmation for {}", booking.getBookingCode());
         } catch (Exception e) {
             log.error("Failed to send booking email", e);
@@ -458,12 +476,18 @@ public class BookingServiceImpl implements BookingService {
                 .filter(b -> b.getDeletedAt() == null)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found with ID: " + id));
 
-        if (request.getCustomerName() != null) booking.setCustomerName(request.getCustomerName());
-        if (request.getCustomerEmail() != null) booking.setCustomerEmail(request.getCustomerEmail());
-        if (request.getCustomerPhone() != null) booking.setCustomerPhone(request.getCustomerPhone());
-        if (request.getTotalAmount() != null) booking.setTotalAmount(request.getTotalAmount());
-        if (request.getBookingStatus() != null) booking.setBookingStatus(request.getBookingStatus());
-        if (request.getCustomerNotes() != null) booking.setCustomerNotes(request.getCustomerNotes());
+        if (request.getCustomerName() != null)
+            booking.setCustomerName(request.getCustomerName());
+        if (request.getCustomerEmail() != null)
+            booking.setCustomerEmail(request.getCustomerEmail());
+        if (request.getCustomerPhone() != null)
+            booking.setCustomerPhone(request.getCustomerPhone());
+        if (request.getTotalAmount() != null)
+            booking.setTotalAmount(request.getTotalAmount());
+        if (request.getBookingStatus() != null)
+            booking.setBookingStatus(request.getBookingStatus());
+        if (request.getCustomerNotes() != null)
+            booking.setCustomerNotes(request.getCustomerNotes());
 
         booking = bookingRepository.save(booking);
         return bookingMapper.toDto(booking);

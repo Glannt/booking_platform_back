@@ -15,4 +15,5 @@ public class UserDto {
     private String status;
     private String kakaoTalkId;
     private String zaloId;
+    private String whatsapp;
 }

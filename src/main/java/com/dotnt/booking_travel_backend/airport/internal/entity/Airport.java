@@ -24,8 +24,17 @@ public class Airport extends MasterEntity {
     @Column(name = "location", length = 255)
     private String location;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active;
+
+    @Column(name = "is_default", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean isDefault;
 
     @OneToMany(mappedBy = "airport", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

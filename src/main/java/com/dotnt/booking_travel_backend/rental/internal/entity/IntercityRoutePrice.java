@@ -23,11 +23,8 @@ public class IntercityRoutePrice extends MasterEntity {
     @Column(name = "vehicle_category_id", nullable = false)
     private Long vehicleCategoryId;
 
-    @Column(name = "one_way_amount", nullable = false, precision = 15, scale = 2)
-    private BigDecimal oneWayAmount;
-
-    @Column(name = "round_trip_amount", nullable = false, precision = 15, scale = 2)
-    private BigDecimal roundTripAmount;
+    @Column(name = "per_km_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal perKmAmount;
 
     @Column(name = "currency", length = 10, nullable = false)
     private String currency;

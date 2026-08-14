@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <div th:replace="~{email/fragments :: styles}"></div>
+    <title>Xác nhận yêu cầu đặt xe đưa đón sân bay</title>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <!-- Brand Header -->
+            <div th:replace="~{email/fragments :: header('Xác Nhận Đặt Chuyến Sân Bay', 'Đơn đặt dịch vụ của Quý khách đã được tiếp nhận thành công')}"></div>
+
+            <!-- Status Banner -->
+            <div class="status-banner">
+                <div>
+                    <div class="status-banner-title">⏳ Đang Chờ Điều Phối &amp; Xác Nhận</div>
+                    <div class="status-banner-desc">
+                        Cảm ơn Quý khách <strong th:text="${booking.customerName}">Quý khách</strong>. Minh Khoa Travel đã nhận được thông tin đặt chuyến. Nhân viên điều hành sẽ liên hệ qua số điện thoại/Zalo để xác nhận trong ít phút.
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-body">
+                <!-- Customer Info -->
+                <div th:replace="~{email/fragments :: customerInfo(${booking})}"></div>
+
+                <!-- Booking Details -->
+                <div class="section-header">
+                    <span>✈️ Lịch trình Đưa đón Sân bay</span>
+                </div>
+
+                <div class="card-box" style="border-left: 4px solid #2563eb;">
+                    <!-- Trip Header Tag & Vehicle -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px dashed #cbd5e1;">
+                        <div>
+                            <span class="badge-tag" th:classappend="${detail.tripType == 'ROUND_TRIP' ? 'badge-roundtrip' : 'badge-oneway'}"
+                                  th:text="${detail.tripType == 'ROUND_TRIP' ? '🔄 KHỨ HỒI' : '➡️ MỘT CHIỀU'}">MỘT CHIỀU</span>
+                            <span style="font-weight: 700; font-size: 13px; color: #0f172a; margin-left: 8px;" th:if="${vehicleCategoryName != null}">
+                                Xe <span th:text="${vehicleCategoryName}">4 chỗ</span>
+                            </span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b; font-weight: 600;" th:if="${detail.passenger != null}">
+                            👥 <span th:text="${detail.passenger + ' hành khách'}">1 hành khách</span>
+                        </div>
+                    </div>
+
+                    <!-- Outbound (Chiều đi) -->
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-weight: 700; color: #2563eb; font-size: 13px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            📍 Chiều đi: 
+                            <span th:text="${detail.outboundDirection == 'FROM_AIRPORT' ? 'Đón tại Sân bay ➔ Về Khách sạn' : 'Đón tại Khách sạn ➔ Ra Sân bay'}">Sân bay ➔ Khách sạn</span>
+                        </div>
+
+                        <div class="itinerary-step">
+                            <div class="itinerary-dot dot-pickup"></div>
+                            <div class="itinerary-label">Thời gian đón</div>
+                            <div class="itinerary-value" style="color: #2563eb;" th:text="${detail.outboundPickupTime != null ? #temporals.format(detail.outboundPickupTime, 'HH:mm - EEEE, dd/MM/yyyy', new java.util.Locale('vi', 'VN')) : (detail.outboundDate != null ? #temporals.format(detail.outboundDate, 'dd/MM/yyyy') : 'Theo yêu cầu')}">12:00 - Thứ Tư, 13/08/2026</div>
+                        </div>
+
+                        <div class="itinerary-step" th:if="${detail.outboundFlightNumber != null and !detail.outboundFlightNumber.isEmpty()}">
+                            <div class="itinerary-dot" style="background-color: #8b5cf6; box-shadow: 0 0 0 3px #ede9fe;"></div>
+                            <div class="itinerary-label">Số hiệu chuyến bay</div>
+                            <div class="itinerary-value">
+                                <span style="background: #ede9fe; color: #6d28d9; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 12px;" th:text="${detail.outboundFlightNumber}">VN123</span>
+                                <span style="font-size: 11px; color: #64748b; font-weight: normal; margin-left: 6px;">(Tài xế sẽ theo dõi giờ hạ cánh thực tế)</span>
+                            </div>
+                        </div>
+
+                        <div class="itinerary-step">
+                            <div class="itinerary-dot dot-pickup"></div>
+                            <div class="itinerary-label">Điểm đón</div>
+                            <div class="itinerary-value" th:text="${detail.outboundPickupAddress}">Sân bay Quốc tế Cam Ranh (CXR)</div>
+                        </div>
+
+                        <div class="itinerary-step" th:if="${detail.outboundDropoffAddress != null and !detail.outboundDropoffAddress.isEmpty()}">
+                            <div class="itinerary-dot dot-dropoff"></div>
+                            <div class="itinerary-label">Điểm đến (Trả khách)</div>
+                            <div class="itinerary-value" th:text="${detail.outboundDropoffAddress}">60 Trần Phú, Nha Trang</div>
+                        </div>
+                    </div>
+
+                    <!-- Return (Chiều về - if Round Trip) -->
+                    <div th:if="${detail.tripType == 'ROUND_TRIP'}" style="margin-top: 16px; border-top: 1px dashed #cbd5e1; padding-top: 14px;">
+                        <div style="font-weight: 700; color: #16a34a; font-size: 13px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            📍 Chiều về: 
+                            <span th:text="${detail.returnDirection == 'FROM_AIRPORT' ? 'Đón tại Sân bay ➔ Về Khách sạn' : 'Đón tại Khách sạn ➔ Ra Sân bay'}">Khách sạn ➔ Sân bay</span>
+                        </div>
+
+                        <div class="itinerary-step">
+                            <div class="itinerary-dot dot-pickup"></div>
+                            <div class="itinerary-label">Thời gian đón chiều về</div>
+                            <div class="itinerary-value" style="color: #16a34a;" th:text="${detail.returnPickupTime != null ? #temporals.format(detail.returnPickupTime, 'HH:mm - EEEE, dd/MM/yyyy', new java.util.Locale('vi', 'VN')) : (detail.returnDate != null ? #temporals.format(detail.returnDate, 'dd/MM/yyyy') : 'Theo yêu cầu')}">12:00 - Thứ Tư, 20/08/2026</div>
+                        </div>
+
+                        <div class="itinerary-step" th:if="${detail.returnFlightNumber != null and !detail.returnFlightNumber.isEmpty()}">
+                            <div class="itinerary-dot" style="background-color: #8b5cf6; box-shadow: 0 0 0 3px #ede9fe;"></div>
+                            <div class="itinerary-label">Số hiệu chuyến bay về</div>
+                            <div class="itinerary-value">
+                                <span style="background: #ede9fe; color: #6d28d9; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 12px;" th:text="${detail.returnFlightNumber}">VN124</span>
+                            </div>
+                        </div>
+
+                        <div class="itinerary-step" th:if="${detail.returnPickupAddress != null and !detail.returnPickupAddress.isEmpty()}">
+                            <div class="itinerary-dot dot-pickup"></div>
+                            <div class="itinerary-label">Điểm đón chiều về</div>
+                            <div class="itinerary-value" th:text="${detail.returnPickupAddress}">60 Trần Phú, Nha Trang</div>
+                        </div>
+
+                        <div class="itinerary-step" th:if="${detail.returnDropoffAddress != null and !detail.returnDropoffAddress.isEmpty()}">
+                            <div class="itinerary-dot dot-dropoff"></div>
+                            <div class="itinerary-label">Điểm trả chiều về</div>
+                            <div class="itinerary-value" th:text="${detail.returnDropoffAddress}">Sân bay Quốc tế Cam Ranh (CXR)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing Table -->
+                <div class="section-header">
+                    <span>💳 Chi tiết Thanh toán</span>
+                </div>
+
+                <table class="price-table">
+                    <thead>
+                        <tr>
+                            <th>Dịch vụ / Hạng mục</th>
+                            <th style="text-align: right; width: 140px;">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <strong>Xe đưa đón sân bay</strong> (<span th:text="${detail.tripType == 'ROUND_TRIP' ? 'Khứ hồi' : 'Một chiều'}">Một chiều</span>)
+                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;" th:if="${vehicleCategoryName != null}">
+                                    Loại xe: <span th:text="${vehicleCategoryName}">4 chỗ</span> · Bao gồm xăng dầu, cầu đường &amp; tài xế
+                                </div>
+                            </td>
+                            <td style="text-align: right; font-weight: 600;" th:text="${#numbers.formatDecimal(detail.basePrice != null ? detail.basePrice : detail.totalPrice, 0, 'COMMA', 0, 'POINT') + ' ₫'}">450,000 ₫</td>
+                        </tr>
+                        <tr th:if="${detail.nightSurcharge != null and detail.nightSurcharge.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+                            <td>
+                                <strong>Phụ phí khung giờ / cao điểm</strong>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Áp dụng theo quy định của hệ thống</div>
+                            </td>
+                            <td style="text-align: right; color: #d97706; font-weight: 600;" th:text="${'+' + #numbers.formatDecimal(detail.nightSurcharge, 0, 'COMMA', 0, 'POINT') + ' ₫'}">+50,000 ₫</td>
+                        </tr>
+                        <tr class="price-total-row">
+                            <td style="text-align: right; font-weight: 700;">TỔNG THANH TOÁN:</td>
+                            <td style="text-align: right;" class="price-total-amount" th:text="${#numbers.formatDecimal(booking.totalAmount != null ? booking.totalAmount : detail.totalPrice, 0, 'COMMA', 0, 'POINT') + ' ₫'}">450,000 ₫</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Tips & Important Notes -->
+                <div class="tips-box">
+                    <div style="font-weight: 700; margin-bottom: 4px;">📌 Lưu ý quan trọng dành cho Quý khách:</div>
+                    <ul style="margin: 0; padding-left: 18px;">
+                        <li><strong>Đón tại Sân bay:</strong> Tài xế sẽ có mặt trước giờ hạ cánh và cầm biển tên đón Quý khách tại sảnh đến (Cột số A/B ga đến).</li>
+                        <li><strong>Thời gian chờ:</strong> Miễn phí thời gian chờ 60 phút sau khi máy bay hạ cánh thực tế.</li>
+                        <li><strong>Thanh toán:</strong> Quý khách có thể thanh toán trực tiếp cho tài xế hoặc chuyển khoản sau khi hoàn thành chuyến đi.</li>
+                        <li>Trường hợp có thay đổi giờ bay hoặc cần hỗ trợ khẩn cấp, vui lòng gọi Hotline 24/7: <strong>0987.654.321</strong>.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div th:replace="~{email/fragments :: footer}"></div>
+        </div>
+    </div>
+</body>
+</html>

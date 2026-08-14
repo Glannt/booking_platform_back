@@ -8,6 +8,8 @@ import com.dotnt.booking_travel_backend.user.api.UserDto;
 import com.dotnt.booking_travel_backend.user.internal.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/bookings")
 @RequiredArgsConstructor
+@Slf4j
 public class BookingPublicController {
 
     private final BookingService bookingService;

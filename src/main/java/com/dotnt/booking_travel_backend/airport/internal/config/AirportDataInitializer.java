@@ -25,8 +25,6 @@ public class AirportDataInitializer implements CommandLineRunner {
     private final AirportRouteRepository airportRouteRepository;
     private final AirportTransferPriceRepository airportTransferPriceRepository;
     private final VehicleCategoryRepository vehicleCategoryRepository;
-    private final SurchargeRuleRepository surchargeRuleRepository;
-    private final SurchargeRuleVehicleRepository surchargeRuleVehicleRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -41,6 +39,8 @@ public class AirportDataInitializer implements CommandLineRunner {
                 .code("CXR")
                 .name("Cam Ranh International Airport")
                 .location("Cam Ranh, Khanh Hoa, Vietnam")
+                .latitude(12.0104)
+                .longitude(109.2171)
                 .active(true)
                 .translations(new ArrayList<>())
                 .build());
@@ -91,22 +91,19 @@ public class AirportDataInitializer implements CommandLineRunner {
 
         List<AirportRoute> routes = List.of(route1, route2, route3);
 
+        BigDecimal baseKm = new BigDecimal("35");
+        BigDecimal defaultFeeFixed = new BigDecimal("100000");
         for (AirportRoute route : routes) {
             if (cat4 != null) {
                 airportTransferPriceRepository.save(AirportTransferPrice.builder()
                         .airportRouteId(route.getId())
                         .vehicleCategoryId(cat4.getId())
-                        .serviceType("ONE_WAY")
+                        .baseKm(baseKm)
+                        .baseAmount(new BigDecimal("300000"))
+                        .perKmAmount(new BigDecimal("10000"))
+                        .fixedOvercharge(false)
+                        .feeOverchargeFixed(defaultFeeFixed)
                         .currency("VND")
-                        .amount(new BigDecimal("300000"))
-                        .active(true)
-                        .build());
-                airportTransferPriceRepository.save(AirportTransferPrice.builder()
-                        .airportRouteId(route.getId())
-                        .vehicleCategoryId(cat4.getId())
-                        .serviceType("ROUND_TRIP")
-                        .currency("VND")
-                        .amount(new BigDecimal("500000"))
                         .active(true)
                         .build());
             }
@@ -114,17 +111,12 @@ public class AirportDataInitializer implements CommandLineRunner {
                 airportTransferPriceRepository.save(AirportTransferPrice.builder()
                         .airportRouteId(route.getId())
                         .vehicleCategoryId(cat7.getId())
-                        .serviceType("ONE_WAY")
+                        .baseKm(baseKm)
+                        .baseAmount(new BigDecimal("450000"))
+                        .perKmAmount(new BigDecimal("15000"))
+                        .fixedOvercharge(false)
+                        .feeOverchargeFixed(defaultFeeFixed)
                         .currency("VND")
-                        .amount(new BigDecimal("450000"))
-                        .active(true)
-                        .build());
-                airportTransferPriceRepository.save(AirportTransferPrice.builder()
-                        .airportRouteId(route.getId())
-                        .vehicleCategoryId(cat7.getId())
-                        .serviceType("ROUND_TRIP")
-                        .currency("VND")
-                        .amount(new BigDecimal("750000"))
                         .active(true)
                         .build());
             }
@@ -132,45 +124,16 @@ public class AirportDataInitializer implements CommandLineRunner {
                 airportTransferPriceRepository.save(AirportTransferPrice.builder()
                         .airportRouteId(route.getId())
                         .vehicleCategoryId(cat16.getId())
-                        .serviceType("ONE_WAY")
+                        .baseKm(baseKm)
+                        .baseAmount(new BigDecimal("700000"))
+                        .perKmAmount(new BigDecimal("20000"))
+                        .fixedOvercharge(false)
+                        .feeOverchargeFixed(defaultFeeFixed)
                         .currency("VND")
-                        .amount(new BigDecimal("700000"))
-                        .active(true)
-                        .build());
-                airportTransferPriceRepository.save(AirportTransferPrice.builder()
-                        .airportRouteId(route.getId())
-                        .vehicleCategoryId(cat16.getId())
-                        .serviceType("ROUND_TRIP")
-                        .currency("VND")
-                        .amount(new BigDecimal("1200000"))
                         .active(true)
                         .build());
             }
         }
-
-        SurchargeRule nightRule = surchargeRuleRepository.save(SurchargeRule.builder()
-                .code("NIGHT_VN")
-                .description("Phụ thu ban đêm Việt Nam (22h - 05h)")
-                .country("VN")
-                .startTime(LocalTime.of(22, 0))
-                .endTime(LocalTime.of(5, 0))
-                .amount(new BigDecimal("100000"))
-                .currency("VND")
-                .active(true)
-                .vehicles(new ArrayList<>())
-                .build());
-
-        SurchargeRule holidayRule = surchargeRuleRepository.save(SurchargeRule.builder()
-                .code("HOLIDAY_VN")
-                .description("Phụ thu ngày lễ Việt Nam")
-                .country("VN")
-                .startTime(LocalTime.MIN)
-                .endTime(LocalTime.MAX)
-                .amount(new BigDecimal("150000"))
-                .currency("VND")
-                .active(true)
-                .vehicles(new ArrayList<>())
-                .build());
 
         log.info("Airport transfer data seeded successfully!");
     }
