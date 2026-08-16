@@ -1,8 +1,6 @@
 @ApplicationModule(
         displayName = "Rental",
-        allowedDependencies = {
-                "shared"
-        }
+        allowedDependencies = {"shared", "shared :: entity"}
 )
 package com.dotnt.booking_travel_backend.rental;
 

@@ -6,8 +6,10 @@ import com.dotnt.booking_travel_backend.shared.utils.PriceMath;
 import java.math.BigDecimal;
 
 /**
- * km-based airport transfer pricing.
- * oneWay = baseAmount + max(0, actualKm - baseKm) * perKmAmount
+ * km-based airport transfer pricing with Zone Buffer support.
+ * effectiveBaseKm = baseKm + zoneBufferKm (tolerance zone where base price is preserved)
+ * overage = max(0, actualKm - effectiveBaseKm)
+ * oneWay = baseAmount + overage * perKmAmount (or fixed overcharge)
  * roundTrip = 2 * oneWay
  */
 public final class AirportTransferPriceCalculator {
@@ -17,8 +19,12 @@ public final class AirportTransferPriceCalculator {
 
     public static BigDecimal oneWay(AirportTransferPrice price, BigDecimal actualKm) {
         if (price == null || price.getBaseAmount() == null) return BigDecimal.ZERO;
-        BigDecimal km = actualKm != null ? actualKm : price.getBaseKm();
-        BigDecimal overage = km.subtract(price.getBaseKm()).max(BigDecimal.ZERO);
+        BigDecimal baseKm = price.getBaseKm() != null ? price.getBaseKm() : BigDecimal.ZERO;
+        BigDecimal zoneBuffer = price.getZoneBufferKm() != null ? price.getZoneBufferKm() : BigDecimal.ZERO;
+        BigDecimal effectiveBaseKm = baseKm.add(zoneBuffer);
+
+        BigDecimal km = actualKm != null ? actualKm : baseKm;
+        BigDecimal overage = km.subtract(effectiveBaseKm).max(BigDecimal.ZERO);
         BigDecimal raw = price.getBaseAmount();
         
         if (overage.compareTo(BigDecimal.ZERO) > 0) {
@@ -28,7 +34,8 @@ public final class AirportTransferPriceCalculator {
                         : new BigDecimal("100000"); // mặc định 100k
                 raw = raw.add(fixedFee);
             } else {
-                raw = raw.add(overage.multiply(price.getPerKmAmount()));
+                BigDecimal perKm = price.getPerKmAmount() != null ? price.getPerKmAmount() : BigDecimal.ZERO;
+                raw = raw.add(overage.multiply(perKm));
             }
         }
         

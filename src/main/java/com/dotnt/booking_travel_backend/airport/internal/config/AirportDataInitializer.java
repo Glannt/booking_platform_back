@@ -92,6 +92,7 @@ public class AirportDataInitializer implements CommandLineRunner {
         List<AirportRoute> routes = List.of(route1, route2, route3);
 
         BigDecimal baseKm = new BigDecimal("35");
+        BigDecimal defaultZoneBufferKm = new BigDecimal("2.00");
         BigDecimal defaultFeeFixed = new BigDecimal("100000");
         for (AirportRoute route : routes) {
             if (cat4 != null) {
@@ -99,6 +100,7 @@ public class AirportDataInitializer implements CommandLineRunner {
                         .airportRouteId(route.getId())
                         .vehicleCategoryId(cat4.getId())
                         .baseKm(baseKm)
+                        .zoneBufferKm(defaultZoneBufferKm)
                         .baseAmount(new BigDecimal("300000"))
                         .perKmAmount(new BigDecimal("10000"))
                         .fixedOvercharge(false)
@@ -112,6 +114,7 @@ public class AirportDataInitializer implements CommandLineRunner {
                         .airportRouteId(route.getId())
                         .vehicleCategoryId(cat7.getId())
                         .baseKm(baseKm)
+                        .zoneBufferKm(defaultZoneBufferKm)
                         .baseAmount(new BigDecimal("450000"))
                         .perKmAmount(new BigDecimal("15000"))
                         .fixedOvercharge(false)
@@ -125,6 +128,7 @@ public class AirportDataInitializer implements CommandLineRunner {
                         .airportRouteId(route.getId())
                         .vehicleCategoryId(cat16.getId())
                         .baseKm(baseKm)
+                        .zoneBufferKm(defaultZoneBufferKm)
                         .baseAmount(new BigDecimal("700000"))
                         .perKmAmount(new BigDecimal("20000"))
                         .fixedOvercharge(false)

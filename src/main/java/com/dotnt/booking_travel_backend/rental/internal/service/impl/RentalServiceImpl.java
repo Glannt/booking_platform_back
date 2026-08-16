@@ -48,6 +48,14 @@ public class RentalServiceImpl implements IRentalService {
                 throw new IllegalArgumentException("Vehicle category validation failed", ex);
             }
         }
+        if (dto.isActive() && dto.getVehicleCategoryId() != null) {
+            java.util.List<Rental> existingActive = rentalRepository.findByVehicleCategoryIdAndActiveTrue(dto.getVehicleCategoryId());
+            for (Rental ex : existingActive) {
+                ex.setActive(false);
+                rentalRepository.save(ex);
+            }
+        }
+
         Rental r = Rental.builder()
                 .rentalTypeId(dto.getRentalTypeId())
                 .driverRequired(dto.isDriverRequired())
@@ -93,6 +101,17 @@ public class RentalServiceImpl implements IRentalService {
                     throw new IllegalArgumentException("Vehicle category validation failed", ex);
                 }
             }
+
+            if (dto.isActive() && dto.getVehicleCategoryId() != null) {
+                java.util.List<Rental> existingActive = rentalRepository.findByVehicleCategoryIdAndActiveTrue(dto.getVehicleCategoryId());
+                for (Rental ex : existingActive) {
+                    if (!ex.getId().equals(id)) {
+                        ex.setActive(false);
+                        rentalRepository.save(ex);
+                    }
+                }
+            }
+
             r.setRentalTypeId(dto.getRentalTypeId());
             r.setDriverRequired(dto.isDriverRequired());
             r.setDeposit(dto.getDeposit());

@@ -55,5 +55,32 @@ public class RentalController {
     public ResponseEntity<List<RentalPrice>> getPrices(@PathVariable Long id) {
         return ResponseEntity.ok(rentalPriceRepository.findByRentalId(id));
     }
+
+    @PostMapping("/{id}/prices")
+    @PreAuthorize("hasAuthority('VEHICLE_UPDATE')")
+    public ResponseEntity<RentalPrice> createPrice(@PathVariable Long id, @RequestBody RentalPrice price) {
+        price.setRentalId(id);
+        if (price.getCurrency() == null || price.getCurrency().isBlank()) {
+            price.setCurrency("VND");
+        }
+        return ResponseEntity.ok(rentalPriceRepository.save(price));
+    }
+
+    @PutMapping("/{id}/prices/{priceId}")
+    @PreAuthorize("hasAuthority('VEHICLE_UPDATE')")
+    public ResponseEntity<RentalPrice> updatePrice(@PathVariable Long id, @PathVariable Long priceId, @RequestBody RentalPrice price) {
+        return rentalPriceRepository.findById(priceId)
+                .map(existing -> {
+                    if (price.getAmount() != null) {
+                        existing.setAmount(price.getAmount());
+                    }
+                    if (price.getCurrency() != null && !price.getCurrency().isBlank()) {
+                        existing.setCurrency(price.getCurrency());
+                    }
+                    existing.setActive(price.isActive());
+                    return ResponseEntity.ok(rentalPriceRepository.save(existing));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
 

@@ -37,6 +37,10 @@ public class AirportTransferPrice extends MasterEntity {
     @Column(name = "fee_overcharge_fixed", precision = 15, scale = 2)
     private BigDecimal feeOverchargeFixed;
 
+    @Column(name = "zone_buffer_km", precision = 8, scale = 2, nullable = false, columnDefinition = "DECIMAL(8,2) DEFAULT 2.00")
+    @Builder.Default
+    private BigDecimal zoneBufferKm = new BigDecimal("2.00");
+
     @Column(name = "currency", length = 10, nullable = false)
     private String currency;
 

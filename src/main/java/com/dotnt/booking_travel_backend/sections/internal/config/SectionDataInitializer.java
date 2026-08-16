@@ -39,6 +39,7 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 seedSelfDriveBookingProcess();
                 seedSelfDriveIntro();
                 seedRentCarRoutesHeroBanner();
+                seedRentCarFaq();
                 log.info("Section initialization complete.");
             } catch (Exception e) {
                 log.error("Failed to initialize sections", e);
@@ -727,5 +728,70 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
 
         sectionRepository.save(section);
         log.info("Seeded HERO_BANNER for /rent-car/routes.");
+    }
+
+    @Transactional
+    public void seedRentCarFaq() {
+        if (sectionRepository.existsByPagePathAndSectionType("/rent-car", "FAQ")) {
+            log.info("FAQ for /rent-car already exists, skipping.");
+            return;
+        }
+
+        String faqData = "{\"categories\":["
+                + "{\"title\":{\"vi\":\"Đặt xe\",\"en\":\"Booking\",\"ko\":\"차량 예약\",\"ru\":\"Бронирование\"},"
+                + "\"items\":["
+                + "{\"title\":{\"vi\":\"Làm sao để đặt xe?\",\"en\":\"How to book a car?\",\"ko\":\"차량을 어떻게 예약하나요?\",\"ru\":\"Как забронировать автомобиль?\"},"
+                + "\"content\":{\"vi\":\"Bạn có thể đặt xe trực tuyến qua website bằng cách chọn tuyến đường, ngày giờ khởi hành, loại xe và điền thông tin cá nhân. Chúng tôi sẽ xác nhận đơn đặt trong vòng 15 phút.\",\"en\":\"You can book online by choosing your route, departure time, car type and personal details. We will confirm your booking within 15 minutes.\",\"ko\":\"웹사이트에서 노선, 출발 시간, 차종 및 개인 정보를 선택하여 온라인으로 예약할 수 있습니다. 15분 이내에 예약을 확인해 드립니다.\",\"ru\":\"Вы можете забронировать онлайн на сайте, выбрав маршрут, время отправления, тип автомобиля и личные данные. Мы подтвердим бронирование в течение 15 минут.\"}},"
+                + "{\"title\":{\"vi\":\"Tôi có thể hủy đặt xe không?\",\"en\":\"Can I cancel my booking?\",\"ko\":\"예약을 취소할 수 있나요?\",\"ru\":\"Могу ли я отменить бронирование?\"},"
+                + "\"content\":{\"vi\":\"Có, bạn có thể hủy miễn phí trước giờ khởi hành ít nhất 24 giờ. Vui lòng liên hệ tổng đài hoặc hỗ trợ trực tuyến để được xử lý nhanh nhất.\",\"en\":\"Yes, free cancellation is available up to 24 hours before departure. Please contact our support team for prompt assistance.\",\"ko\":\"네, 출발 24시간 전까지는 무료 취소가 가능합니다. 빠른 처리를 위해 고객센터로 문의해 주세요.\",\"ru\":\"Да, бесплатная отмена возможна за 24 часа до отправления. Пожалуйста, свяжитесь со службой поддержки.\"}}"
+                + "]},"
+                + "{\"title\":{\"vi\":\"Thanh toán\",\"en\":\"Payment\",\"ko\":\"결제\",\"ru\":\"Оплата\"},"
+                + "\"items\":["
+                + "{\"title\":{\"vi\":\"Thanh toán bằng cách nào?\",\"en\":\"How can I pay?\",\"ko\":\"어떻게 결제하나요?\",\"ru\":\"Как я могу оплатить?\"},"
+                + "\"content\":{\"vi\":\"Chúng tôi hỗ trợ chuyển khoản ngân hàng, thẻ quốc tế (Visa/Mastercard) hoặc thanh toán tiền mặt trực tiếp cho tài xế sau khi hoàn thành chuyến đi.\",\"en\":\"We accept bank transfers, credit/debit cards (Visa/Mastercard), or cash payment directly to the driver upon trip completion.\",\"ko\":\"계좌이체, 신용카드(Visa/Mastercard) 또는 탑승 후 기사에게 직접 현금 결제가 가능합니다.\",\"ru\":\"Мы принимаем банковские переводы, карты (Visa/Mastercard) или наличными водителю по завершении поездки.\"}}"
+                + "]},"
+                + "{\"title\":{\"vi\":\"Giờ khởi hành\",\"en\":\"Departure Time\",\"ko\":\"출발 시간\",\"ru\":\"Время отправления\"},"
+                + "\"items\":["
+                + "{\"title\":{\"vi\":\"Giờ khởi hành cố định là giờ nào?\",\"en\":\"What are the fixed departure times?\",\"ko\":\"고정 출발 시간은 언제인가요?\",\"ru\":\"Какое фиксированное время отправления?\"},"
+                + "\"content\":{\"vi\":\"Các chuyến cố định chạy hàng ngày vào các khung giờ: 07:00, 09:00, 13:00, 15:00 và 18:00. Ngoài ra bạn có thể đặt chuyến riêng theo giờ linh hoạt.\",\"en\":\"Fixed departures run daily at: 07:00, 09:00, 13:00, 15:00 and 18:00. You can also book a private transfer with flexible timing.\",\"ko\":\"고정 노선은 매일 07:00, 09:00, 13:00, 15:00, 18:00에 출발합니다. 유연한 시간에 맞춤 프라이빗 차량도 예약 가능합니다.\",\"ru\":\"Фиксированные рейсы отправляются ежедневно в 07:00, 09:00, 13:00, 15:00 и 18:00. Вы также можете заказать индивидуальный трансфер в удобное время.\"}}"
+                + "]}"
+                + "]}";
+
+        Section section = Section.builder()
+                .sectionName("FAQ - Rent Car")
+                .sectionType("FAQ")
+                .pagePath("/rent-car")
+                .orderIndex(8)
+                .active(true)
+                .contentData(faqData)
+                .translations(new ArrayList<>())
+                .build();
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("vi")
+                .title("Câu hỏi thường gặp")
+                .subtitle("Mọi thứ bạn cần biết về dịch vụ thuê xe đi tỉnh.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("en")
+                .title("Frequently Asked Questions")
+                .subtitle("Everything you need to know about intercity car rental.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ko")
+                .title("자주 묻는 질문")
+                .subtitle("시외 차량 대여에 대해 알아야 할 모든 것.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ru")
+                .title("Часто задаваемые вопросы")
+                .subtitle("Все, что нужно знать об аренде авто для межгородних поездок.")
+                .build());
+
+        sectionRepository.save(section);
+        log.info("Seeded FAQ for /rent-car.");
     }
 }

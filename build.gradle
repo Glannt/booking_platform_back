@@ -84,6 +84,15 @@ dependencyManagement {
 tasks.named('test') {
     useJUnitPlatform()
 }
+bootRun {
+    jvmArgs = [
+        "-Xms512m",
+        "-Xmx1024m",
+        "-Dfile.encoding=UTF-8",
+        "-XX:+TieredCompilation",
+        "-XX:TieredStopAtLevel=1"
+    ]
+}
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += [
             '-Amapstruct.defaultComponentModel=spring', // Biến các Mapper thành Spring @Component mặc định
