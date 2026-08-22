@@ -39,6 +39,12 @@ public class VehicleCategoryController {
         return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
     }
 
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<VehicleCategoryDTO> getBySlug(@PathVariable String slug) {
+        VehicleCategoryDTO dto = vehicleCategoryService.getVehicleCategoryBySlug(slug);
+        return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('VEHICLE_CATEGORY_UPDATE')")
     public ResponseEntity<VehicleCategoryDTO> update(@PathVariable Long id,

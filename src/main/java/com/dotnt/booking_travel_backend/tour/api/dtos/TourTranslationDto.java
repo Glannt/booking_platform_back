@@ -10,6 +10,7 @@ public class TourTranslationDto {
     private Long id;
     private String locale;
     private String name;
+    private String slug;
     private String description;
     private String content;
 }

@@ -96,10 +96,14 @@ public class TourServiceImpl implements ITourService {
         // Save translations
         if (request.getTranslations() != null) {
             for (TourTranslationDto transDto : request.getTranslations()) {
+                String slug = transDto.getSlug() != null && !transDto.getSlug().isBlank()
+                        ? transDto.getSlug()
+                        : slugify(transDto.getName());
                 TourTranslation trans = TourTranslation.builder()
                         .tour(saved)
                         .locale(transDto.getLocale())
                         .name(transDto.getName())
+                        .slug(slug)
                         .description(transDto.getDescription())
                         .content(transDto.getContent())
                         .build();
@@ -242,6 +246,7 @@ public class TourServiceImpl implements ITourService {
                             .id(tr.getId())
                             .locale(tr.getLocale())
                             .name(tr.getName())
+                            .slug(tr.getSlug())
                             .description(tr.getDescription())
                             .content(tr.getContent())
                             .build())
@@ -324,10 +329,14 @@ public class TourServiceImpl implements ITourService {
             tourTranslationRepository.flush();
             if (tourDto.getTranslations() != null) {
                 for (TourTranslationDto transDto : tourDto.getTranslations()) {
+                    String slug = transDto.getSlug() != null && !transDto.getSlug().isBlank()
+                            ? transDto.getSlug()
+                            : slugify(transDto.getName());
                     TourTranslation trans = TourTranslation.builder()
                             .tour(saved)
                             .locale(transDto.getLocale())
                             .name(transDto.getName())
+                            .slug(slug)
                             .description(transDto.getDescription())
                             .content(transDto.getContent())
                             .build();
@@ -437,6 +446,37 @@ public class TourServiceImpl implements ITourService {
     @CacheEvict(value = "tours", allEntries = true)
     public void deleteTour(Long id) {
         tourRepository.deleteById(id);
+    }
+
+    @Override
+    @Cacheable(value = "tours", key = "'slug_' + #slug")
+    public TourDto getTourBySlug(String slug) {
+        if (slug == null || slug.isBlank()) return null;
+        return tourTranslationRepository.findBySlug(slug)
+                .map(tr -> getTour(tr.getTour().getId()))
+                .orElseGet(() -> {
+                    try {
+                        Long id = Long.parseLong(slug);
+                        return getTour(id);
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                });
+    }
+
+    private String slugify(String text) {
+        if (text == null || text.isBlank()) {
+            return "tour-" + System.currentTimeMillis();
+        }
+        String normalized = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD);
+        String noDiacritics = normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        return noDiacritics.toLowerCase()
+                .replace("đ", "d")
+                .replace("Đ", "d")
+                .replaceAll("[^a-z0-9\\s-]", "")
+                .replaceAll("\\s+", "-")
+                .replaceAll("-+", "-")
+                .replaceAll("^-|-$", "");
     }
 
     private TourDto toDto(Tour t) {

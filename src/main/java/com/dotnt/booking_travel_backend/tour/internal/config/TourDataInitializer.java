@@ -70,6 +70,7 @@ public class TourDataInitializer implements CommandLineRunner {
                 .tour(tour1)
                 .locale("vi")
                 .name("Tour 3 Đảo Nha Trang VIP (Cano Cao Tốc)")
+                .slug("tour-3-dao-nha-trang-vip")
                 .description("Trải nghiệm cano cao tốc tham quan Bãi Tranh, Làng Chài và Vịnh San Hô với bữa trưa hải sản vô cùng hấp dẫn.")
                 .content("<p>Hành trình khám phá vịnh Nha Trang xinh đẹp bằng cano cao tốc đời mới, đưa quý khách đến với những bãi tắm hoang sơ và trải nghiệm lặn biển ngắm san hô tuyệt vời.</p>")
                 .build();
@@ -77,6 +78,7 @@ public class TourDataInitializer implements CommandLineRunner {
                 .tour(tour1)
                 .locale("en")
                 .name("VIP Nha Trang 3 Islands Tour (Speedboat)")
+                .slug("vip-nha-trang-3-islands-tour")
                 .description("Experience high-speed canoe sightseeing Bãi Tranh, Làng Chài, and Coral Bay with a delicious seafood lunch.")
                 .content("<p>Explore the beautiful Nha Trang Bay by modern speedboat, taking you to pristine beaches and wonderful snorkeling spots.</p>")
                 .build();
@@ -131,12 +133,14 @@ public class TourDataInitializer implements CommandLineRunner {
         TourTranslation t2Vi = TourTranslation.builder()
                 .tour(tour2).locale("vi")
                 .name("Tour Du Thuyền 5 Sao Ngắm Hoàng Hôn Vịnh Nha Trang")
+                .slug("tour-du-thuyen-5-sao-ngam-hoang-hon-vinh-nha-trang")
                 .description("Thưởng thức tiệc cocktail hoàng hôn lãng mạn và bữa tối buffet sang trọng trên du thuyền 5 sao tiêu chuẩn quốc tế.")
                 .content("<p>Hành trình lãng mạn ngắm mặt trời lặn trên vịnh Nha Trang lung linh ánh đèn. Trải nghiệm âm nhạc live acoustic du dương và các món ngon hảo hạng.</p>")
                 .build();
         TourTranslation t2En = TourTranslation.builder()
                 .tour(tour2).locale("en")
                 .name("5-Star Sunset Cruise Tour Nha Trang Bay")
+                .slug("5-star-sunset-cruise-tour-nha-trang-bay")
                 .description("Enjoy a romantic sunset cocktail party and a luxurious buffet dinner on an international 5-star cruise ship.")
                 .content("<p>A romantic journey watching the sun set over the glowing Nha Trang Bay. Experience live acoustic music and premium cuisine.</p>")
                 .build();

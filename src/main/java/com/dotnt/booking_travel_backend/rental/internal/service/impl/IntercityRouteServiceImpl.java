@@ -72,10 +72,14 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
 
         if (dto.getTranslations() != null) {
             for (var tr : dto.getTranslations()) {
+                String slug = tr.getSlug() != null && !tr.getSlug().isBlank()
+                        ? tr.getSlug()
+                        : slugify(tr.getName());
                 translationRepository.save(IntercityRouteTranslation.builder()
                         .route(route)
                         .locale(tr.getLocale())
                         .name(tr.getName())
+                        .slug(slug)
                         .description(tr.getDescription())
                         .build());
             }
@@ -141,10 +145,14 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
             translationRepository.flush();
             if (dto.getTranslations() != null) {
                 for (var tr : dto.getTranslations()) {
+                    String slug = tr.getSlug() != null && !tr.getSlug().isBlank()
+                            ? tr.getSlug()
+                            : slugify(tr.getName());
                     translationRepository.save(IntercityRouteTranslation.builder()
                             .route(route)
                             .locale(tr.getLocale())
                             .name(tr.getName())
+                            .slug(slug)
                             .description(tr.getDescription())
                             .build());
                 }
@@ -164,7 +172,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                 }
             }
 
-            return toDto(route);
+            return get(route.getId());
         }).orElse(null);
     }
 
@@ -177,11 +185,42 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
         routeRepository.deleteById(id);
     }
 
+    @Override
+    @Cacheable(value = "intercityRoutes", key = "'slug_' + #slug")
+    public IntercityRouteDto getBySlug(String slug) {
+        if (slug == null || slug.isBlank()) return null;
+        return translationRepository.findBySlug(slug)
+                .map(tr -> get(tr.getRoute().getId()))
+                .orElseGet(() -> {
+                    try {
+                        Long id = Long.parseLong(slug);
+                        return get(id);
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                });
+    }
+
+    private String slugify(String text) {
+        if (text == null || text.isBlank()) {
+            return "route-" + System.currentTimeMillis();
+        }
+        String normalized = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD);
+        String noDiacritics = normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        return noDiacritics.toLowerCase()
+                .replace("đ", "d")
+                .replace("Đ", "d")
+                .replaceAll("[^a-z0-9\\s-]", "")
+                .replaceAll("\\s+", "-")
+                .replaceAll("-+", "-")
+                .replaceAll("^-|-$", "");
+    }
+
     private IntercityRouteDto toDto(IntercityRoute route) {
         var translations = translationRepository.findByRouteId(route.getId()).stream()
                 .map(tr -> IntercityRouteTranslationDto.builder()
                         .id(tr.getId()).routeId(route.getId()).locale(tr.getLocale())
-                        .name(tr.getName()).description(tr.getDescription()).build())
+                        .name(tr.getName()).slug(tr.getSlug()).description(tr.getDescription()).build())
                 .collect(Collectors.toList());
 
         var prices = priceRepository.findByRouteId(route.getId()).stream()

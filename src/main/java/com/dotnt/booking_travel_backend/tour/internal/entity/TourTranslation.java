@@ -5,7 +5,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "tour_translations", uniqueConstraints = @UniqueConstraint(columnNames = {"tour_id", "locale"}))
+@Table(name = "tour_translations", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"tour_id", "locale"}),
+        @UniqueConstraint(columnNames = {"locale", "slug"})
+})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -23,6 +26,9 @@ public class TourTranslation extends MasterEntity {
 
     @Column(name = "name", nullable = false, length = 255)
     private String name;
+
+    @Column(name = "slug", length = 255)
+    private String slug;
 
     @Column(name = "description", length = 1000)
     private String description;

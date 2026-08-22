@@ -40,6 +40,12 @@ public class IntercityRouteController {
         return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
     }
 
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<IntercityRouteDto> getBySlug(@PathVariable String slug) {
+        IntercityRouteDto dto = routeService.getBySlug(slug);
+        return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('INTERCITY_ROUTE_UPDATE')")
     public ResponseEntity<IntercityRouteDto> update(@PathVariable Long id, @RequestBody IntercityRouteDto dto) {

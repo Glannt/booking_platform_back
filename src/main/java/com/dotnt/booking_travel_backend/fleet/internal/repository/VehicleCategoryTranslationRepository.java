@@ -41,4 +41,6 @@ public interface VehicleCategoryTranslationRepository extends JpaRepository<Vehi
             @Param("active") boolean active,
             Pageable pageable
     );
+
+    java.util.Optional<VehicleCategoryTranslation> findBySlug(String slug);
 }

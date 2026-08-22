@@ -5,76 +5,112 @@
     <title>Yêu cầu thuê xe tự lái</title>
 </head>
 <body>
-    <div class="email-container">
-        <!-- Header -->
-        <div th:replace="~{email/fragments :: header('Minh Khoa Travel', 'Yêu cầu đặt dịch vụ Thuê xe Tự lái mới')}"></div>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <!-- Header -->
+            <div th:replace="~{email/fragments :: header('Minh Khoa Travel', 'Yêu cầu đặt dịch vụ Thuê xe Tự lái mới')}"></div>
 
-        <div class="content-body">
-            <!-- Customer Info -->
-            <div th:replace="~{email/fragments :: customerInfo(${booking})}"></div>
-
-            <!-- Booking Details -->
-            <h3 class="section-title">🔑 Chi tiết Dịch vụ Thuê xe Tự lái</h3>
-            <div class="detail-card">
-                <div class="detail-title">
-                    🔑 THUÊ XE TỰ LÁI
-                    <span style="margin-left: 10px; font-weight: normal; font-size: 13px;" th:if="${vehicleCategoryName != null}">
-                        (Loại xe: <span th:text="${vehicleCategoryName}">4 chỗ</span>)
-                    </span>
-                </div>
-
-                <div class="detail-row">
-                    <span class="detail-row-label">Thời gian thuê: </span>
-                    <span class="detail-row-value">
-                        Từ ngày <span th:text="${#temporals.format(detail.startDate, 'dd/MM/yyyy')}">13/08/2026</span> 
-                        đến ngày <span th:text="${#temporals.format(detail.endDate, 'dd/MM/yyyy')}">15/08/2026</span>
-                    </span>
-                </div>
-                <div class="detail-row" th:if="${detail.rentalDays != null}">
-                    <span class="detail-row-label">Tổng số ngày thuê: </span>
-                    <span class="detail-row-value"><strong th:text="${detail.rentalDays + ' ngày'}">2 ngày</strong></span>
-                </div>
-                <div class="detail-row" th:if="${detail.pickupLocation != null and !detail.pickupLocation.isEmpty()}">
-                    <span class="detail-row-label">Điểm nhận xe: </span>
-                    <span class="detail-row-value" th:text="${detail.pickupLocation}">Nha Trang</span>
-                </div>
-                <div class="detail-row" th:if="${detail.dropoffLocation != null and !detail.dropoffLocation.isEmpty()}">
-                    <span class="detail-row-label">Điểm trả xe: </span>
-                    <span class="detail-row-value" th:text="${detail.dropoffLocation}">Nha Trang</span>
+            <!-- Status Banner -->
+            <div class="status-banner">
+                <div>
+                    <div class="status-banner-title">Đang Chờ Điều Phối &amp; Xác Nhận</div>
+                    <div class="status-banner-desc">
+                        Cảm ơn <strong th:text="${booking.customerName}">Quý khách</strong>. Minh Khoa Travel đã nhận được yêu cầu thuê xe tự lái. Nhân viên phụ trách sẽ liên hệ xác nhận thủ tục giao xe trong ít phút.
+                    </div>
                 </div>
             </div>
 
-            <!-- Pricing Table -->
-            <h3 class="section-title">💳 Chi tiết thanh toán</h3>
-            <table class="price-table">
-                <thead>
-                    <tr>
-                        <th>Mô tả dịch vụ</th>
-                        <th style="text-align: right; width: 120px;">Thành tiền</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            Thuê xe tự lái - Xe <span th:text="${vehicleCategoryName != null ? vehicleCategoryName : ''}"></span>
-                            (<span th:text="${detail.rentalDays != null ? detail.rentalDays : 1}">1</span> ngày)
-                        </td>
-                        <td style="text-align: right;" th:text="${#numbers.formatDecimal(detail.basePrice != null ? detail.basePrice : detail.totalPrice, 0, 'COMMA', 0, 'POINT') + ' VND'}">1,600,000 VND</td>
-                    </tr>
-                    <tr th:if="${detail.deposit != null and detail.deposit.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
-                        <td>Tiền đặt cọc (thanh toán khi nhận xe)</td>
-                        <td style="text-align: right;" th:text="${#numbers.formatDecimal(detail.deposit, 0, 'COMMA', 0, 'POINT') + ' VND'}">5,000,000 VND</td>
-                    </tr>
-                    <tr style="font-weight: bold;">
-                        <td style="text-align: right; border-top: 2px solid #e8eaed;">Tổng tiền thuê:</td>
-                        <td style="text-align: right; border-top: 2px solid #e8eaed;" class="price-total" th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">1,600,000 VND</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="content-body">
+                <!-- Customer Info -->
+                <div th:replace="~{email/fragments :: customerInfo(${booking})}"></div>
 
-        <!-- Footer -->
-        <div th:replace="~{email/fragments :: footer}"></div>
+                <!-- Booking Details -->
+                <h3 class="section-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">
+                        <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                        <path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                        <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6"></path>
+                        <path d="M6 9h10"></path>
+                    </svg>
+                    Chi tiết Thuê xe Tự lái
+                </h3>
+                <div class="detail-card">
+                    <div class="detail-title">
+                        Thuê xe tự lái
+                        <span style="margin-left: 8px; font-weight: normal; font-size: 13px; color: #451a03;" th:if="${vehicleCategoryName != null}">
+                            (Loại xe: <strong th:text="${vehicleCategoryName}">4 chỗ</strong>)
+                        </span>
+                    </div>
+
+                    <div class="detail-row">
+                        <span class="detail-row-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            Thời gian thuê: 
+                        </span>
+                        <span class="detail-row-value" style="color: #92400e; font-weight: 600;">
+                            Từ <span th:text="${#temporals.format(detail.startDate, 'dd/MM/yyyy')}">13/08/2026</span> 
+                            đến <span th:text="${#temporals.format(detail.endDate, 'dd/MM/yyyy')}">15/08/2026</span>
+                        </span>
+                    </div>
+                    <div class="detail-row" th:if="${detail.rentalDays != null}">
+                        <span class="detail-row-label">Tổng số ngày thuê: </span>
+                        <span class="detail-row-value"><strong th:text="${detail.rentalDays + ' ngày'}">2 ngày</strong></span>
+                    </div>
+                    <div class="detail-row" th:if="${detail.pickupLocation != null and !detail.pickupLocation.isEmpty()}">
+                        <span class="detail-row-label">Địa điểm nhận xe: </span>
+                        <span class="detail-row-value" th:text="${detail.pickupLocation}">Nha Trang</span>
+                    </div>
+                    <div class="detail-row" th:if="${detail.dropoffLocation != null and !detail.dropoffLocation.isEmpty()}">
+                        <span class="detail-row-label">Địa điểm trả xe: </span>
+                        <span class="detail-row-value" th:text="${detail.dropoffLocation}">Nha Trang</span>
+                    </div>
+                </div>
+
+                <!-- Pricing Table -->
+                <h3 class="section-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        <path d="M9 14l2 2 4-4"></path>
+                    </svg>
+                    Chi tiết thanh toán
+                </h3>
+                <table class="price-table">
+                    <thead>
+                        <tr>
+                            <th>Mô tả dịch vụ</th>
+                            <th style="text-align: right; width: 140px;">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                Thuê xe tự lái - Xe <span th:text="${vehicleCategoryName != null ? vehicleCategoryName : ''}"></span>
+                                (<span th:text="${detail.rentalDays != null ? detail.rentalDays : 1}">1</span> ngày)
+                            </td>
+                            <td style="text-align: right; font-weight: 600;" th:text="${#numbers.formatDecimal(detail.basePrice != null ? detail.basePrice : detail.totalPrice, 0, 'COMMA', 0, 'POINT') + ' ₫'}">1,600,000 ₫</td>
+                        </tr>
+                        <tr th:if="${detail.deposit != null and detail.deposit.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+                            <td>
+                                <strong>Tiền đặt cọc xe</strong>
+                                <div style="font-size: 11px; color: #78716c;">Thanh toán và hoàn lại khi bàn giao xe</div>
+                            </td>
+                            <td style="text-align: right; color: #92400e;" th:text="${#numbers.formatDecimal(detail.deposit, 0, 'COMMA', 0, 'POINT') + ' ₫'}">5,000,000 ₫</td>
+                        </tr>
+                        <tr class="price-total-row">
+                            <td style="text-align: right; font-weight: 700;">TỔNG TIỀN THUÊ:</td>
+                            <td style="text-align: right;" class="price-total-amount" th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT') + ' ₫'}">1,600,000 ₫</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div th:replace="~{email/fragments :: footer}"></div>
+        </div>
     </div>
 </body>
 </html>

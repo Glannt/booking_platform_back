@@ -6,7 +6,10 @@ import lombok.*;
 
 @Entity
 @Table(name = "intercity_route_translations",
-        uniqueConstraints = {@UniqueConstraint(columnNames = {"route_id", "locale"})})
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"route_id", "locale"}),
+                @UniqueConstraint(columnNames = {"locale", "slug"})
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,6 +26,9 @@ public class IntercityRouteTranslation extends MasterEntity {
 
     @Column(name = "name", nullable = false, length = 255)
     private String name;
+
+    @Column(name = "slug", length = 255)
+    private String slug;
 
     @Column(name = "description", length = 500)
     private String description;

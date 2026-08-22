@@ -11,5 +11,6 @@ public class IntercityRouteTranslationDto {
     private Long routeId;
     private String locale;
     private String name;
+    private String slug;
     private String description;
 }

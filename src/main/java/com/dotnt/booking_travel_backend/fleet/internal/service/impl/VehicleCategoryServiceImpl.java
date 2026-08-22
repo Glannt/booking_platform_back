@@ -153,6 +153,22 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
     }
 
     @Override
+    @Cacheable(value = "vehicleCategories", key = "'slug_' + #slug")
+    public VehicleCategoryDTO getVehicleCategoryBySlug(String slug) {
+        if (slug == null || slug.isBlank()) return null;
+        return vehicleCategoryTranslationRepository.findBySlug(slug)
+                .map(tr -> getVehicleCategoryById(tr.getVehicleCategory().getId()))
+                .orElseGet(() -> {
+                    try {
+                        Long id = Long.parseLong(slug);
+                        return getVehicleCategoryById(id);
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                });
+    }
+
+    @Override
     @Transactional
     @CacheEvict(value = "vehicleCategories", allEntries = true)
     public VehicleCategoryDTO updateVehicleCategory(Long id, VehicleCategoryDTO vehicleCategoryDTO) {

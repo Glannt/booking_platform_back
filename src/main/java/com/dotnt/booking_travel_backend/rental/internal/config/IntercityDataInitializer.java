@@ -98,53 +98,53 @@ public class IntercityDataInitializer implements CommandLineRunner {
     private void seedIntercityRoutes() {
         seedRoute("Nha Trang", "Đà Lạt", "135", "3.5", true,
                 new BigDecimal("12.24507"), new BigDecimal("109.1943"), new BigDecimal("11.940419"), new BigDecimal("108.458313"),
-                "Nha Trang ⇌ Đà Lạt", "Nha Trang ⇌ Da Lat", "나트랑 ⇌ 달랏", "Ня Чанг ⇌ Далат",
+                "Nha Trang ⇌ Đà Lạt", "xe-nha-trang-di-da-lat", "Nha Trang ⇌ Da Lat", "nha-trang-to-da-lat", "나트랑 ⇌ 달랏", "nha-trang-da-lat-route", "Ня Чанг ⇌ Далат", "nha-trang-dalat-route",
                 new long[]{10000, 11000, 16000});
 
         seedRoute("Nha Trang", "Mũi Né", "155", "4", false,
                 new BigDecimal("12.24507"), new BigDecimal("109.1943"), new BigDecimal("10.9333"), new BigDecimal("108.2833"),
-                "Nha Trang ⇌ Mũi Né", "Nha Trang ⇌ Mui Ne", "나트랑 ⇌ 무이네", "Ня Чанг ⇌ Муйне",
+                "Nha Trang ⇌ Mũi Né", "xe-nha-trang-di-mui-ne", "Nha Trang ⇌ Mui Ne", "nha-trang-to-mui-ne", "나트랑 ⇌ 무이네", "nha-trang-mui-ne-route", "Ня Чанг ⇌ Муйне", "nha-trang-muine-route",
                 new long[]{10000, 11000, 16000});
 
         seedRoute("Nha Trang", "Phan Rang", "100", "2.5", false,
                 new BigDecimal("12.24507"), new BigDecimal("109.1943"), new BigDecimal("11.5667"), new BigDecimal("108.9833"),
-                "Nha Trang ⇌ Phan Rang", "Nha Trang ⇌ Phan Rang", "나트랑 ⇌ 판랑", "Ня Чанг ⇌ Фанранг",
+                "Nha Trang ⇌ Phan Rang", "xe-nha-trang-di-phan-rang", "Nha Trang ⇌ Phan Rang", "nha-trang-to-phan-rang", "나트랑 ⇌ 판랑", "nha-trang-phan-rang-route", "Ня Чанг ⇌ Фанранг", "nha-trang-phanrang-route",
                 new long[]{10000, 11000, 16000});
 
         seedRoute("Nha Trang", "Buôn Ma Thuột", "260", "5.5", false,
                 new BigDecimal("12.24507"), new BigDecimal("109.1943"), new BigDecimal("12.6833"), new BigDecimal("108.0500"),
-                "Nha Trang ⇌ Buôn Ma Thuột", "Nha Trang ⇌ Buon Ma Thuot", "나트랑 ⇌ 봄마투옷", "Ня Чанг ⇌ Бонматьют",
+                "Nha Trang ⇌ Buôn Ma Thuột", "xe-nha-trang-di-buon-ma-thuot", "Nha Trang ⇌ Buon Ma Thuot", "nha-trang-to-buon-ma-thuot", "나트랑 ⇌ 봄마투옷", "nha-trang-buon-ma-thuot-route", "Ня Чанг ⇌ Бонматьют", "nha-trang-bonmatyut-route",
                 new long[]{10000, 11000, 16000});
     }
 
     private void seedRoute(String origin, String dest, String dist, String hours, boolean hasDepartureTimes,
                            BigDecimal originLat, BigDecimal originLng, BigDecimal destLat, BigDecimal destLng,
-                           String viName, String enName, String koName, String ruName,
+                           String viName, String viSlug, String enName, String enSlug, String koName, String koSlug, String ruName, String ruSlug,
                            long[] perKmPrices) {
-IntercityRoute route = IntercityRoute.builder()
-                  .originCity(origin)
-                  .destinationCity(dest)
-                  .originName(origin)
-                  .destinationName(dest)
-                  .distanceKm(new BigDecimal(dist))
-                  .estimatedHours(new BigDecimal(hours))
-                  .originLat(originLat)
-                  .originLng(originLng)
-                  .destinationLat(destLat)
-                  .destinationLng(destLng)
-                  .active(true)
-                  .hasDepartureTimes(hasDepartureTimes)
-                  .build();
+        IntercityRoute route = IntercityRoute.builder()
+                .originCity(origin)
+                .destinationCity(dest)
+                .originName(origin)
+                .destinationName(dest)
+                .distanceKm(new BigDecimal(dist))
+                .estimatedHours(new BigDecimal(hours))
+                .originLat(originLat)
+                .originLng(originLng)
+                .destinationLat(destLat)
+                .destinationLng(destLng)
+                .active(true)
+                .hasDepartureTimes(hasDepartureTimes)
+                .build();
         route = routeRepository.save(route);
 
         translationRepository.save(IntercityRouteTranslation.builder()
-                .route(route).locale("vi").name(viName).description("Tuyến xe đi tỉnh từ " + origin + " đến " + dest).build());
+                .route(route).locale("vi").name(viName).slug(viSlug).description("Tuyến xe đi tỉnh từ " + origin + " đến " + dest).build());
         translationRepository.save(IntercityRouteTranslation.builder()
-                .route(route).locale("en").name(enName).description("Intercity route from " + origin + " to " + dest).build());
+                .route(route).locale("en").name(enName).slug(enSlug).description("Intercity route from " + origin + " to " + dest).build());
         translationRepository.save(IntercityRouteTranslation.builder()
-                .route(route).locale("ko").name(koName).description(origin + "에서 " + dest + "까지 노선").build());
+                .route(route).locale("ko").name(koName).slug(koSlug).description(origin + "에서 " + dest + "까지 노선").build());
         translationRepository.save(IntercityRouteTranslation.builder()
-                .route(route).locale("ru").name(ruName).description("Маршрут из " + origin + " в " + dest).build());
+                .route(route).locale("ru").name(ruName).slug(ruSlug).description("Маршрут из " + origin + " в " + dest).build());
 
         Long[] vcIds = {1L, 2L, 3L};
         for (int i = 0; i < vcIds.length; i++) {

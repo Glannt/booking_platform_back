@@ -5,96 +5,148 @@
     <title>Yêu cầu đặt dịch vụ thuê xe liên tỉnh</title>
 </head>
 <body>
-    <div class="email-container">
-        <!-- Header -->
-        <div th:replace="~{email/fragments :: header('Minh Khoa Travel', 'Yêu cầu đặt dịch vụ Thuê xe Liên tỉnh')}"></div>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <!-- Header -->
+            <div th:replace="~{email/fragments :: header('Minh Khoa Travel', 'Yêu cầu đặt dịch vụ Thuê xe Liên tỉnh')}"></div>
 
-        <div class="content-body">
-            <!-- Customer Info -->
-            <div th:replace="~{email/fragments :: customerInfo(${booking})}"></div>
-
-            <!-- Booking Details -->
-            <h3 class="section-title">🚗 Chi tiết Dịch vụ Thuê xe Liên tỉnh</h3>
-            <div class="detail-card">
-                <div class="detail-title">
-                    <span th:text="${detail.tripType == 'ROUND_TRIP' ? '🔄 KHỨ HỒI' : '➡️ MỘT CHIỀU'}">MỘT CHIỀU</span>
-                    <span style="margin-left: 10px; font-weight: normal; font-size: 13px;" th:if="${vehicleCategoryName != null}">
-                        (Loại xe: <span th:text="${vehicleCategoryName}">4 chỗ</span>)
-                    </span>
-                </div>
-
-                <!-- Route info -->
-                <div th:if="${route != null}" style="margin-bottom: 12px; font-size: 15px; font-weight: 600; color: #202124;">
-                    Tuyến đường: <span th:text="${route.originCity + ' ➡️ ' + route.destinationCity}">Nha Trang ➡️ Đà Lạt</span>
-                    <span style="font-size: 13px; font-weight: normal; color: #5f6368;" th:if="${route.distanceKm != null}">
-                        (Khoảng cách: <span th:text="${route.distanceKm}">140</span> km)
-                    </span>
-                </div>
-
-                <!-- Departure details -->
-                <div class="detail-row">
-                    <span class="detail-row-label">Ngày đi: </span>
-                    <span class="detail-row-value" th:text="${#temporals.format(detail.departureDate, 'dd/MM/yyyy')}">13/08/2026</span>
-                </div>
-                <div class="detail-row" th:if="${detail.departureTime != null}">
-                    <span class="detail-row-label">Giờ xuất phát: </span>
-                    <span class="detail-row-value" th:text="${#temporals.format(detail.departureTime, 'HH:mm')}">08:00</span>
-                </div>
-                <div class="detail-row" th:if="${detail.tripType == 'ROUND_TRIP' and detail.returnDate != null}">
-                    <span class="detail-row-label">Ngày về: </span>
-                    <span class="detail-row-value" th:text="${#temporals.format(detail.returnDate, 'dd/MM/yyyy')}">15/08/2026</span>
-                </div>
-                <div class="detail-row" th:if="${detail.tripType == 'ROUND_TRIP' and detail.returnTime != null}">
-                    <span class="detail-row-label">Giờ về: </span>
-                    <span class="detail-row-value" th:text="${#temporals.format(detail.returnTime, 'HH:mm')}">14:00</span>
-                </div>
-
-                <div style="margin-top: 10px; border-top: 1px dashed #e8eaed; padding-top: 10px;">
-                    <div class="detail-row">
-                        <span class="detail-row-label">Điểm đón: </span>
-                        <span class="detail-row-value" th:text="${detail.pickupAddress}">Nha Trang</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-row-label">Điểm trả: </span>
-                        <span class="detail-row-value" th:text="${detail.dropoffAddress}">Đà Lạt</span>
-                    </div>
-                    <div class="detail-row" th:if="${detail.passengerCount != null}">
-                        <span class="detail-row-label">Số hành khách: </span>
-                        <span class="detail-row-value" th:text="${detail.passengerCount + ' khách'}">1 khách</span>
+            <!-- Status Banner -->
+            <div class="status-banner">
+                <div>
+                    <div class="status-banner-title">Đang Chờ Điều Phối &amp; Xác Nhận</div>
+                    <div class="status-banner-desc">
+                        Cảm ơn <strong th:text="${booking.customerName}">Quý khách</strong>. Minh Khoa Travel đã nhận được thông tin chuyến liên tỉnh. Nhân viên điều hành sẽ liên hệ để xác nhận lịch trình trong ít phút.
                     </div>
                 </div>
             </div>
 
-            <!-- Pricing Table -->
-            <h3 class="section-title">💳 Chi tiết thanh toán</h3>
-            <table class="price-table">
-                <thead>
-                    <tr>
-                        <th>Mô tả dịch vụ</th>
-                        <th style="text-align: right; width: 120px;">Thành tiền</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            Thuê xe liên tỉnh (<span th:text="${detail.tripType == 'ROUND_TRIP' ? 'Khứ hồi' : 'Một chiều'}">Một chiều</span>) - Xe <span th:text="${vehicleCategoryName != null ? vehicleCategoryName : ''}"></span>
-                        </td>
-                        <td style="text-align: right;" th:text="${#numbers.formatDecimal(detail.basePrice != null ? detail.basePrice : detail.totalPrice, 0, 'COMMA', 0, 'POINT') + ' VND'}">2,500,000 VND</td>
-                    </tr>
-                    <tr th:if="${detail.surchargeAmount != null and detail.surchargeAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
-                        <td>Phụ thu phát sinh (nếu có)</td>
-                        <td style="text-align: right;" th:text="${#numbers.formatDecimal(detail.surchargeAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">200,000 VND</td>
-                    </tr>
-                    <tr style="font-weight: bold;">
-                        <td style="text-align: right; border-top: 2px solid #e8eaed;">Tổng cộng:</td>
-                        <td style="text-align: right; border-top: 2px solid #e8eaed;" class="price-total" th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">2,500,000 VND</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="content-body">
+                <!-- Customer Info -->
+                <div th:replace="~{email/fragments :: customerInfo(${booking})}"></div>
 
-        <!-- Footer -->
-        <div th:replace="~{email/fragments :: footer}"></div>
+                <!-- Booking Details -->
+                <h3 class="section-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">
+                        <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                        <path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                        <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6"></path>
+                        <path d="M6 9h10"></path>
+                    </svg>
+                    Chi tiết Dịch vụ Thuê xe Liên tỉnh
+                </h3>
+                <div class="detail-card">
+                    <div class="detail-title">
+                        <span class="badge-tag" th:classappend="${detail.tripType == 'ROUND_TRIP' ? 'badge-roundtrip' : 'badge-oneway'}"
+                              th:text="${detail.tripType == 'ROUND_TRIP' ? 'KHỨ HỒI' : 'MỘT CHIỀU'}">MỘT CHIỀU</span>
+                        <span style="margin-left: 8px; font-weight: normal; font-size: 13px; color: #451a03;" th:if="${vehicleCategoryName != null}">
+                            (Loại xe: <strong th:text="${vehicleCategoryName}">4 chỗ</strong>)
+                        </span>
+                    </div>
+
+                    <!-- Route info -->
+                    <div th:if="${route != null}" style="margin-bottom: 12px; font-size: 14px; font-weight: 700; color: #78350f;">
+                        Tuyến đường: <span th:text="${route.originCity + ' ➔ ' + route.destinationCity}">Nha Trang ➔ Đà Lạt</span>
+                        <span style="font-size: 12px; font-weight: normal; color: #78716c;" th:if="${route.distanceKm != null}">
+                            (Khoảng cách: <span th:text="${route.distanceKm}">140</span> km)
+                        </span>
+                    </div>
+
+                    <!-- Departure details -->
+                    <div class="detail-row">
+                        <span class="detail-row-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            Ngày khởi hành: 
+                        </span>
+                        <span class="detail-row-value" style="color: #92400e; font-weight: 600;" th:text="${#temporals.format(detail.departureDate, 'dd/MM/yyyy')}">13/08/2026</span>
+                    </div>
+                    <div class="detail-row" th:if="${detail.departureTime != null}">
+                        <span class="detail-row-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            Giờ xuất phát: 
+                        </span>
+                        <span class="detail-row-value" th:text="${#temporals.format(detail.departureTime, 'HH:mm')}">08:00</span>
+                    </div>
+                    <div class="detail-row" th:if="${detail.tripType == 'ROUND_TRIP' and detail.returnDate != null}">
+                        <span class="detail-row-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#78350f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            Ngày về: 
+                        </span>
+                        <span class="detail-row-value" style="color: #78350f; font-weight: 600;" th:text="${#temporals.format(detail.returnDate, 'dd/MM/yyyy')}">15/08/2026</span>
+                    </div>
+                    <div class="detail-row" th:if="${detail.tripType == 'ROUND_TRIP' and detail.returnTime != null}">
+                        <span class="detail-row-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#78350f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            Giờ về: 
+                        </span>
+                        <span class="detail-row-value" th:text="${#temporals.format(detail.returnTime, 'HH:mm')}">14:00</span>
+                    </div>
+
+                    <div style="margin-top: 10px; border-top: 1px dashed #d6cebf; padding-top: 10px;">
+                        <div class="detail-row">
+                            <span class="detail-row-label">Điểm đón: </span>
+                            <span class="detail-row-value" th:text="${detail.pickupAddress}">Nha Trang</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-row-label">Điểm trả: </span>
+                            <span class="detail-row-value" th:text="${detail.dropoffAddress}">Đà Lạt</span>
+                        </div>
+                        <div class="detail-row" th:if="${detail.passengerCount != null}">
+                            <span class="detail-row-label">Số hành khách: </span>
+                            <span class="detail-row-value" th:text="${detail.passengerCount + ' khách'}">1 khách</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing Table -->
+                <h3 class="section-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        <path d="M9 14l2 2 4-4"></path>
+                    </svg>
+                    Chi tiết thanh toán
+                </h3>
+                <table class="price-table">
+                    <thead>
+                        <tr>
+                            <th>Mô tả dịch vụ</th>
+                            <th style="text-align: right; width: 140px;">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                Thuê xe liên tỉnh (<span th:text="${detail.tripType == 'ROUND_TRIP' ? 'Khứ hồi' : 'Một chiều'}">Một chiều</span>) - Xe <span th:text="${vehicleCategoryName != null ? vehicleCategoryName : ''}"></span>
+                            </td>
+                            <td style="text-align: right; font-weight: 600;" th:text="${#numbers.formatDecimal(detail.basePrice != null ? detail.basePrice : detail.totalPrice, 0, 'COMMA', 0, 'POINT') + ' ₫'}">2,500,000 ₫</td>
+                        </tr>
+                        <tr th:if="${detail.surchargeAmount != null and detail.surchargeAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+                            <td>Phụ thu phát sinh (nếu có)</td>
+                            <td style="text-align: right; color: #92400e;" th:text="${#numbers.formatDecimal(detail.surchargeAmount, 0, 'COMMA', 0, 'POINT') + ' ₫'}">200,000 ₫</td>
+                        </tr>
+                        <tr class="price-total-row">
+                            <td style="text-align: right; font-weight: 700;">TỔNG CỘNG:</td>
+                            <td style="text-align: right;" class="price-total-amount" th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT') + ' ₫'}">2,500,000 ₫</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div th:replace="~{email/fragments :: footer}"></div>
+        </div>
     </div>
 </body>
 </html>

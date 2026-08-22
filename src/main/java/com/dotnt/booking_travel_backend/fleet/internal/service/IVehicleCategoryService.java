@@ -10,6 +10,7 @@ public interface IVehicleCategoryService {
     Page<VehicleCategoryDTO> getVehicleCategories(Pageable pageable, String search, Boolean active);
 
     VehicleCategoryDTO getVehicleCategoryById(Long id);
+    VehicleCategoryDTO getVehicleCategoryBySlug(String slug);
 
     VehicleCategoryDTO updateVehicleCategory(Long id, VehicleCategoryDTO vehicleCategoryDTO);
 

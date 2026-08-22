@@ -5,74 +5,120 @@
     <title>Yêu cầu đặt tour du lịch</title>
 </head>
 <body>
-    <div class="email-container">
-        <!-- Header -->
-        <div th:replace="~{email/fragments :: header('Minh Khoa Travel', 'Yêu cầu đặt Tour Du lịch mới')}"></div>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <!-- Header -->
+            <div th:replace="~{email/fragments :: header('Minh Khoa Travel', 'Yêu cầu đặt Tour Du lịch mới')}"></div>
 
-        <div class="content-body">
-            <!-- Customer Info -->
-            <div th:replace="~{email/fragments :: customerInfo(${booking})}"></div>
-
-            <!-- Booking Details -->
-            <h3 class="section-title">🗺️ Chi tiết Tour Du lịch</h3>
-            <div class="detail-card">
-                <div class="detail-title" th:text="${tourName != null ? tourName : 'Tour Du lịch'}">
-                    Tour du lịch Nha Trang
-                </div>
-
-                <div class="detail-row" th:if="${detail.startTime != null}">
-                    <span class="detail-row-label">Ngày khởi hành: </span>
-                    <span class="detail-row-value" th:text="${#instants.format(detail.startTime, 'dd/MM/yyyy', 'UTC')}">13/08/2026</span>
-                </div>
-                <div class="detail-row" th:if="${detail.startTime != null}">
-                    <span class="detail-row-label">Giờ khởi hành: </span>
-                    <span class="detail-row-value" th:text="${#instants.format(detail.startTime, 'HH:mm', 'UTC')}">08:00</span>
-                </div>
-                <div class="detail-row" th:if="${detail.endTime != null}">
-                    <span class="detail-row-label">Ngày kết thúc: </span>
-                    <span class="detail-row-value" th:text="${#instants.format(detail.endTime, 'dd/MM/yyyy', 'UTC')}">15/08/2026</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-row-label">Số khách: </span>
-                    <span class="detail-row-value"><strong th:text="${detail.guestCount + ' người'}">2 người</strong></span>
-                </div>
-                <div class="detail-row" th:if="${detail.meetingPoint != null and !detail.meetingPoint.isEmpty()}">
-                    <span class="detail-row-label">Điểm đón: </span>
-                    <span class="detail-row-value" th:text="${detail.meetingPoint}">Khách sạn tại Nha Trang</span>
-                </div>
-                <div class="detail-row" th:if="${vehicleCategoryName != null}">
-                    <span class="detail-row-label">Loại xe đăng ký: </span>
-                    <span class="detail-row-value" th:text="${vehicleCategoryName}">4 chỗ</span>
+            <!-- Status Banner -->
+            <div class="status-banner">
+                <div>
+                    <div class="status-banner-title">Đang Chờ Điều Phối &amp; Xác Nhận</div>
+                    <div class="status-banner-desc">
+                        Cảm ơn <strong th:text="${booking.customerName}">Quý khách</strong>. Minh Khoa Travel đã tiếp nhận yêu cầu đặt Tour. Tư vấn viên sẽ liên hệ để xác nhận lịch trình chi tiết trong ít phút.
+                    </div>
                 </div>
             </div>
 
-            <!-- Pricing Table -->
-            <h3 class="section-title">💳 Chi tiết thanh toán</h3>
-            <table class="price-table">
-                <thead>
-                    <tr>
-                        <th>Mô tả dịch vụ</th>
-                        <th style="text-align: right; width: 120px;">Thành tiền</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            Đặt tour: <span th:text="${tourName != null ? tourName : 'Tour du lịch'}"></span> 
-                            (Số lượng: <span th:text="${detail.guestCount}">1</span> người)
-                        </td>
-                        <td style="text-align: right;" th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">2,000,000 VND</td>
-                    </tr>
-                    <tr style="font-weight: bold;">
-                        <td style="text-align: right; border-top: 2px solid #e8eaed;">Tổng cộng:</td>
-                        <td style="text-align: right; border-top: 2px solid #e8eaed;" class="price-total" th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT') + ' VND'}">2,000,000 VND</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="content-body">
+                <!-- Customer Info -->
+                <div th:replace="~{email/fragments :: customerInfo(${booking})}"></div>
 
-        <!-- Footer -->
-        <div th:replace="~{email/fragments :: footer}"></div>
+                <!-- Booking Details -->
+                <h3 class="section-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        <path d="M9 14l2 2 4-4"></path>
+                    </svg>
+                    Chi tiết Tour Du lịch
+                </h3>
+                <div class="detail-card">
+                    <div class="detail-title" th:text="${tourName != null ? tourName : 'Tour Du lịch'}">
+                        Tour du lịch Nha Trang
+                    </div>
+
+                    <div class="detail-row" th:if="${detail.startTime != null}">
+                        <span class="detail-row-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            Ngày khởi hành: 
+                        </span>
+                        <span class="detail-row-value" style="font-weight: 600; color: #92400e;" th:text="${#instants.format(detail.startTime, 'dd/MM/yyyy', 'UTC')}">13/08/2026</span>
+                    </div>
+                    <div class="detail-row" th:if="${detail.startTime != null}">
+                        <span class="detail-row-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            Giờ khởi hành: 
+                        </span>
+                        <span class="detail-row-value" th:text="${#instants.format(detail.startTime, 'HH:mm', 'UTC')}">08:00</span>
+                    </div>
+                    <div class="detail-row" th:if="${detail.endTime != null}">
+                        <span class="detail-row-label">Ngày kết thúc: </span>
+                        <span class="detail-row-value" th:text="${#instants.format(detail.endTime, 'dd/MM/yyyy', 'UTC')}">15/08/2026</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-row-label">Số khách tham gia: </span>
+                        <span class="detail-row-value"><strong th:text="${detail.guestCount + ' người'}">2 người</strong></span>
+                    </div>
+                    <div class="detail-row" th:if="${detail.meetingPoint != null and !detail.meetingPoint.isEmpty()}">
+                        <span class="detail-row-label">Điểm đón: </span>
+                        <span class="detail-row-value" th:text="${detail.meetingPoint}">Khách sạn tại Nha Trang</span>
+                    </div>
+                    <div class="detail-row" th:if="${vehicleCategoryName != null}">
+                        <span class="detail-row-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                                <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                                <path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                                <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6"></path>
+                                <path d="M6 9h10"></path>
+                            </svg>
+                            Phương tiện: 
+                        </span>
+                        <span class="detail-row-value">Xe <span th:text="${vehicleCategoryName}">4 chỗ</span></span>
+                    </div>
+                </div>
+
+                <!-- Pricing Table -->
+                <h3 class="section-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        <path d="M9 14l2 2 4-4"></path>
+                    </svg>
+                    Chi tiết thanh toán
+                </h3>
+                <table class="price-table">
+                    <thead>
+                        <tr>
+                            <th>Mô tả dịch vụ</th>
+                            <th style="text-align: right; width: 140px;">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                Đặt tour: <strong th:text="${tourName != null ? tourName : 'Tour du lịch'}"></strong> 
+                                (<span th:text="${detail.guestCount}">1</span> người)
+                            </td>
+                            <td style="text-align: right; font-weight: 600;" th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT') + ' ₫'}">2,000,000 ₫</td>
+                        </tr>
+                        <tr class="price-total-row">
+                            <td style="text-align: right; font-weight: 700;">TỔNG CỘNG:</td>
+                            <td style="text-align: right;" class="price-total-amount" th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT') + ' ₫'}">2,000,000 ₫</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div th:replace="~{email/fragments :: footer}"></div>
+        </div>
     </div>
 </body>
 </html>

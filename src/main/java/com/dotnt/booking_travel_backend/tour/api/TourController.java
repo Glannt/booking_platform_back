@@ -35,6 +35,12 @@ public class TourController {
         return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
     }
 
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<TourDto> getBySlug(@PathVariable String slug) {
+        TourDto dto = tourService.getTourBySlug(slug);
+        return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
+    }
+
     @PreAuthorize("hasAuthority('TOUR_UPDATE')")
     @PutMapping("/{id}")
     public ResponseEntity<TourDto> update(@PathVariable Long id, @RequestBody TourDto dto) {

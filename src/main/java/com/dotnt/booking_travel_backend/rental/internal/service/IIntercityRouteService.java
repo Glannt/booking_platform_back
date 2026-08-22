@@ -11,6 +11,7 @@ public interface IIntercityRouteService {
     Page<IntercityRouteDto> list(Pageable pageable);
     List<IntercityRouteDto> listActive();
     IntercityRouteDto get(Long id);
+    IntercityRouteDto getBySlug(String slug);
     IntercityRouteDto update(Long id, IntercityRouteDto dto);
     void delete(Long id);
 }
