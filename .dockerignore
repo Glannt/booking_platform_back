@@ -1,0 +1,12 @@
+.gradle
+build
+.git
+.github
+.idea
+.vscode
+.agents
+.opencode
+*.log
+.env
+.env.production
+!.env.example
