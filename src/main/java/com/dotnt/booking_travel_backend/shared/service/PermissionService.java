@@ -1,9 +1,9 @@
 package com.dotnt.booking_travel_backend.shared.service;
 
 import com.dotnt.booking_travel_backend.shared.entity.Permission;
-import com.dotnt.booking_travel_backend.shared.entity.RolePermission;
 import com.dotnt.booking_travel_backend.shared.repository.PermissionRepository;
-import com.dotnt.booking_travel_backend.shared.repository.RolePermissionRepository;
+import com.dotnt.booking_travel_backend.user.internal.entity.Role;
+import com.dotnt.booking_travel_backend.user.internal.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,24 +18,29 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PermissionService {
 
     private final PermissionRepository permissionRepository;
-    private final RolePermissionRepository rolePermissionRepository;
+    private final RoleRepository roleRepository;
 
     private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
     private static final long CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
     @Transactional(readOnly = true)
-    public List<String> getPermissionsForRole(String role) {
-        CacheEntry entry = cache.get(role);
+    public List<String> getPermissionsForRole(String roleCode) {
+        if (roleCode == null) {
+            return Collections.emptyList();
+        }
+        CacheEntry entry = cache.get(roleCode.toUpperCase());
         if (entry != null && !entry.isExpired()) {
             return entry.permissions;
         }
 
-        List<RolePermission> rps = rolePermissionRepository.findByRole(role);
-        List<String> codes = rps.stream()
-                .map(rp -> rp.getPermission().getCode())
-                .toList();
+        Optional<Role> roleOpt = roleRepository.findByCodeWithPermissions(roleCode.toUpperCase());
+        List<String> codes = roleOpt.map(role -> role.getPermissions().stream()
+                .map(Permission::getCode)
+                .sorted()
+                .toList())
+                .orElse(Collections.emptyList());
 
-        cache.put(role, new CacheEntry(codes));
+        cache.put(roleCode.toUpperCase(), new CacheEntry(codes));
         return codes;
     }
 
@@ -47,21 +52,31 @@ public class PermissionService {
     @Transactional(readOnly = true)
     public Map<String, List<String>> getAllRolePermissions() {
         Map<String, List<String>> result = new LinkedHashMap<>();
-        for (String role : List.of("ADMIN", "STAFF", "MODERATOR", "CUSTOMER")) {
-            result.put(role, getPermissionsForRole(role));
+        List<Role> roles = roleRepository.findAllWithPermissions();
+        for (Role role : roles) {
+            List<String> codes = role.getPermissions().stream()
+                    .map(Permission::getCode)
+                    .sorted()
+                    .toList();
+            result.put(role.getCode(), codes);
         }
         return result;
     }
 
-    public void setPermissionsForRole(String role, List<String> permissionCodes) {
-        rolePermissionRepository.deleteByRole(role);
-        List<Permission> perms = permissionRepository.findByCodeIn(permissionCodes);
-        List<RolePermission> rps = perms.stream()
-                .map(p -> RolePermission.builder().role(role).permission(p).build())
-                .toList();
-        rolePermissionRepository.saveAll(rps);
-        cache.remove(role);
-        log.info("Updated permissions for role {}: {} permissions set", role, perms.size());
+    @Transactional
+    public void setPermissionsForRole(String roleCode, List<String> permissionCodes) {
+        Role role = roleRepository.findByCodeIgnoreCase(roleCode)
+                .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleCode));
+
+        List<Permission> perms = (permissionCodes != null && !permissionCodes.isEmpty())
+                ? permissionRepository.findByCodeIn(permissionCodes)
+                : Collections.emptyList();
+
+        role.setPermissions(new HashSet<>(perms));
+        roleRepository.save(role);
+
+        cache.remove(roleCode.toUpperCase());
+        log.info("Updated permissions for role {}: {} permissions set", roleCode, perms.size());
     }
 
     public void refreshCache() {

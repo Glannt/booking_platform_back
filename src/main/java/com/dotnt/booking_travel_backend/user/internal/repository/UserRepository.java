@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -20,6 +21,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
            "LOWER(u.fullname) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(u.phone) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<User> searchUsers(@Param("search") String search, Pageable pageable);
+
+    @Query("SELECT u FROM User u WHERE u.deletedAt IS NULL AND u.role.code IN :roleCodes AND (" +
+           "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(u.fullname) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(u.phone) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<User> searchUsersByRoles(@Param("search") String search, @Param("roleCodes") List<String> roleCodes, Pageable pageable);
+
+    @Query("SELECT u FROM User u WHERE u.deletedAt IS NULL AND u.role.code IN :roleCodes")
+    Page<User> findByRoleCodeInAndDeletedAtIsNull(@Param("roleCodes") List<String> roleCodes, Pageable pageable);
 
     Page<User> findByDeletedAtIsNull(Pageable pageable);
 }

@@ -1,9 +1,9 @@
 package com.dotnt.booking_travel_backend.shared.config;
 
 import com.dotnt.booking_travel_backend.shared.entity.Permission;
-import com.dotnt.booking_travel_backend.shared.entity.RolePermission;
 import com.dotnt.booking_travel_backend.shared.repository.PermissionRepository;
-import com.dotnt.booking_travel_backend.shared.repository.RolePermissionRepository;
+import com.dotnt.booking_travel_backend.user.internal.entity.Role;
+import com.dotnt.booking_travel_backend.user.internal.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -12,8 +12,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 @RequiredArgsConstructor
@@ -22,7 +21,7 @@ import java.util.Map;
 public class PermissionDataInitializer implements ApplicationListener<ApplicationReadyEvent> {
 
     private final PermissionRepository permissionRepository;
-    private final RolePermissionRepository rolePermissionRepository;
+    private final RoleRepository roleRepository;
 
     private static final Map<String, String> ALL_PERMISSIONS = Map.ofEntries(
             // Airport
@@ -96,23 +95,37 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
 
     private static final List<String> ADMIN_PERMISSIONS = ALL_PERMISSIONS.keySet().stream().toList();
 
-    private static final List<String> STAFF_PERMISSIONS = List.of(
+    private static final List<String> MODERATOR_PERMISSIONS = List.of(
+            // Booking
             "BOOKING_VIEW_ALL", "BOOKING_UPDATE",
-            "TOUR_UPDATE",
-            "VEHICLE_UPDATE",
-            "INTERCITY_ROUTE_UPDATE",
-            "MEDIA_CREATE",
-            "FEEDBACK_UPDATE",
-            "ROLE_VIEW"
+            // Tour
+            "TOUR_CREATE", "TOUR_UPDATE", "TOUR_CATEGORY_CREATE", "TOUR_CATEGORY_UPDATE",
+            // Vehicle
+            "VEHICLE_CREATE", "VEHICLE_UPDATE", "VEHICLE_CATEGORY_CREATE", "VEHICLE_CATEGORY_UPDATE",
+            // Intercity
+            "INTERCITY_ROUTE_CREATE", "INTERCITY_ROUTE_UPDATE", "INTERCITY_PRICE_CREATE", "INTERCITY_PRICE_UPDATE",
+            // Airport & Surcharges
+            "AIRPORT_CREATE", "AIRPORT_UPDATE", "AIRPORT_ROUTE_CREATE", "AIRPORT_ROUTE_UPDATE",
+            "SURCHARGE_RULE_CREATE", "SURCHARGE_RULE_UPDATE", "SURCHARGE_MAPPING_MANAGE",
+            // Media & Content
+            "MEDIA_CREATE", "MEDIA_DELETE",
+            "FEEDBACK_UPDATE", "FEEDBACK_DELETE",
+            "SECTION_CREATE", "SECTION_UPDATE",
+            // Language & Users
+            "LANGUAGE_CREATE", "LANGUAGE_UPDATE",
+            "USER_VIEW", "USER_UPDATE"
     );
 
-    private static final List<String> MODERATOR_PERMISSIONS = List.of(
+    private static final List<String> STAFF_PERMISSIONS = List.of(
+            // Daily operations
             "BOOKING_VIEW_ALL", "BOOKING_UPDATE",
             "TOUR_UPDATE",
             "VEHICLE_UPDATE",
             "INTERCITY_ROUTE_UPDATE",
+            "AIRPORT_ROUTE_UPDATE",
             "MEDIA_CREATE",
-            "FEEDBACK_UPDATE"
+            "FEEDBACK_UPDATE",
+            "USER_VIEW"
     );
 
     @Override
@@ -120,10 +133,11 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
         new Thread(() -> {
             try {
                 seedPermissions();
+                seedRoles();
                 seedRolePermissions();
-                log.info("Permission data initialization complete.");
+                log.info("Permission and Role data initialization complete.");
             } catch (Exception e) {
-                log.error("Failed to initialize permission data", e);
+                log.error("Failed to initialize permission/role data", e);
             }
         }).start();
     }
@@ -145,25 +159,50 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
     }
 
     @Transactional
+    public void seedRoles() {
+        List<Map<String, String>> defaultRoles = List.of(
+                Map.of("code", Role.CODE_ADMIN, "name", "Quản trị viên", "description", "Toàn quyền quản trị hệ thống"),
+                Map.of("code", Role.CODE_MODERATOR, "name", "Điều phối viên", "description", "Quản lý nội dung và điều phối đơn hàng"),
+                Map.of("code", Role.CODE_STAFF, "name", "Nhân viên", "description", "Nhân viên vận hành và chăm sóc khách hàng"),
+                Map.of("code", Role.CODE_CUSTOMER, "name", "Khách hàng", "description", "Người dùng thông thường")
+        );
+
+        for (var roleDef : defaultRoles) {
+            String code = roleDef.get("code");
+            if (!roleRepository.existsByCode(code)) {
+                roleRepository.save(Role.builder()
+                        .code(code)
+                        .name(roleDef.get("name"))
+                        .description(roleDef.get("description"))
+                        .build());
+                log.info("Seeded role: {}", code);
+            }
+        }
+    }
+
+    @Transactional
     public void seedRolePermissions() {
-        assignPermissionsToRole("ADMIN", ADMIN_PERMISSIONS);
-        assignPermissionsToRole("STAFF", STAFF_PERMISSIONS);
-        assignPermissionsToRole("MODERATOR", MODERATOR_PERMISSIONS);
+        assignPermissionsToRole(Role.CODE_ADMIN, ADMIN_PERMISSIONS);
+        assignPermissionsToRole(Role.CODE_MODERATOR, MODERATOR_PERMISSIONS);
+        assignPermissionsToRole(Role.CODE_STAFF, STAFF_PERMISSIONS);
         log.info("Role permission mappings seeded.");
     }
 
-    private void assignPermissionsToRole(String role, List<String> permissionCodes) {
-        List<Permission> perms = permissionRepository.findByCodeIn(permissionCodes);
-        int created = 0;
-        for (Permission perm : perms) {
-            if (!rolePermissionRepository.existsByRoleAndPermissionCode(role, perm.getCode())) {
-                rolePermissionRepository.save(RolePermission.builder()
-                        .role(role)
-                        .permission(perm)
-                        .build());
-                created++;
-            }
+    private void assignPermissionsToRole(String roleCode, List<String> permissionCodes) {
+        Optional<Role> roleOpt = roleRepository.findByCodeWithPermissions(roleCode);
+        if (roleOpt.isEmpty()) {
+            return;
         }
-        log.info("Role {}: assigned {} new permissions ({} total)", role, created, perms.size());
+
+        Role role = roleOpt.get();
+        Set<Permission> currentPerms = role.getPermissions();
+        if (currentPerms == null) {
+            currentPerms = new HashSet<>();
+        }
+        List<Permission> perms = permissionRepository.findByCodeIn(permissionCodes);
+        currentPerms.addAll(perms);
+        role.setPermissions(currentPerms);
+        roleRepository.save(role);
+        log.info("Role {}: configured with {} permissions", roleCode, currentPerms.size());
     }
 }

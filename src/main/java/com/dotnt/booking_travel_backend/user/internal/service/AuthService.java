@@ -26,6 +26,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
+    private final RoleRepository roleRepository;
 
     @Transactional
     public UserDto register(CreateUserRequest request) {
@@ -34,7 +35,12 @@ public class AuthService {
         }
 
         // SECURITY: Force CUSTOMER role on registration — never allow client-supplied role
-        Role role = Role.CUSTOMER;
+        Role role = roleRepository.findByCode(Role.CODE_CUSTOMER)
+                .orElseGet(() -> roleRepository.save(Role.builder()
+                        .code(Role.CODE_CUSTOMER)
+                        .name("Khách hàng")
+                        .description("Người dùng thông thường")
+                        .build()));
 
         User user = User.builder()
                 .email(request.getEmail())
@@ -49,7 +55,7 @@ public class AuthService {
         User savedUser = userRepository.save(user);
 
         // Publish modulith creation event
-        eventPublisher.publishEvent(new UserCreatedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name()));
+        eventPublisher.publishEvent(new UserCreatedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getRoleCode()));
 
         return toDto(savedUser);
     }
@@ -67,7 +73,7 @@ public class AuthService {
             throw new IllegalArgumentException(I18nHelper.msg("error.auth.account.inactive"));
         }
 
-        String accessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        String accessToken = jwtService.generateToken(user.getEmail(), user.getRoleCode());
         String refreshTokenString = UUID.randomUUID().toString();
 
         // Save refresh token, delete old ones for this user first
@@ -98,7 +104,7 @@ public class AuthService {
         }
 
         User user = refreshToken.getUser();
-        String accessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        String accessToken = jwtService.generateToken(user.getEmail(), user.getRoleCode());
         String newRefreshTokenString = UUID.randomUUID().toString();
 
         // Rotate refresh token
@@ -198,7 +204,7 @@ public class AuthService {
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .fullname(user.getFullname())
-                .role(user.getRole() != null ? user.getRole().name() : null)
+                .role(user.getRoleCode())
                 .status(user.getStatus())
                 .kakaoTalkId(user.getKakaoTalkId())
                 .zaloId(user.getZaloId())

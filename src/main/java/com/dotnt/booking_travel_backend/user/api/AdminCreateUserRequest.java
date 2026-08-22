@@ -18,7 +18,8 @@ public class AdminCreateUserRequest {
     private String email;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 6, max = 128, message = "Password must be between 6 and 128 characters")
+    @Size(min = 8, max = 128, message = "Password must be between 8 and 128 characters")
+    @Pattern(regexp = "^(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,128}$", message = "Password must be at least 8 characters long, contain at least 1 uppercase letter and 1 special character")
     private String password;
 
     @NotBlank(message = "Full name is required")
@@ -31,4 +32,14 @@ public class AdminCreateUserRequest {
     @NotBlank(message = "Role is required")
     @Pattern(regexp = "ADMIN|CUSTOMER|STAFF|MODERATOR", message = "Role must be one of: ADMIN, CUSTOMER, STAFF, MODERATOR")
     private String role;
+
+    @Pattern(regexp = "^$|active|inactive|blocked", message = "Status must be one of: active, inactive, blocked")
+    private String status;
+
+    @Size(max = 500, message = "Reason inactive must not exceed 500 characters")
+    private String reasonInactive;
+
+    private String kakaoTalkId;
+    private String zaloId;
+    private String whatsapp;
 }

@@ -13,6 +13,7 @@ public class UserDto {
     private String fullname;
     private String role;
     private String status;
+    private String reasonInactive;
     private String kakaoTalkId;
     private String zaloId;
     private String whatsapp;

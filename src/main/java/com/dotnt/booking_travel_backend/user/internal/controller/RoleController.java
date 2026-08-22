@@ -1,11 +1,11 @@
 package com.dotnt.booking_travel_backend.user.internal.controller;
 
-import com.dotnt.booking_travel_backend.shared.entity.Permission;
 import com.dotnt.booking_travel_backend.shared.service.PermissionService;
 import com.dotnt.booking_travel_backend.user.internal.dto.PermissionDto;
 import com.dotnt.booking_travel_backend.user.internal.dto.RoleDto;
 import com.dotnt.booking_travel_backend.user.internal.dto.UpdateRolePermissionsRequest;
 import com.dotnt.booking_travel_backend.user.internal.entity.Role;
+import com.dotnt.booking_travel_backend.user.internal.repository.RoleRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -22,19 +22,24 @@ import java.util.List;
 public class RoleController {
 
     private final PermissionService permissionService;
+    private final RoleRepository roleRepository;
 
     @GetMapping
     @Operation(summary = "Get all roles with their permissions")
     @PreAuthorize("hasAuthority('ROLE_VIEW')")
     public ResponseEntity<List<RoleDto>> getAllRoles() {
-        List<RoleDto> roles = List.of(Role.values()).stream()
-                .filter(r -> r != Role.CUSTOMER) // CUSTOMER has no admin-granted permissions
+        List<Role> roles = roleRepository.findAllWithPermissions();
+        List<RoleDto> dtos = roles.stream()
+                .filter(r -> !Role.CODE_CUSTOMER.equalsIgnoreCase(r.getCode())) // CUSTOMER has no admin-granted permissions
                 .map(r -> RoleDto.builder()
-                        .name(r.name())
-                        .permissions(permissionService.getPermissionsForRole(r.name()))
+                        .name(r.getCode())
+                        .permissions(r.getPermissions().stream()
+                                .map(p -> p.getCode())
+                                .sorted()
+                                .toList())
                         .build())
                 .toList();
-        return ResponseEntity.ok(roles);
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/permissions")
@@ -57,11 +62,13 @@ public class RoleController {
     public ResponseEntity<RoleDto> updateRolePermissions(
             @PathVariable String role,
             @RequestBody UpdateRolePermissionsRequest request) {
-        Role.valueOf(role.toUpperCase()); // validate role exists
-        permissionService.setPermissionsForRole(role.toUpperCase(), request.getPermissions());
+        Role targetRole = roleRepository.findByCodeIgnoreCase(role)
+                .orElseThrow(() -> new IllegalArgumentException("Role not found: " + role));
+
+        permissionService.setPermissionsForRole(targetRole.getCode(), request.getPermissions());
         return ResponseEntity.ok(RoleDto.builder()
-                .name(role.toUpperCase())
-                .permissions(permissionService.getPermissionsForRole(role.toUpperCase()))
+                .name(targetRole.getCode())
+                .permissions(permissionService.getPermissionsForRole(targetRole.getCode()))
                 .build());
     }
 }

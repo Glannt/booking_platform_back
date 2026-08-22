@@ -25,8 +25,13 @@ public class User extends MasterEntity {
     @Column(name = "fullname", length = 255)
     private String fullname;
 
-    @Column(name = "role", length = 50)
-    private Role role; // "admin", "customer", "partner", "driver"
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id")
+    private Role role;
+
+    public String getRoleCode() {
+        return role != null ? role.getCode() : null;
+    }
 
     @Column(name = "status", length = 50)
     private String status; // "active", "inactive", "blocked"
@@ -39,6 +44,9 @@ public class User extends MasterEntity {
 
     @Column(name = "whatsapp")
     private String whatsapp;
+
+    @Column(name = "reason_inactive", length = 500)
+    private String reasonInactive;
 
 
 
