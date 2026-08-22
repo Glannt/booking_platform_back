@@ -59,11 +59,11 @@ springdoc:
 aws:
   s3:
     enabled: ${AWS_S3_ENABLED:false}
-    endpoint: ${AWS_S3_ENDPOINT}
-    region: ${AWS_S3_REGION}
-    access-key: ${AWS_S3_ACCESS_KEY}
-    secret-key: ${AWS_S3_SECRET_KEY}
-    bucket-name: ${AWS_S3_BUCKET_NAME}
+    endpoint: ${AWS_S3_ENDPOINT:http://localhost:8333}
+    region: ${AWS_S3_REGION:us-east-1}
+    access-key: ${AWS_S3_ACCESS_KEY:any_key}
+    secret-key: ${AWS_S3_SECRET_KEY:any_secret}
+    bucket-name: ${AWS_S3_BUCKET_NAME:booking-travel-bucket}
 
 app:
   cors:
@@ -79,35 +79,35 @@ app:
     client-id: ${OPENSKY_CLIENT_ID:}
     client-secret: ${OPENSKY_CLIENT_SECRET:}
   currency:
-    api-base-url: ${CURRENCY_API_BASE_URL}
-    api-key: ${CURRENCY_API_KEY}
+    api-base-url: ${CURRENCY_API_BASE_URL:https://v1.apiplugin.com/v1/currency}
+    api-key: ${CURRENCY_API_KEY:}
 
 seed:
   admin:
-    email: ${SEED_ADMIN_EMAIL}
-    password: ${SEED_ADMIN_PASSWORD}
-    phone: ${SEED_ADMIN_PHONE}
-    fullname: ${SEED_ADMIN_FULLNAME}
+    email: ${SEED_ADMIN_EMAIL:tongnguyenthanhdo@gmail.com}
+    password: ${SEED_ADMIN_PASSWORD:Admin@123456}
+    phone: ${SEED_ADMIN_PHONE:0987654321}
+    fullname: ${SEED_ADMIN_FULLNAME:Minh Khoa Admin}
   moderator:
-    email: ${SEED_MODERATOR_EMAIL}
-    password: ${SEED_MODERATOR_PASSWORD}
-    phone: ${SEED_MODERATOR_PHONE}
-    fullname: ${SEED_MODERATOR_FULLNAME}
+    email: ${SEED_MODERATOR_EMAIL:minhkhoa.travel.vn@gmail.com}
+    password: ${SEED_MODERATOR_PASSWORD:Moderator@123456}
+    phone: ${SEED_MODERATOR_PHONE:0901234567}
+    fullname: ${SEED_MODERATOR_FULLNAME:Minh Khoa Moderator}
   staff:
-    email: ${SEED_STAFF_EMAIL}
-    password: ${SEED_STAFF_PASSWORD}
-    phone: ${SEED_STAFF_PHONE}
-    fullname: ${SEED_STAFF_FULLNAME}
+    email: ${SEED_STAFF_EMAIL:staff@minhkhoatravel.vn}
+    password: ${SEED_STAFF_PASSWORD:Staff@123456}
+    phone: ${SEED_STAFF_PHONE:0901234568}
+    fullname: ${SEED_STAFF_FULLNAME:Minh Khoa Staff}
   customer:
-    email: ${SEED_CUSTOMER_EMAIL}
-    password: ${SEED_CUSTOMER_PASSWORD}
-    phone: ${SEED_CUSTOMER_PHONE}
-    fullname: ${SEED_CUSTOMER_FULLNAME}
+    email: ${SEED_CUSTOMER_EMAIL:customer@minhkhoatravel.vn}
+    password: ${SEED_CUSTOMER_PASSWORD:Customer@123456}
+    phone: ${SEED_CUSTOMER_PHONE:0901234569}
+    fullname: ${SEED_CUSTOMER_FULLNAME:Minh Khoa Customer}
 
 cloudinary:
-  cloud_name: ${CLOUDINARY_CLOUD_NAME}
-  api_key: ${CLOUDINARY_API_KEY}
-  api_secret: ${CLOUDINARY_API_SECRET}
+  cloud_name: ${CLOUDINARY_CLOUD_NAME:}
+  api_key: ${CLOUDINARY_API_KEY:}
+  api_secret: ${CLOUDINARY_API_SECRET:}
   folder: ${CLOUDINARY_FOLDER:booking_travel}
 
 management:
