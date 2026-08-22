@@ -66,6 +66,8 @@ aws:
     bucket-name: ${AWS_S3_BUCKET_NAME}
 
 app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
   upload:
     dir: ${APP_UPLOAD_DIR:uploads}
   jwt:

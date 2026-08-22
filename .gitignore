@@ -41,9 +41,23 @@ uploads/
 
 ### Environment & Logs ###
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+*.env
 *.log
 
+### Security & Secrets ###
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*secret*.yaml
+*secret*.yml
+*local*.yaml
+*local*.yml
+application-*.yaml
+application-*.yml
+!application.yaml
+!application.yml
+docker-compose.override.yml
+docker-compose.override.yaml
