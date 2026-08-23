@@ -110,7 +110,7 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
             // Media & Content
             "MEDIA_CREATE", "MEDIA_DELETE",
             "FEEDBACK_UPDATE", "FEEDBACK_DELETE",
-            "SECTION_CREATE", "SECTION_UPDATE",
+            "SECTION_CREATE", "SECTION_UPDATE", "SECTION_DELETE",
             // Language & Users
             "LANGUAGE_CREATE", "LANGUAGE_UPDATE",
             "USER_VIEW", "USER_UPDATE"
@@ -125,6 +125,7 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
             "AIRPORT_ROUTE_UPDATE",
             "MEDIA_CREATE",
             "FEEDBACK_UPDATE",
+            "SECTION_CREATE", "SECTION_UPDATE",
             "USER_VIEW"
     );
 
