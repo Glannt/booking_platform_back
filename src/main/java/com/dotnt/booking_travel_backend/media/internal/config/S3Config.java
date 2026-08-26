@@ -39,7 +39,7 @@ public class S3Config {
     @Bean
 //    @Lazy
     public S3Client s3Client() {
-        log.info("Initializing S3 Client with endpoint: {}, region: {}, accessKey: {}, secretKey: {}", endpoint, region, accessKey, secretKey);
+        log.info("Media Storage Provider initialized: S3/SeaweedFS (Region: {})", region);
 
         AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
 

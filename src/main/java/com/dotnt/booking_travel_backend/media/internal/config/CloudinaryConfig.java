@@ -26,12 +26,11 @@ public class CloudinaryConfig {
 
     @PostConstruct
     public void init() {
-        log.info("CloudinaryConfig loaded - cloudName: {}, apiKey: {}, folder: {}", cloudName, apiKey != null ? apiKey.substring(0, 4) + "****" : "null", folder);
+        log.info("Media Storage Provider initialized: Cloudinary");
     }
 
     @Bean
     public Cloudinary cloudinary() {
-        log.info("Initializing Cloudinary with cloud_name: {}", cloudName);
         Map<String, String> config = Map.of(
                 "cloud_name", cloudName,
                 "api_key", apiKey,
