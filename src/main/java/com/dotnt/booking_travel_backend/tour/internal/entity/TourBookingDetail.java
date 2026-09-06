@@ -21,6 +21,28 @@ public class TourBookingDetail extends MasterEntity {
     @Column(name = "booking_item_id", nullable = true)
     private Long bookingItemId;
 
+    @Column(name = "tour_package_id")
+    private Long tourPackageId;
+
+    @Column(name = "package_name")
+    private String packageName;
+
+    @Column(name = "pricing_type", length = 50)
+    @Builder.Default
+    private String pricingType = "PER_PERSON";
+
+    @Column(name = "adult_count")
+    @Builder.Default
+    private int adultCount = 1;
+
+    @Column(name = "child_count")
+    @Builder.Default
+    private int childCount = 0;
+
+    @Column(name = "infant_count")
+    @Builder.Default
+    private int infantCount = 0;
+
     @Column(name = "guest_count", nullable = false)
     private int guestCount;
     @Column(name = "note", columnDefinition = "text")

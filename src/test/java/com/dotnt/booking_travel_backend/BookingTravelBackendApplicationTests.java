@@ -15,14 +15,4 @@ class BookingTravelBackendApplicationTests {
     @Test
     void contextLoads() {
     }
-
-    @Test
-    void createModuleDocumentation(){
-        ApplicationModules modules = ApplicationModules.of(BookingTravelBackendApplication.class);
-        new Documenter(modules)
-                .writeDocumentation()
-                .writeIndividualModulesAsPlantUml();
-//        modules.forEach(System.out::println);
-    }
-
 }

@@ -49,6 +49,20 @@ public class Tour extends MasterEntity {
     @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active;
 
+    @Column(name = "status", length = 30)
+    @Builder.Default
+    private String status = "ACTIVE";
+
+    @Column(name = "inclusions", columnDefinition = "TEXT")
+    private String inclusions;
+
+    @Column(name = "exclusions", columnDefinition = "TEXT")
+    private String exclusions;
+
+    @OneToMany(mappedBy = "tour", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<TourPackage> packages = new ArrayList<>();
+
     @OneToMany(mappedBy = "tour", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<TourOption> options = new ArrayList<>();

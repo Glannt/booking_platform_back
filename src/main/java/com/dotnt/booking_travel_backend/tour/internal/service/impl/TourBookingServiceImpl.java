@@ -49,6 +49,29 @@ public class TourBookingServiceImpl implements TourBookingService {
             Instant startTime,
             Instant endTime
     ) {
+        return createTourBookingDetail(
+                bookingItemId, tourId, guestCount, pickupLocation, note, startTime, endTime,
+                null, null, "PER_PERSON", guestCount, 0, 0
+        );
+    }
+
+    @Override
+    @Transactional
+    public Long createTourBookingDetail(
+            Long bookingItemId,
+            Long tourId,
+            int guestCount,
+            String pickupLocation,
+            String note,
+            Instant startTime,
+            Instant endTime,
+            Long tourPackageId,
+            String packageName,
+            String pricingType,
+            int adultCount,
+            int childCount,
+            int infantCount
+    ) {
         TourBookingDetail detail = TourBookingDetail.builder()
                 .bookingItemId(bookingItemId)
                 .meetingPoint(pickupLocation != null ? pickupLocation : "")
@@ -56,6 +79,12 @@ public class TourBookingServiceImpl implements TourBookingService {
                 .note(note)
                 .startTime(startTime)
                 .endTime(endTime)
+                .tourPackageId(tourPackageId)
+                .packageName(packageName)
+                .pricingType(pricingType != null ? pricingType : "PER_PERSON")
+                .adultCount(adultCount > 0 ? adultCount : guestCount)
+                .childCount(childCount)
+                .infantCount(infantCount)
                 .build();
 
         detail = tourBookingDetailRepository.save(detail);

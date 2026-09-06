@@ -15,6 +15,9 @@ public class CreateTourRequest {
 	private int minGuest;
 	private int maxGuest;
 	private boolean active;
+	private String status;
+	private String inclusions;
+	private String exclusions;
 	private List<TourDayDto> tourDays;
 	private Long tourCategoryId;
 	private Long thumbnailId;
@@ -22,4 +25,5 @@ public class CreateTourRequest {
 	private List<TourOptionDto> options;
 	private List<TourTranslationDto> translations;
 	private List<TourPriceDto> prices;
+	private List<TourPackageDto> packages;
 }

@@ -40,6 +40,8 @@ public class TourServiceImpl implements ITourService {
     private final TourOptionTranslationRepository tourOptionTranslationRepository;
     private final TourTranslationRepository tourTranslationRepository;
     private final TourPriceRepository tourPriceRepository;
+    private final TourPackageRepository tourPackageRepository;
+    private final TourPackageTranslationRepository tourPackageTranslationRepository;
     private final TourMapper tourMapper;
     private final ImageRepository imageRepository;
 
@@ -52,6 +54,11 @@ public class TourServiceImpl implements ITourService {
             category = tourCategoryRepository.findById(request.getTourCategoryId())
                     .orElseThrow(() -> new IllegalArgumentException("Tour category not found"));
         }
+        String tourStatus = request.getStatus() != null && !request.getStatus().isBlank()
+                ? request.getStatus().toUpperCase()
+                : (request.isActive() ? "ACTIVE" : "INACTIVE");
+        boolean isTourActive = "ACTIVE".equalsIgnoreCase(tourStatus);
+
         Tour t = Tour.builder()
                 .category(category)
                 .durationDays(request.getDurationDays())
@@ -59,7 +66,10 @@ public class TourServiceImpl implements ITourService {
                 .minGuest(request.getMinGuest())
                 .maxGuest(request.getMaxGuest())
                 .thumbnailId(request.getThumbnailId())
-                .active(request.isActive())
+                .status(tourStatus)
+                .active(isTourActive)
+                .inclusions(request.getInclusions())
+                .exclusions(request.getExclusions())
                 .build();
 
         // Set images from IDs
@@ -122,6 +132,47 @@ public class TourServiceImpl implements ITourService {
                         .active(prDto.isActive())
                         .build();
                 tourPriceRepository.save(price);
+            }
+        }
+
+        // Save packages
+        if (request.getPackages() != null) {
+            for (TourPackageDto pkgDto : request.getPackages()) {
+                TourPackage pkg = TourPackage.builder()
+                        .tour(saved)
+                        .name(pkgDto.getName() != null ? pkgDto.getName() : "Gói Tiêu Chuẩn")
+                        .pricingType(pkgDto.getPricingType() != null ? pkgDto.getPricingType() : "PER_PERSON")
+                        .adultPrice(pkgDto.getAdultPrice() != null ? pkgDto.getAdultPrice() : java.math.BigDecimal.ZERO)
+                        .childPrice(pkgDto.getChildPrice() != null ? pkgDto.getChildPrice() : java.math.BigDecimal.ZERO)
+                        .infantPrice(pkgDto.getInfantPrice() != null ? pkgDto.getInfantPrice() : java.math.BigDecimal.ZERO)
+                        .childPolicyNote(pkgDto.getChildPolicyNote())
+                        .infantPolicyNote(pkgDto.getInfantPolicyNote())
+                        .fixedPrice(pkgDto.getFixedPrice() != null ? pkgDto.getFixedPrice() : java.math.BigDecimal.ZERO)
+                        .isContactOnly(pkgDto.isContactOnly())
+                        .minGuests(pkgDto.getMinGuests() > 0 ? pkgDto.getMinGuests() : 1)
+                        .maxGuests(pkgDto.getMaxGuests() > 0 ? pkgDto.getMaxGuests() : 30)
+                        .highlights(pkgDto.getHighlights())
+                        .inclusions(pkgDto.getInclusions())
+                        .exclusions(pkgDto.getExclusions())
+                        .active(pkgDto.isActive())
+                        .sortOrder(pkgDto.getSortOrder())
+                        .build();
+                TourPackage savedPkg = tourPackageRepository.save(pkg);
+                if (pkgDto.getTranslations() != null) {
+                    for (TourPackageTranslationDto ptrDto : pkgDto.getTranslations()) {
+                        TourPackageTranslation ptr = TourPackageTranslation.builder()
+                                .tourPackage(savedPkg)
+                                .locale(ptrDto.getLocale())
+                                .name(ptrDto.getName())
+                                .highlights(ptrDto.getHighlights())
+                                .inclusions(ptrDto.getInclusions())
+                                .exclusions(ptrDto.getExclusions())
+                                .childPolicyNote(ptrDto.getChildPolicyNote())
+                                .infantPolicyNote(ptrDto.getInfantPolicyNote())
+                                .build();
+                        tourPackageTranslationRepository.save(ptr);
+                    }
+                }
             }
         }
 
@@ -265,6 +316,41 @@ public class TourServiceImpl implements ITourService {
                     .collect(Collectors.toList());
             dto.setPrices(priceDtos);
 
+            // load packages
+            List<TourPackageDto> packageDtos = tourPackageRepository.findByTourId(t.getId()).stream()
+                    .map(pkg -> TourPackageDto.builder()
+                            .id(pkg.getId())
+                            .tourId(t.getId())
+                            .name(pkg.getName())
+                            .pricingType(pkg.getPricingType())
+                            .adultPrice(pkg.getAdultPrice())
+                            .childPrice(pkg.getChildPrice())
+                            .infantPrice(pkg.getInfantPrice())
+                            .childPolicyNote(pkg.getChildPolicyNote())
+                            .infantPolicyNote(pkg.getInfantPolicyNote())
+                            .fixedPrice(pkg.getFixedPrice())
+                            .isContactOnly(pkg.isContactOnly())
+                            .minGuests(pkg.getMinGuests())
+                            .maxGuests(pkg.getMaxGuests())
+                            .highlights(pkg.getHighlights())
+                            .inclusions(pkg.getInclusions())
+                            .exclusions(pkg.getExclusions())
+                            .active(pkg.isActive())
+                            .sortOrder(pkg.getSortOrder())
+                            .translations(pkg.getTranslations().stream().map(ptr -> TourPackageTranslationDto.builder()
+                                    .id(ptr.getId())
+                                    .locale(ptr.getLocale())
+                                    .name(ptr.getName())
+                                    .highlights(ptr.getHighlights())
+                                    .inclusions(ptr.getInclusions())
+                                    .exclusions(ptr.getExclusions())
+                                    .childPolicyNote(ptr.getChildPolicyNote())
+                                    .infantPolicyNote(ptr.getInfantPolicyNote())
+                                    .build()).collect(Collectors.toList()))
+                            .build())
+                    .collect(Collectors.toList());
+            dto.setPackages(packageDtos);
+
             return dto;
         }).orElse(null);
     }
@@ -286,7 +372,19 @@ public class TourServiceImpl implements ITourService {
             t.setMinGuest(tourDto.getMinGuest());
             t.setMaxGuest(tourDto.getMaxGuest());
             t.setThumbnailId(tourDto.getThumbnailId());
-            t.setActive(tourDto.isActive());
+            if (tourDto.getStatus() != null && !tourDto.getStatus().isBlank()) {
+                t.setStatus(tourDto.getStatus().toUpperCase());
+                t.setActive("ACTIVE".equalsIgnoreCase(t.getStatus()));
+            } else {
+                t.setActive(tourDto.isActive());
+                t.setStatus(tourDto.isActive() ? "ACTIVE" : "INACTIVE");
+            }
+            if (tourDto.getInclusions() != null) {
+                t.setInclusions(tourDto.getInclusions());
+            }
+            if (tourDto.getExclusions() != null) {
+                t.setExclusions(tourDto.getExclusions());
+            }
 
             // Update images
             if (tourDto.getImageIds() != null) {
@@ -359,6 +457,50 @@ public class TourServiceImpl implements ITourService {
                             .active(prDto.isActive())
                             .build();
                     tourPriceRepository.save(price);
+                }
+            }
+
+            // Clear and recreate packages
+            List<TourPackage> existingPackages = tourPackageRepository.findByTourId(saved.getId());
+            tourPackageRepository.deleteAll(existingPackages);
+            tourPackageRepository.flush();
+            if (tourDto.getPackages() != null) {
+                for (TourPackageDto pkgDto : tourDto.getPackages()) {
+                    TourPackage pkg = TourPackage.builder()
+                            .tour(saved)
+                            .name(pkgDto.getName() != null ? pkgDto.getName() : "Gói Tiêu Chuẩn")
+                            .pricingType(pkgDto.getPricingType() != null ? pkgDto.getPricingType() : "PER_PERSON")
+                            .adultPrice(pkgDto.getAdultPrice() != null ? pkgDto.getAdultPrice() : java.math.BigDecimal.ZERO)
+                            .childPrice(pkgDto.getChildPrice() != null ? pkgDto.getChildPrice() : java.math.BigDecimal.ZERO)
+                            .infantPrice(pkgDto.getInfantPrice() != null ? pkgDto.getInfantPrice() : java.math.BigDecimal.ZERO)
+                            .childPolicyNote(pkgDto.getChildPolicyNote())
+                            .infantPolicyNote(pkgDto.getInfantPolicyNote())
+                            .fixedPrice(pkgDto.getFixedPrice() != null ? pkgDto.getFixedPrice() : java.math.BigDecimal.ZERO)
+                            .isContactOnly(pkgDto.isContactOnly())
+                            .minGuests(pkgDto.getMinGuests() > 0 ? pkgDto.getMinGuests() : 1)
+                            .maxGuests(pkgDto.getMaxGuests() > 0 ? pkgDto.getMaxGuests() : 30)
+                            .highlights(pkgDto.getHighlights())
+                            .inclusions(pkgDto.getInclusions())
+                            .exclusions(pkgDto.getExclusions())
+                            .active(pkgDto.isActive())
+                            .sortOrder(pkgDto.getSortOrder())
+                            .build();
+                    TourPackage savedPkg = tourPackageRepository.save(pkg);
+                    if (pkgDto.getTranslations() != null) {
+                        for (TourPackageTranslationDto ptrDto : pkgDto.getTranslations()) {
+                            TourPackageTranslation ptr = TourPackageTranslation.builder()
+                                    .tourPackage(savedPkg)
+                                    .locale(ptrDto.getLocale())
+                                    .name(ptrDto.getName())
+                                    .highlights(ptrDto.getHighlights())
+                                    .inclusions(ptrDto.getInclusions())
+                                    .exclusions(ptrDto.getExclusions())
+                                    .childPolicyNote(ptrDto.getChildPolicyNote())
+                                    .infantPolicyNote(ptrDto.getInfantPolicyNote())
+                                    .build();
+                            tourPackageTranslationRepository.save(ptr);
+                        }
+                    }
                 }
             }
 
@@ -494,9 +636,33 @@ public class TourServiceImpl implements ITourService {
                         .height(img.getHeight())
                         .build()).toList()
                 : List.of();
+        TourCategoryDTO categoryDTO = null;
+        if (t.getCategory() != null) {
+            categoryDTO = TourCategoryDTO.builder()
+                    .id(t.getCategory().getId())
+                    .code(t.getCategory().getCode())
+                    .icon(t.getCategory().getIcon())
+                    .sortOrder(t.getCategory().getSortOrder())
+                    .active(t.getCategory().isActive())
+                    .isActive(t.getCategory().isActive())
+                    .title(t.getCategory().getTitle())
+                    .description(t.getCategory().getDescription())
+                    .translations(t.getCategory().getTranslations() != null ? t.getCategory().getTranslations().stream()
+                            .map(tr -> TourCategoryTranslationDTO.builder()
+                                    .id(tr.getId())
+                                    .locale(tr.getLocale())
+                                    .name(tr.getName())
+                                    .slug(tr.getSlug())
+                                    .description(tr.getDescription())
+                                    .build())
+                            .toList() : List.of())
+                    .build();
+        }
+
         return TourDto.builder()
                 .id(t.getId())
                 .tourCategoryId(t.getCategory() != null ? t.getCategory().getId() : null)
+                .tourCategory(categoryDTO)
                 .durationDays(t.getDurationDays())
                 .durationNights(t.getDurationNights())
                 .minGuest(t.getMinGuest())
@@ -505,6 +671,9 @@ public class TourServiceImpl implements ITourService {
                 .imageIds(imageIds)
                 .images(images)
                 .active(t.isActive())
+                .status(t.getStatus() != null ? t.getStatus() : (t.isActive() ? "ACTIVE" : "INACTIVE"))
+                .inclusions(t.getInclusions())
+                .exclusions(t.getExclusions())
                 .build();
     }
 }
