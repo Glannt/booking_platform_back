@@ -37,6 +37,8 @@ public class FleetDataInitializer implements CommandLineRunner {
                     .unitLuggage("kiện")
                     .active(true)
                     .isDefault(true)
+                    .totalVehicles(3)
+                    .availableVehicles(3)
                     .translations(new ArrayList<>())
                     .build();
             cat4.getTranslations().add(VehicleCategoryTranslation.builder()
@@ -64,6 +66,8 @@ public class FleetDataInitializer implements CommandLineRunner {
                     .unitLuggage("kiện")
                     .active(true)
                     .isDefault(false)
+                    .totalVehicles(3)
+                    .availableVehicles(3)
                     .translations(new ArrayList<>())
                     .build();
             cat7.getTranslations().add(VehicleCategoryTranslation.builder()
@@ -91,6 +95,8 @@ public class FleetDataInitializer implements CommandLineRunner {
                     .unitLuggage("kiện")
                     .active(true)
                     .isDefault(false)
+                    .totalVehicles(2)
+                    .availableVehicles(2)
                     .translations(new ArrayList<>())
                     .build();
             cat16.getTranslations().add(VehicleCategoryTranslation.builder()
@@ -110,56 +116,93 @@ public class FleetDataInitializer implements CommandLineRunner {
 
             vehicleCategoryRepository.saveAll(List.of(cat4, cat7, cat16));
             log.info("Vehicle categories seeded successfully!");
+        } else {
+            // Update existing categories if totalVehicles is null
+            List<VehicleCategory> existingCats = vehicleCategoryRepository.findAll();
+            for (VehicleCategory cat : existingCats) {
+                boolean changed = false;
+                if (cat.getTotalVehicles() == null) {
+                    if ("4-seater".equals(cat.getCode())) { cat.setTotalVehicles(3); cat.setAvailableVehicles(3); }
+                    else if ("7-seater".equals(cat.getCode())) { cat.setTotalVehicles(3); cat.setAvailableVehicles(3); }
+                    else if ("16-seater".equals(cat.getCode())) { cat.setTotalVehicles(2); cat.setAvailableVehicles(2); }
+                    else { cat.setTotalVehicles(1); cat.setAvailableVehicles(1); }
+                    changed = true;
+                }
+                if (changed) {
+                    vehicleCategoryRepository.save(cat);
+                }
+            }
         }
 
-        if (vehicleRepository.count() == 0) {
-            log.info("Seeding vehicles...");
-            VehicleCategory cat4 = vehicleCategoryRepository.findAll().stream()
-                    .filter(c -> c.getCode().equals("4-seater")).findFirst().orElse(null);
-            VehicleCategory cat7 = vehicleCategoryRepository.findAll().stream()
-                    .filter(c -> c.getCode().equals("7-seater")).findFirst().orElse(null);
-            VehicleCategory cat16 = vehicleCategoryRepository.findAll().stream()
-                    .filter(c -> c.getCode().equals("16-seater")).findFirst().orElse(null);
+        seedSampleVehicles();
+    }
 
-            if (cat4 != null) {
-                vehicleRepository.save(Vehicle.builder()
-                        .brand("Toyota")
-                        .model("Vios")
-                        .year(2023)
-                        .fuelType("gasoline")
-                        .active(true)
-                        .luggage(2)
-                        .luggageUnit("kiện")
-                        .category(cat4)
-                        .build());
-            }
+    private void seedSampleVehicles() {
+        VehicleCategory cat4 = vehicleCategoryRepository.findAll().stream()
+                .filter(c -> c.getCode().equals("4-seater")).findFirst().orElse(null);
+        VehicleCategory cat7 = vehicleCategoryRepository.findAll().stream()
+                .filter(c -> c.getCode().equals("7-seater")).findFirst().orElse(null);
+        VehicleCategory cat16 = vehicleCategoryRepository.findAll().stream()
+                .filter(c -> c.getCode().equals("16-seater")).findFirst().orElse(null);
 
-            if (cat7 != null) {
-                vehicleRepository.save(Vehicle.builder()
-                        .brand("Mitsubishi")
-                        .model("Xpander")
-                        .year(2023)
-                        .fuelType("gasoline")
-                        .active(true)
-                        .luggage(4)
-                        .luggageUnit("kiện")
-                        .category(cat7)
-                        .build());
-            }
+        // Category 4-seater (3 vehicles)
+        if (cat4 != null) {
+            seedOrUpdateVehicle("Toyota", "Vios", "79A-123.45", 2023, "gasoline", 2, "kiện", cat4);
+            seedOrUpdateVehicle("Hyundai", "Accent", "79A-234.56", 2023, "gasoline", 2, "kiện", cat4);
+            seedOrUpdateVehicle("Kia", "K3", "79A-345.67", 2024, "gasoline", 2, "kiện", cat4);
+        }
 
-            if (cat16 != null) {
-                vehicleRepository.save(Vehicle.builder()
-                        .brand("Ford")
-                        .model("Transit")
-                        .year(2022)
-                        .fuelType("diesel")
-                        .active(true)
-                        .luggage(8)
-                        .luggageUnit("kiện")
-                        .category(cat16)
-                        .build());
+        // Category 7-seater (3 vehicles)
+        if (cat7 != null) {
+            seedOrUpdateVehicle("Mitsubishi", "Xpander", "79A-456.78", 2023, "gasoline", 4, "kiện", cat7);
+            seedOrUpdateVehicle("Toyota", "Veloz Cross", "79A-567.89", 2024, "gasoline", 4, "kiện", cat7);
+            seedOrUpdateVehicle("Toyota", "Fortuner", "79A-678.90", 2023, "diesel", 4, "kiện", cat7);
+        }
+
+        // Category 16-seater (2 vehicles)
+        if (cat16 != null) {
+            seedOrUpdateVehicle("Ford", "Transit", "79B-789.01", 2022, "diesel", 8, "kiện", cat16);
+            seedOrUpdateVehicle("Hyundai", "Solati", "79B-890.12", 2023, "diesel", 8, "kiện", cat16);
+        }
+        log.info("Sample vehicles checked and synchronized!");
+    }
+
+    private void seedOrUpdateVehicle(String brand, String model, String licensePlate, int year,
+                                     String fuelType, int luggage, String luggageUnit, VehicleCategory category) {
+        List<Vehicle> existing = vehicleRepository.findAll().stream()
+                .filter(v -> (v.getLicensePlate() != null && v.getLicensePlate().equalsIgnoreCase(licensePlate))
+                        || (v.getBrand().equalsIgnoreCase(brand) && v.getModel().equalsIgnoreCase(model) && v.getCategory().getId().equals(category.getId())))
+                .toList();
+
+        if (existing.isEmpty()) {
+            vehicleRepository.save(Vehicle.builder()
+                    .brand(brand)
+                    .model(model)
+                    .licensePlate(licensePlate)
+                    .year(year)
+                    .fuelType(fuelType)
+                    .active(true)
+                    .canRent(true)
+                    .luggage(luggage)
+                    .luggageUnit(luggageUnit)
+                    .category(category)
+                    .build());
+            log.info("Seeded new vehicle: {} {} ({})", brand, model, licensePlate);
+        } else {
+            Vehicle v = existing.get(0);
+            boolean updated = false;
+            if (v.getLicensePlate() == null || !v.getLicensePlate().equals(licensePlate)) {
+                v.setLicensePlate(licensePlate);
+                updated = true;
             }
-            log.info("Vehicles seeded successfully!");
+            if (!v.isCanRent()) {
+                v.setCanRent(true);
+                updated = true;
+            }
+            if (updated) {
+                vehicleRepository.save(v);
+                log.info("Updated vehicle plate: {} {} ({})", brand, model, licensePlate);
+            }
         }
     }
 }

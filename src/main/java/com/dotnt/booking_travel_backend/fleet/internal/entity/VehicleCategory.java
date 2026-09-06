@@ -48,6 +48,12 @@ public class VehicleCategory extends MasterEntity {
     @Column(name = "thumbnail_id", nullable = true)
     private Long thumbnailId;
 
+    @Column(name = "total_vehicles", nullable = true)
+    private Integer totalVehicles;
+
+    @Column(name = "available_vehicles", nullable = true)
+    private Integer availableVehicles;
+
     @OneToMany(mappedBy = "vehicleCategory", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 50)
     @Builder.Default

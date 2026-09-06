@@ -24,6 +24,9 @@ public class Vehicle extends MasterEntity {
     @Column(name = "model", nullable = false)
     private String model;
 
+    @Column(name = "license_plate", length = 50)
+    private String licensePlate;
+
     @Column(name = "year", nullable = true)
     private int year;
 

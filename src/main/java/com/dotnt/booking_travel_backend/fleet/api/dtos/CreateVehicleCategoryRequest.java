@@ -16,6 +16,8 @@ public record CreateVehicleCategoryRequest(
         Boolean active,
         Boolean isDefault,
         Long thumbnailId,
+        Integer totalVehicles,
+        Integer availableVehicles,
         @NotEmpty List<VehicleCategoryTranslationDTO> translations
 ) {
 }

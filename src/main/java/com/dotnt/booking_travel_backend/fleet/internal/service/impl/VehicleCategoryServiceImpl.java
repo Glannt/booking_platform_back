@@ -41,6 +41,22 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
     private final VehicleCategoryRepository vehicleCategoryRepository;
     private final VehicleCategoryTranslationRepository vehicleCategoryTranslationRepository;
     private final ImageRepository imageRepository;
+    private final com.dotnt.booking_travel_backend.fleet.internal.repository.VehicleRepository vehicleRepository;
+
+    private Integer resolveTotalVehicles(VehicleCategory cat) {
+        if (cat.getTotalVehicles() != null && cat.getTotalVehicles() > 0) {
+            return cat.getTotalVehicles();
+        }
+        if (cat.getId() == null) return 0;
+        return vehicleRepository.findByCategoryIdAndCanRentTrueAndActiveTrue(cat.getId()).size();
+    }
+
+    private Integer resolveAvailableVehicles(VehicleCategory cat, Integer total) {
+        if (cat.getAvailableVehicles() != null) {
+            return cat.getAvailableVehicles();
+        }
+        return total;
+    }
 
     private String resolveThumbnailUrl(Long thumbnailId) {
         if (thumbnailId == null) return null;
@@ -70,6 +86,8 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
             .active(request.active() != null ? request.active() : true)
             .isDefault(request.isDefault() != null ? request.isDefault() : false)
             .thumbnailId(request.thumbnailId())
+            .totalVehicles(request.totalVehicles())
+            .availableVehicles(request.availableVehicles())
             .build();
         vehicleCategoryRepository.save(vehicleCategory);
 
@@ -84,7 +102,11 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                 .collect(toList());
         vehicleCategoryTranslationRepository.saveAll(translations);
 
+        Integer total = resolveTotalVehicles(vehicleCategory);
+        Integer available = resolveAvailableVehicles(vehicleCategory, total);
+
         VehicleCategoryDTO response = VehicleCategoryDTO.builder()
+                .id(vehicleCategory.getId())
                 .code(vehicleCategory.getCode())
                 .minSeat(vehicleCategory.getMinSeat())
                 .maxSeat(vehicleCategory.getMaxSeat())
@@ -96,6 +118,8 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                 .isDefault(vehicleCategory.isDefault())
                 .thumbnailId(vehicleCategory.getThumbnailId())
                 .thumbnailUrl(resolveThumbnailUrl(vehicleCategory.getThumbnailId()))
+                .totalVehicles(total)
+                .availableVehicles(available)
                 .translations(
                         translations.stream().map(
                                 t -> VehicleCategoryTranslationDTO.builder()
@@ -133,6 +157,8 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                             .description(t.getDescription())
                             .build())
                     .collect(Collectors.toList());
+            Integer total = resolveTotalVehicles(vehicleCategory);
+            Integer available = resolveAvailableVehicles(vehicleCategory, total);
             return VehicleCategoryDTO.builder()
                     .id(vehicleCategory.getId())
                     .code(vehicleCategory.getCode())
@@ -146,6 +172,8 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                     .isDefault(vehicleCategory.isDefault())
                     .thumbnailId(vehicleCategory.getThumbnailId())
                     .thumbnailUrl(resolveThumbnailUrl(vehicleCategory.getThumbnailId()))
+                    .totalVehicles(total)
+                    .availableVehicles(available)
                     .translations(translations)
                     .build();
         }
@@ -192,6 +220,13 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
             }
             if (vehicleCategoryDTO.getThumbnailId() != null || vehicleCategoryDTO.getThumbnailUrl() == null) {
                 existingVehicleCategory.setThumbnailId(vehicleCategoryDTO.getThumbnailId());
+            }
+
+            if (vehicleCategoryDTO.getTotalVehicles() != null) {
+                existingVehicleCategory.setTotalVehicles(vehicleCategoryDTO.getTotalVehicles());
+            }
+            if (vehicleCategoryDTO.getAvailableVehicles() != null) {
+                existingVehicleCategory.setAvailableVehicles(vehicleCategoryDTO.getAvailableVehicles());
             }
 
             if (vehicleCategoryDTO.getCode() != null && !vehicleCategoryDTO.getCode().equals(existingVehicleCategory.getCode())) {

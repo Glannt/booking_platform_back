@@ -14,6 +14,7 @@ public class VehicleDTO {
     private Long id;
     private String brand;
     private String model;
+    private String licensePlate;
     private int year;
     private String fuelType;
     private boolean active;

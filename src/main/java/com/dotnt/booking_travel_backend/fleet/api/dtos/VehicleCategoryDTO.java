@@ -22,5 +22,7 @@ public class VehicleCategoryDTO {
     private Boolean isDefault;
     private Long thumbnailId;
     private String thumbnailUrl;
+    private Integer totalVehicles;
+    private Integer availableVehicles;
     private List<VehicleCategoryTranslationDTO> translations;
 }

@@ -10,6 +10,29 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class FleetFacade {
     private final VehicleCategoryRepository vehicleCategoryRepository;
+    private final com.dotnt.booking_travel_backend.fleet.internal.repository.VehicleRepository vehicleRepository;
+
+    public Integer getCategoryTotalVehicles(Long id) {
+        return vehicleCategoryRepository.findById(id).map(c -> {
+            if (c.getTotalVehicles() != null && c.getTotalVehicles() > 0) {
+                return c.getTotalVehicles();
+            }
+            return vehicleRepository.findByCategoryIdAndCanRentTrueAndActiveTrue(id).size();
+        }).orElse(0);
+    }
+
+    public Integer getCategoryAvailableVehicles(Long id) {
+        return vehicleCategoryRepository.findById(id).map(c -> {
+            if (c.getAvailableVehicles() != null) {
+                return c.getAvailableVehicles();
+            }
+            return getCategoryTotalVehicles(id);
+        }).orElse(0);
+    }
+
+    public int countRentableVehiclesByCategory(Long categoryId) {
+        return vehicleRepository.findByCategoryIdAndCanRentTrueAndActiveTrue(categoryId).size();
+    }
 
     public Integer getVehicleCategoryMaxSeat(Long id) {
         return vehicleCategoryRepository.findById(id)

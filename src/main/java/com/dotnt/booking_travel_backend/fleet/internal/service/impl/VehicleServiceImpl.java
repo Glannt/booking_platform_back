@@ -41,6 +41,7 @@ public class VehicleServiceImpl implements IVehicleService {
             Vehicle vehicle = Vehicle.builder()
                     .brand(request.brand())
                     .model(request.model())
+                    .licensePlate(request.licensePlate())
                     .year(request.year())
                     .fuelType(request.fuelType() != null ? request.fuelType() : "gasoline")
                     .active(request.active() != null ? request.active() : true)
@@ -90,6 +91,7 @@ public class VehicleServiceImpl implements IVehicleService {
         return vehicleRepository.findById(id).map(existing -> {
             if (request.brand() != null) existing.setBrand(request.brand());
             if (request.model() != null) existing.setModel(request.model());
+            if (request.licensePlate() != null) existing.setLicensePlate(request.licensePlate());
             if (request.year() != null) existing.setYear(request.year());
             if (request.fuelType() != null) existing.setFuelType(request.fuelType());
             if (request.active() != null) existing.setActive(request.active());
@@ -151,6 +153,7 @@ public class VehicleServiceImpl implements IVehicleService {
                 .id(v.getId())
                 .brand(v.getBrand())
                 .model(v.getModel())
+                .licensePlate(v.getLicensePlate())
                 .year(v.getYear())
                 .fuelType(v.getFuelType())
                 .active(v.isActive())

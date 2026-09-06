@@ -3,6 +3,7 @@ package com.dotnt.booking_travel_backend.fleet.api.dtos;
 public record CreateVehicleRequest(
         String brand,
         String model,
+        String licensePlate,
         Integer year,
         String fuelType,
         Boolean active,
