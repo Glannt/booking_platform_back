@@ -13,5 +13,7 @@ public interface BookingService {
     BookingDto getBookingByCode(String code);
     BookingDto updateBooking(Long id, UpdateBookingRequest request);
     void deleteBooking(Long id);
+    void deleteBooking(Long id, String reason);
+    List<com.dotnt.booking_travel_backend.booking.api.BookingTimelineDto> getBookingTimeline(Long id);
     List<BookingDto> getMyBookings(Long userId);
 }

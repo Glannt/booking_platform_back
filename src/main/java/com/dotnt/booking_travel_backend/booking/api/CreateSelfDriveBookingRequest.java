@@ -17,6 +17,9 @@ public class CreateSelfDriveBookingRequest {
     @Size(max = 500) private String customerNotes;
     private String contactChannel;
     private String contactId;
+    private String zaloId;
+    private String kakaoTalkId;
+    private String whatsapp;
 
     @NotNull private Long vehicleCategoryId;
     @NotNull private LocalDate startDate;

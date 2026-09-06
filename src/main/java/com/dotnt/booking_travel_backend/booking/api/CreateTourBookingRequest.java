@@ -16,8 +16,16 @@ public class CreateTourBookingRequest {
     @Size(max = 500) private String customerNotes;
     private String contactChannel;
     private String contactId;
+    private String zaloId;
+    private String kakaoTalkId;
+    private String whatsapp;
 
     @NotNull private Long tourId;
+    private Long tourPackageId;
+    private String packageName;
+    private Integer adultCount;
+    private Integer childCount;
+    private Integer infantCount;
     @NotNull @Min(1) private Integer guestCount;
     private Long vehicleCategoryId;
     private String pickupLocation;

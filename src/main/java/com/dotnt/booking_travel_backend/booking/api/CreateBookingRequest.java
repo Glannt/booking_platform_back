@@ -36,6 +36,10 @@ public class CreateBookingRequest {
     private String idempotencyKey;
     private String contactChannel;
     private String contactId;
+    private String zaloId;
+    private String kakaoTalkId;
+    private String whatsapp;
+    private String paymentMethod;
 
     @NotEmpty(message = "At least one booking item is required")
     @Size(max = 20, message = "Maximum 20 items per booking")

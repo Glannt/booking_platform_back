@@ -32,6 +32,8 @@ public class RentCarBookingController {
         Map<String, Object> dd = new LinkedHashMap<>();
         dd.put("routeId", req.getRouteId());
         dd.put("vehicleCategoryId", req.getVehicleCategoryId());
+        dd.put("serviceType", req.getServiceType() != null && !req.getServiceType().isBlank() ? req.getServiceType().toUpperCase() : "PRIVATE");
+        dd.put("passengerCount", req.getPassengerCount() != null && req.getPassengerCount() > 0 ? req.getPassengerCount() : 1);
         dd.put("tripType", req.getTripType());
         dd.put("departureDate", req.getDepartureDate().toString());
         dd.put("departureTime", req.getDepartureTime());
@@ -45,6 +47,8 @@ public class RentCarBookingController {
         dd.put("dropoffAddress", req.getDropoffAddress());
         String dynamicDetails = objectMapper.writeValueAsString(dd);
 
+        int quantity = req.getPassengerCount() != null && req.getPassengerCount() > 0 ? req.getPassengerCount() : 1;
+
         CreateBookingRequest generic = CreateBookingRequest.builder()
                 .customerName(req.getCustomerName())
                 .customerEmail(req.getCustomerEmail())
@@ -53,10 +57,13 @@ public class RentCarBookingController {
                 .customerNotes(req.getCustomerNotes())
                 .contactChannel(req.getContactChannel())
                 .contactId(req.getContactId())
+                .zaloId(req.getZaloId())
+                .kakaoTalkId(req.getKakaoTalkId())
+                .whatsapp(req.getWhatsapp())
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(102L)
                         .serviceOptionId(req.getVehicleCategoryId())
-                        .quantity(1)
+                        .quantity(quantity)
                         .unitPrice(req.getTotalPrice())
                         .startDate(startDate.atStartOfDay())
                         .pickupLocation(req.getPickupAddress())

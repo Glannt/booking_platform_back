@@ -17,9 +17,14 @@ public class CreateRentCarBookingRequest {
     @Size(max = 500) private String customerNotes;
     private String contactChannel;
     private String contactId;
+    private String zaloId;
+    private String kakaoTalkId;
+    private String whatsapp;
 
     @NotNull private Long routeId;
-    @NotNull private Long vehicleCategoryId;
+    private Long vehicleCategoryId;
+    private String serviceType;
+    private Integer passengerCount;
     @NotBlank private String tripType;
     @NotNull private LocalDate departureDate;
     @NotBlank private String departureTime;

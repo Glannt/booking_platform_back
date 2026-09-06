@@ -22,6 +22,7 @@ public class SelfDriveBookingController {
 
     private final BookingService bookingService;
     private final ObjectMapper objectMapper;
+    private final com.dotnt.booking_travel_backend.rental.api.RentalFacade rentalFacade;
 
     @PostMapping
     @SuccessResponse("Self-drive booking created successfully!")
@@ -30,6 +31,15 @@ public class SelfDriveBookingController {
                 : (req.getRentalDays() != null ? req.getStartDate().plusDays(req.getRentalDays() - 1) : req.getStartDate());
         int rentalDays = req.getRentalDays() != null ? req.getRentalDays()
                 : (int) java.time.temporal.ChronoUnit.DAYS.between(req.getStartDate(), endDate) + 1;
+
+        // Availability Guard (P0-01)
+        com.dotnt.booking_travel_backend.rental.api.dtos.CategoryAvailabilityDto availability =
+                rentalFacade.checkSelfDriveAvailability(req.getVehicleCategoryId(), req.getStartDate(), endDate, "vi");
+        if (availability == null || !Boolean.TRUE.equals(availability.getIsAvailable()) || availability.getAvailableVehicles() <= 0) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Phân khúc xe " + (availability != null ? availability.getCategoryName() : "") + " đã hết xe khả dụng trong khoảng thời gian từ " + req.getStartDate() + " đến " + endDate + ". Vui lòng chọn ngày khác hoặc phân khúc khác.");
+        }
 
         String dynamicDetails = objectMapper.writeValueAsString(Map.of(
                 "vehicleCategoryId", req.getVehicleCategoryId(),
@@ -51,6 +61,9 @@ public class SelfDriveBookingController {
                 .customerNotes(req.getCustomerNotes())
                 .contactChannel(req.getContactChannel())
                 .contactId(req.getContactId())
+                .zaloId(req.getZaloId())
+                .kakaoTalkId(req.getKakaoTalkId())
+                .whatsapp(req.getWhatsapp())
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(103L)
                         .serviceOptionId(req.getVehicleCategoryId())

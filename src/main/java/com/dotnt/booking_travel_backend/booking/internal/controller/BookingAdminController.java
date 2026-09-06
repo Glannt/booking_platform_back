@@ -40,8 +40,16 @@ public class BookingAdminController {
     @PreAuthorize("hasAuthority('BOOKING_DELETE')")
     @DeleteMapping("/{id}")
     @SuccessResponse("Booking deleted successfully!")
-    public ResponseEntity<Void> deleteBooking(@PathVariable Long id) {
-        bookingService.deleteBooking(id);
+    public ResponseEntity<Void> deleteBooking(
+            @PathVariable Long id,
+            @RequestParam(value = "reason", required = false) String reason) {
+        bookingService.deleteBooking(id, reason);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}/timeline")
+    @SuccessResponse("Booking timeline retrieved successfully!")
+    public ResponseEntity<List<com.dotnt.booking_travel_backend.booking.api.BookingTimelineDto>> getBookingTimeline(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.getBookingTimeline(id));
     }
 }

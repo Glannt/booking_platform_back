@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,6 +30,12 @@ public class BookingMapper {
             return null;
         }
 
+        BigDecimal total = booking.getTotalAmount() != null ? booking.getTotalAmount() : BigDecimal.ZERO;
+        BigDecimal dep = booking.getDepositAmount() != null ? booking.getDepositAmount() : BigDecimal.ZERO;
+        BigDecimal rec = booking.getReceivedAmount() != null ? booking.getReceivedAmount() : BigDecimal.ZERO;
+        BigDecimal paid = booking.getPaidAmount() != null ? booking.getPaidAmount() : dep.add(rec);
+        BigDecimal remaining = total.subtract(paid).max(BigDecimal.ZERO);
+
         return BookingDto.builder()
                 .id(booking.getId())
                 .bookingCode(booking.getBookingCode())
@@ -42,6 +49,19 @@ public class BookingMapper {
                 .idempotencyKey(booking.getIdempotencyKey())
                 .contactChannel(booking.getContactChannel())
                 .contactId(booking.getContactId())
+                .zaloId(booking.getZaloId())
+                .kakaoTalkId(booking.getKakaoTalkId())
+                .whatsapp(booking.getWhatsapp())
+                .internalNotes(booking.getInternalNotes())
+                .paymentStatus(booking.getPaymentStatus())
+                .paymentMethod(booking.getPaymentMethod())
+                .paidAmount(paid)
+                .depositAmount(dep)
+                .receivedAmount(rec)
+                .remainingAmount(remaining)
+                .deletionReason(booking.getDeletionReason())
+                .assignedDriver(booking.getAssignedDriver())
+                .assignedVehicle(booking.getAssignedVehicle())
                 .items(booking.getItems() != null ? booking.getItems().stream()
                         .map(this::toDto)
                         .collect(Collectors.toList()) : Collections.emptyList())
@@ -79,17 +99,44 @@ public class BookingMapper {
                 String tourName = "Tour du lịch";
                 if (dynamicDetails != null) {
                     try {
-                        java.util.Map<String, Object> ad = objectMapper.readValue(
+                        java.util.Map<String, Object> existing = objectMapper.readValue(
                                 dynamicDetails, 
                                 new TypeReference<java.util.Map<String, Object>>() {}
                         );
-                        if (ad.containsKey("tourId") && ad.get("tourId") != null) {
-                            Long tourId = Long.valueOf(ad.get("tourId").toString());
+                        if (existing.containsKey("tourId") && existing.get("tourId") != null) {
+                            Long tourId = Long.valueOf(existing.get("tourId").toString());
                             tourName = tourBookingService.getTourName(tourId);
                         }
                     } catch (Exception ignored) {}
                 }
                 serviceNameMap = Map.of("vi", tourName, "en", tourName);
+
+                java.util.Map<String, Object> td = new java.util.LinkedHashMap<>();
+                try {
+                    if (dynamicDetails != null && !dynamicDetails.isBlank()) {
+                        td.putAll(objectMapper.readValue(dynamicDetails, new TypeReference<java.util.Map<String, Object>>() {}));
+                    }
+                } catch (Exception ignored) {}
+                td.put("guestCount", detail.getGuestCount());
+                if (detail.getTourPackageId() != null) {
+                    td.put("tourPackageId", detail.getTourPackageId());
+                }
+                if (detail.getPackageName() != null) {
+                    td.put("packageName", detail.getPackageName());
+                }
+                if (detail.getPricingType() != null) {
+                    td.put("pricingType", detail.getPricingType());
+                }
+                td.put("adultCount", detail.getAdultCount());
+                td.put("childCount", detail.getChildCount());
+                td.put("infantCount", detail.getInfantCount());
+                td.put("meetingPoint", detail.getMeetingPoint());
+                td.put("startTime", detail.getStartTime() != null ? detail.getStartTime().toString() : null);
+                td.put("endTime", detail.getEndTime() != null ? detail.getEndTime().toString() : null);
+                td.put("note", detail.getNote());
+                try {
+                    dynamicDetails = objectMapper.writeValueAsString(td);
+                } catch (Exception ignored) {}
             }
         } else if (item.getAirportTransferBookingDetailId() != null) {
             var detail = airportBookingDetailRepository.findById(item.getAirportTransferBookingDetailId()).orElse(null);
@@ -142,6 +189,28 @@ public class BookingMapper {
                 pickupLocation = detail.getPickupAddress();
                 dropoffLocation = detail.getDropoffAddress();
                 serviceNameMap = Map.of("vi", "Thuê xe đi tỉnh", "en", "Inter-provincial Rent");
+
+                java.util.Map<String, Object> idMap = new java.util.LinkedHashMap<>();
+                try {
+                    if (dynamicDetails != null && !dynamicDetails.isBlank()) {
+                        idMap.putAll(objectMapper.readValue(dynamicDetails, new TypeReference<java.util.Map<String, Object>>() {}));
+                    }
+                } catch (Exception ignored) {}
+                idMap.put("tripType", detail.getTripType());
+                idMap.put("serviceType", detail.getServiceType() != null ? detail.getServiceType() : "PRIVATE");
+                idMap.put("routeId", detail.getRouteId());
+                idMap.put("vehicleCategoryId", detail.getVehicleCategoryId());
+                idMap.put("passengerCount", detail.getPassengerCount());
+                idMap.put("departureDate", detail.getDepartureDate() != null ? detail.getDepartureDate().toString() : null);
+                idMap.put("departureTime", detail.getDepartureTime() != null ? detail.getDepartureTime().toString() : null);
+                idMap.put("returnDate", detail.getReturnDate() != null ? detail.getReturnDate().toString() : null);
+                idMap.put("returnTime", detail.getReturnTime() != null ? detail.getReturnTime().toString() : null);
+                idMap.put("basePrice", detail.getBasePrice());
+                idMap.put("surchargeAmount", detail.getSurchargeAmount());
+                idMap.put("note", detail.getNote());
+                try {
+                    dynamicDetails = objectMapper.writeValueAsString(idMap);
+                } catch (Exception ignored) {}
             }
         } else if (item.getSelfDriveBookingDetailId() != null) {
             var detail = selfDriveBookingDetailRepository.findById(item.getSelfDriveBookingDetailId()).orElse(null);
@@ -155,6 +224,25 @@ public class BookingMapper {
                 pickupLocation = detail.getPickupLocation();
                 dropoffLocation = detail.getDropoffLocation();
                 serviceNameMap = Map.of("vi", "Thuê xe tự lái", "en", "Self-drive Rent");
+
+                java.util.Map<String, Object> sdMap = new java.util.LinkedHashMap<>();
+                try {
+                    if (dynamicDetails != null && !dynamicDetails.isBlank()) {
+                        sdMap.putAll(objectMapper.readValue(dynamicDetails, new TypeReference<java.util.Map<String, Object>>() {}));
+                    }
+                } catch (Exception ignored) {}
+                sdMap.put("rentalDays", detail.getRentalDays());
+                sdMap.put("vehicleCategoryId", detail.getVehicleCategoryId());
+                sdMap.put("basePrice", detail.getBasePrice());
+                sdMap.put("deposit", detail.getDeposit());
+                sdMap.put("totalPrice", detail.getTotalPrice());
+                sdMap.put("currency", detail.getCurrency());
+                sdMap.put("note", detail.getNote());
+                sdMap.put("idCardImageUrl", detail.getIdCardImageUrl());
+                sdMap.put("driverLicenseImageUrl", detail.getDriverLicenseImageUrl());
+                try {
+                    dynamicDetails = objectMapper.writeValueAsString(sdMap);
+                } catch (Exception ignored) {}
             }
         }
 

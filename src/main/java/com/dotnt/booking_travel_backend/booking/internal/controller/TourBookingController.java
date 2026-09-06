@@ -18,6 +18,7 @@ import java.util.List;
 public class TourBookingController {
 
     private final BookingService bookingService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @PostMapping
     @SuccessResponse("Tour booking created successfully!")
@@ -29,6 +30,40 @@ public class TourBookingController {
                 ? LocalDateTime.parse(req.getEndTime())
                 : null;
 
+        // Build dynamic details JSON map
+        java.util.Map<String, Object> detailsMap = new java.util.LinkedHashMap<>();
+        detailsMap.put("tourId", req.getTourId());
+        if (req.getTourPackageId() != null) {
+            detailsMap.put("tourPackageId", req.getTourPackageId());
+        }
+        if (req.getPackageName() != null) {
+            detailsMap.put("packageName", req.getPackageName());
+        }
+        int adults = req.getAdultCount() != null ? req.getAdultCount() : req.getGuestCount();
+        int children = req.getChildCount() != null ? req.getChildCount() : 0;
+        int infants = req.getInfantCount() != null ? req.getInfantCount() : 0;
+        detailsMap.put("adultCount", adults);
+        detailsMap.put("childCount", children);
+        detailsMap.put("infantCount", infants);
+        detailsMap.put("guestCount", req.getGuestCount());
+        if (req.getPickupLocation() != null) {
+            detailsMap.put("pickupLocation", req.getPickupLocation());
+        }
+        if (req.getDescription() != null) {
+            detailsMap.put("description", req.getDescription());
+        }
+
+        String dynamicDetailsJson;
+        try {
+            dynamicDetailsJson = objectMapper.writeValueAsString(detailsMap);
+        } catch (Exception e) {
+            dynamicDetailsJson = req.getDescription() != null ? req.getDescription() : "";
+        }
+
+        Long serviceOptionId = req.getTourPackageId() != null
+                ? req.getTourPackageId()
+                : req.getVehicleCategoryId();
+
         CreateBookingRequest generic = CreateBookingRequest.builder()
                 .customerName(req.getCustomerName())
                 .customerEmail(req.getCustomerEmail())
@@ -37,12 +72,15 @@ public class TourBookingController {
                 .customerNotes(req.getCustomerNotes() != null ? req.getCustomerNotes() : req.getNote())
                 .contactChannel(req.getContactChannel())
                 .contactId(req.getContactId())
+                .zaloId(req.getZaloId())
+                .kakaoTalkId(req.getKakaoTalkId())
+                .whatsapp(req.getWhatsapp())
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(req.getTourId())
                         .quantity(req.getGuestCount())
                         .unitPrice(req.getTotalPrice())
-                        .serviceOptionId(req.getVehicleCategoryId())
-                        .dynamicDetails(req.getDescription() != null ? req.getDescription() : "")
+                        .serviceOptionId(serviceOptionId)
+                        .dynamicDetails(dynamicDetailsJson)
                         .startDate(startDateTime)
                         .endDate(endDateTime)
                         .pickupLocation(req.getPickupLocation())

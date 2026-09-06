@@ -56,6 +56,42 @@ public class Booking extends MasterEntity {
     @Column(name = "contact_id", length = 100)
     private String contactId;
 
+    @Column(name = "zalo_id", length = 100)
+    private String zaloId;
+
+    @Column(name = "kakao_talk_id", length = 100)
+    private String kakaoTalkId;
+
+    @Column(name = "whatsapp", length = 100)
+    private String whatsapp;
+
+    @Column(name = "internal_notes", columnDefinition = "text")
+    private String internalNotes;
+
+    @Column(name = "payment_status", length = 50)
+    private String paymentStatus;
+
+    @Column(name = "payment_method", length = 50)
+    private String paymentMethod;
+
+    @Column(name = "paid_amount", precision = 15, scale = 2)
+    private BigDecimal paidAmount;
+
+    @Column(name = "deposit_amount", precision = 15, scale = 2)
+    private BigDecimal depositAmount;
+
+    @Column(name = "received_amount", precision = 15, scale = 2)
+    private BigDecimal receivedAmount;
+
+    @Column(name = "deletion_reason", length = 500)
+    private String deletionReason;
+
+    @Column(name = "assigned_driver", length = 255)
+    private String assignedDriver;
+
+    @Column(name = "assigned_vehicle", length = 255)
+    private String assignedVehicle;
+
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<BookingItem> items = new ArrayList<>();

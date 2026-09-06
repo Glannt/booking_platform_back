@@ -47,6 +47,7 @@ public class BookingServiceImpl implements BookingService {
     private final FleetFacade fleetFacade;
     private final AirportFacade airportFacade;
     private final RentalFacade rentalFacade;
+    private final com.dotnt.booking_travel_backend.booking.internal.repository.BookingTimelineEventRepository bookingTimelineEventRepository;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
@@ -94,11 +95,17 @@ public class BookingServiceImpl implements BookingService {
                 .customerPhone(request.getCustomerPhone())
                 .contactChannel(request.getContactChannel())
                 .contactId(request.getContactId())
+                .zaloId(request.getZaloId())
+                .kakaoTalkId(request.getKakaoTalkId())
+                .whatsapp(request.getWhatsapp())
                 .idempotencyKey(request.getIdempotencyKey())
                 .totalAmount(BigDecimal.ZERO)
                 .totalPrice(BigDecimal.ZERO)
                 .bookingStatus(BookingStatus.pending)
                 .customerNotes(request.getCustomerNotes())
+                .paymentStatus("UNPAID")
+                .paymentMethod(request.getPaymentMethod())
+                .paidAmount(BigDecimal.ZERO)
                 .items(new ArrayList<>())
                 .build();
 
@@ -124,11 +131,15 @@ public class BookingServiceImpl implements BookingService {
 
                 if (isTour) {
                     if (itemReq.getServiceOptionId() != null) {
-                        Integer maxSeat = fleetFacade.getVehicleCategoryMaxSeat(itemReq.getServiceOptionId());
-                        if (maxSeat != null && quantity > maxSeat) {
-                            throw new IllegalArgumentException("The number of guests (" + quantity
-                                    + ") exceeds the vehicle's maximum seat capacity (" + maxSeat
-                                    + " seats)!");
+                        try {
+                            Integer maxSeat = fleetFacade.getVehicleCategoryMaxSeat(itemReq.getServiceOptionId());
+                            if (maxSeat != null && maxSeat > 0 && quantity > maxSeat) {
+                                throw new IllegalArgumentException("The number of guests (" + quantity
+                                        + ") exceeds the vehicle's maximum seat capacity (" + maxSeat
+                                        + " seats)!");
+                            }
+                        } catch (Exception ignored) {
+                            // serviceOptionId is a tour package, not a vehicle category
                         }
                     }
 
@@ -139,6 +150,40 @@ public class BookingServiceImpl implements BookingService {
                             ? itemReq.getEndDate().toInstant(java.time.ZoneOffset.UTC)
                             : null;
 
+                    Long tourPackageId = null;
+                    String packageName = null;
+                    String pricingType = "PER_PERSON";
+                    int adultCount = quantity;
+                    int childCount = 0;
+                    int infantCount = 0;
+
+                    if (itemReq.getDynamicDetails() != null && !itemReq.getDynamicDetails().isBlank()) {
+                        try {
+                            com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                            java.util.Map<String, Object> tdMap = om.readValue(
+                                    itemReq.getDynamicDetails(),
+                                    new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+                            if (tdMap.containsKey("tourPackageId") && tdMap.get("tourPackageId") != null) {
+                                tourPackageId = Long.valueOf(tdMap.get("tourPackageId").toString());
+                            }
+                            if (tdMap.containsKey("packageName") && tdMap.get("packageName") != null) {
+                                packageName = tdMap.get("packageName").toString();
+                            }
+                            if (tdMap.containsKey("pricingType") && tdMap.get("pricingType") != null) {
+                                pricingType = tdMap.get("pricingType").toString();
+                            }
+                            if (tdMap.containsKey("adultCount") && tdMap.get("adultCount") != null) {
+                                adultCount = Integer.parseInt(tdMap.get("adultCount").toString());
+                            }
+                            if (tdMap.containsKey("childCount") && tdMap.get("childCount") != null) {
+                                childCount = Integer.parseInt(tdMap.get("childCount").toString());
+                            }
+                            if (tdMap.containsKey("infantCount") && tdMap.get("infantCount") != null) {
+                                infantCount = Integer.parseInt(tdMap.get("infantCount").toString());
+                            }
+                        } catch (Exception ignored) {}
+                    }
+
                     tourBookingDetailId = tourBookingService.createTourBookingDetail(
                             null,
                             itemReq.getServiceId(),
@@ -146,7 +191,13 @@ public class BookingServiceImpl implements BookingService {
                             itemReq.getPickupLocation(),
                             request.getCustomerNotes(),
                             startTime,
-                            endTime);
+                            endTime,
+                            tourPackageId,
+                            packageName,
+                            pricingType,
+                            adultCount,
+                            childCount,
+                            infantCount);
                 } else if (isAirport) {
                     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
                     java.util.Map<String, Object> ad = new java.util.HashMap<>();
@@ -276,6 +327,17 @@ public class BookingServiceImpl implements BookingService {
                         } catch (Exception ignored) {
                         }
                     }
+                    String serviceType = ad.getOrDefault("serviceType", "PRIVATE").toString();
+                    Integer passengerCount = null;
+                    if (ad.containsKey("passengerCount") && ad.get("passengerCount") != null) {
+                        try {
+                            passengerCount = Integer.valueOf(ad.get("passengerCount").toString());
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    if (passengerCount == null) {
+                        passengerCount = (itemReq.getQuantity() != null && itemReq.getQuantity() > 0) ? itemReq.getQuantity() : 1;
+                    }
                     String tripType = ad.getOrDefault("tripType", "ONE_WAY").toString();
                     java.time.LocalDate departureDate = null;
                     if (ad.containsKey("departureDate") && ad.get("departureDate") != null) {
@@ -295,6 +357,13 @@ public class BookingServiceImpl implements BookingService {
                     if (ad.containsKey("returnDate") && ad.get("returnDate") != null) {
                         try {
                             returnDate = java.time.LocalDate.parse(ad.get("returnDate").toString());
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    java.time.LocalTime returnTime = null;
+                    if (ad.containsKey("returnTime") && ad.get("returnTime") != null) {
+                        try {
+                            returnTime = java.time.LocalTime.parse(ad.get("returnTime").toString());
                         } catch (Exception ignored) {
                         }
                     }
@@ -323,11 +392,14 @@ public class BookingServiceImpl implements BookingService {
                     String dropoffAddress = ad.get("dropoffAddress") != null ? ad.get("dropoffAddress").toString() : null;
 
                     intercityBookingDetailId = rentalFacade.createIntercityBookingDetail(
+                            serviceType,
+                            passengerCount,
                             vehicleCategoryId,
                             routeId,
                             tripType,
                             departureDateTime,
                             returnDate,
+                            returnTime,
                             itemUnitPrice,
                             basePrice,
                             totalPrice,
@@ -427,6 +499,10 @@ public class BookingServiceImpl implements BookingService {
         booking.setTotalPrice(calculatedTotal);
         booking = bookingRepository.save(booking);
 
+        recordTimelineEvent(booking.getId(), "CREATED", "Tạo đơn đặt", 
+                "Đơn đặt " + booking.getBookingCode() + " được tạo thành công cho " + booking.getCustomerName(), 
+                null, booking.getBookingStatus().name());
+
         sendBookingEmail(booking);
 
         return bookingMapper.toDto(booking);
@@ -476,6 +552,14 @@ public class BookingServiceImpl implements BookingService {
                 .filter(b -> b.getDeletedAt() == null)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found with ID: " + id));
 
+        BookingStatus oldStatus = booking.getBookingStatus();
+        String oldDriver = booking.getAssignedDriver();
+        String oldVehicle = booking.getAssignedVehicle();
+        BigDecimal oldDeposit = booking.getDepositAmount() != null ? booking.getDepositAmount() : BigDecimal.ZERO;
+        BigDecimal oldReceived = booking.getReceivedAmount() != null ? booking.getReceivedAmount() : BigDecimal.ZERO;
+        String oldPaymentStatus = booking.getPaymentStatus();
+        String oldInternalNotes = booking.getInternalNotes();
+
         if (request.getCustomerName() != null)
             booking.setCustomerName(request.getCustomerName());
         if (request.getCustomerEmail() != null)
@@ -488,19 +572,207 @@ public class BookingServiceImpl implements BookingService {
             booking.setBookingStatus(request.getBookingStatus());
         if (request.getCustomerNotes() != null)
             booking.setCustomerNotes(request.getCustomerNotes());
+        if (request.getContactChannel() != null)
+            booking.setContactChannel(request.getContactChannel());
+        if (request.getContactId() != null)
+            booking.setContactId(request.getContactId());
+        if (request.getZaloId() != null)
+            booking.setZaloId(request.getZaloId());
+        if (request.getKakaoTalkId() != null)
+            booking.setKakaoTalkId(request.getKakaoTalkId());
+        if (request.getWhatsapp() != null)
+            booking.setWhatsapp(request.getWhatsapp());
+        if (request.getInternalNotes() != null)
+            booking.setInternalNotes(request.getInternalNotes());
+        if (request.getPaymentMethod() != null)
+            booking.setPaymentMethod(request.getPaymentMethod());
+
+        if (request.getDepositAmount() != null)
+            booking.setDepositAmount(request.getDepositAmount());
+        if (request.getReceivedAmount() != null)
+            booking.setReceivedAmount(request.getReceivedAmount());
+
+        BigDecimal currentDeposit = booking.getDepositAmount() != null ? booking.getDepositAmount() : BigDecimal.ZERO;
+        BigDecimal currentReceived = booking.getReceivedAmount() != null ? booking.getReceivedAmount() : BigDecimal.ZERO;
+        booking.setPaidAmount(currentDeposit.add(currentReceived));
+
+        if (request.getPaymentStatus() != null && !request.getPaymentStatus().isBlank()) {
+            booking.setPaymentStatus(request.getPaymentStatus());
+        } else if (booking.getPaymentStatus() == null || booking.getPaymentStatus().isBlank()) {
+            if (booking.getPaidAmount().compareTo(BigDecimal.ZERO) == 0) {
+                booking.setPaymentStatus("UNPAID");
+            } else if (booking.getPaidAmount().compareTo(booking.getTotalAmount() != null ? booking.getTotalAmount() : BigDecimal.ZERO) >= 0) {
+                booking.setPaymentStatus("PAID");
+            } else {
+                booking.setPaymentStatus("DEPOSITED");
+            }
+        }
+
+        if (request.getAssignedDriver() != null)
+            booking.setAssignedDriver(request.getAssignedDriver());
+        if (request.getAssignedVehicle() != null) {
+            String targetVehicle = request.getAssignedVehicle().trim();
+            booking.setAssignedVehicle(targetVehicle);
+
+            if (!targetVehicle.isBlank() && booking.getBookingStatus() != BookingStatus.cancelled) {
+                java.time.LocalDate[] targetDates = extractBookingDates(booking);
+                if (targetDates != null && targetDates[0] != null && targetDates[1] != null) {
+                    java.time.LocalDate start = targetDates[0];
+                    java.time.LocalDate end = targetDates[1];
+
+                    List<Booking> allBookings = bookingRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc();
+                    for (Booking other : allBookings) {
+                        if (other.getId().equals(id)) continue;
+                        if (other.getBookingStatus() == BookingStatus.cancelled) continue;
+                        if (other.getAssignedVehicle() == null || other.getAssignedVehicle().isBlank()) continue;
+
+                        if (other.getAssignedVehicle().trim().equalsIgnoreCase(targetVehicle)) {
+                            java.time.LocalDate[] otherDates = extractBookingDates(other);
+                            if (otherDates != null && otherDates[0] != null && otherDates[1] != null) {
+                                java.time.LocalDate otherStart = otherDates[0];
+                                java.time.LocalDate otherEnd = otherDates[1];
+
+                                if (!start.isAfter(otherEnd) && !end.isBefore(otherStart)) {
+                                    throw new IllegalArgumentException("Xe \"" + targetVehicle + "\" đã được phân công cho đơn " +
+                                            other.getBookingCode() + " (" + otherStart + " đến " + otherEnd + "). Không thể phân công trùng lịch!");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         booking = bookingRepository.save(booking);
+
+        // Record timeline events for detected operational changes
+        if (booking.getBookingStatus() != null && !booking.getBookingStatus().equals(oldStatus)) {
+            recordTimelineEvent(booking.getId(), "STATUS_CHANGE", "Thay đổi trạng thái",
+                    "Trạng thái đơn chuyển từ " + oldStatus + " sang " + booking.getBookingStatus(),
+                    oldStatus != null ? oldStatus.name() : null, booking.getBookingStatus().name());
+        }
+
+        boolean driverChanged = !java.util.Objects.equals(oldDriver, booking.getAssignedDriver());
+        boolean vehicleChanged = !java.util.Objects.equals(oldVehicle, booking.getAssignedVehicle());
+        if (driverChanged || vehicleChanged) {
+            recordTimelineEvent(booking.getId(), "DISPATCH_UPDATE", "Điều phối xe / tài xế",
+                    "Cập nhật điều phối: Tài xế [" + (booking.getAssignedDriver() != null ? booking.getAssignedDriver() : "Chưa gán") +
+                            "], Xe [" + (booking.getAssignedVehicle() != null ? booking.getAssignedVehicle() : "Chưa gán") + "]",
+                    "Tài xế: " + (oldDriver != null ? oldDriver : "Chưa có") + ", Xe: " + (oldVehicle != null ? oldVehicle : "Chưa có"),
+                    "Tài xế: " + (booking.getAssignedDriver() != null ? booking.getAssignedDriver() : "Chưa có") + ", Xe: " + (booking.getAssignedVehicle() != null ? booking.getAssignedVehicle() : "Chưa có"));
+        }
+
+        if (oldDeposit.compareTo(currentDeposit) != 0 || oldReceived.compareTo(currentReceived) != 0 || !java.util.Objects.equals(oldPaymentStatus, booking.getPaymentStatus())) {
+            recordTimelineEvent(booking.getId(), "PAYMENT_UPDATE", "Cập nhật thanh toán",
+                    "Cọc: " + currentDeposit + ", Đã nhận sau: " + currentReceived + ", Tổng thu: " + booking.getPaidAmount() + ", Trạng thái: " + booking.getPaymentStatus(),
+                    "Cọc: " + oldDeposit + ", Nhận sau: " + oldReceived + ", TT: " + oldPaymentStatus,
+                    "Cọc: " + currentDeposit + ", Nhận sau: " + currentReceived + ", TT: " + booking.getPaymentStatus());
+        }
+
+        if (!java.util.Objects.equals(oldInternalNotes, booking.getInternalNotes())) {
+            recordTimelineEvent(booking.getId(), "NOTE_UPDATE", "Cập nhật ghi chú nội bộ",
+                    "Cập nhật ghi chú vận hành nội bộ",
+                    oldInternalNotes, booking.getInternalNotes());
+        }
+
         return bookingMapper.toDto(booking);
+    }
+
+    private java.time.LocalDate[] extractBookingDates(Booking b) {
+        if (b.getItems() == null) return null;
+        for (BookingItem item : b.getItems()) {
+            if (item.getSelfDriveBookingDetailId() != null) {
+                java.time.LocalDate[] dates = rentalFacade.getSelfDriveBookingDates(item.getSelfDriveBookingDetailId());
+                if (dates != null) return dates;
+            }
+            if (item.getDynamicDetails() != null && !item.getDynamicDetails().isBlank()) {
+                try {
+                    com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(item.getDynamicDetails());
+                    if (node.has("startDate") && node.has("endDate")) {
+                        java.time.LocalDate s = java.time.LocalDate.parse(node.get("startDate").asText().substring(0, 10));
+                        java.time.LocalDate e = java.time.LocalDate.parse(node.get("endDate").asText().substring(0, 10));
+                        return new java.time.LocalDate[]{s, e};
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return null;
     }
 
     @Override
     @Transactional
     public void deleteBooking(Long id) {
+        deleteBooking(id, "Xóa bởi quản trị viên");
+    }
+
+    @Override
+    @Transactional
+    public void deleteBooking(Long id, String reason) {
         Booking booking = bookingRepository.findById(id)
                 .filter(b -> b.getDeletedAt() == null)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found with ID: " + id));
+
+        BigDecimal dep = booking.getDepositAmount() != null ? booking.getDepositAmount() : BigDecimal.ZERO;
+        BigDecimal rec = booking.getReceivedAmount() != null ? booking.getReceivedAmount() : BigDecimal.ZERO;
+        BigDecimal paid = booking.getPaidAmount() != null ? booking.getPaidAmount() : BigDecimal.ZERO;
+        if (dep.compareTo(BigDecimal.ZERO) > 0 || rec.compareTo(BigDecimal.ZERO) > 0 || paid.compareTo(BigDecimal.ZERO) > 0
+                || "PAID".equalsIgnoreCase(booking.getPaymentStatus()) || "DEPOSITED".equalsIgnoreCase(booking.getPaymentStatus())) {
+            throw new IllegalStateException("Đơn đặt " + booking.getBookingCode() + " đã ghi nhận dòng tiền (Cọc: " + dep + ", Nhận sau: " + rec + ", Đã thanh toán: " + paid + "). Không thể xóa đơn hàng production! Vui lòng chuyển trạng thái Hủy (Cancelled) hoặc thực hiện hoàn tiền trước.");
+        }
+
+        String actualReason = (reason != null && !reason.isBlank()) ? reason.trim() : "Xóa bởi quản trị viên";
+        booking.setDeletionReason(actualReason);
         booking.setDeletedAt(LocalDateTime.now());
         bookingRepository.save(booking);
+
+        recordTimelineEvent(booking.getId(), "DELETED", "Xóa đơn đặt",
+                "Đơn đặt đã bị soft-delete với lý do: " + actualReason,
+                "Active", "Deleted");
+    }
+
+    @Override
+    public List<BookingTimelineDto> getBookingTimeline(Long id) {
+        return bookingTimelineEventRepository.findByBookingIdOrderByCreatedAtAsc(id)
+                .stream()
+                .map(e -> BookingTimelineDto.builder()
+                        .id(e.getId())
+                        .bookingId(e.getBookingId())
+                        .actorId(e.getActorId())
+                        .actorName(e.getActorName())
+                        .eventType(e.getEventType())
+                        .title(e.getTitle())
+                        .description(e.getDescription())
+                        .oldValue(e.getOldValue())
+                        .newValue(e.getNewValue())
+                        .createdAt(e.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private void recordTimelineEvent(Long bookingId, String eventType, String title, String description, String oldValue, String newValue) {
+        try {
+            String actorName = "Hệ thống";
+            Long actorId = null;
+            var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && auth.getName() != null && !auth.getName().equalsIgnoreCase("anonymousUser")) {
+                actorName = auth.getName();
+            }
+            com.dotnt.booking_travel_backend.booking.internal.entity.BookingTimelineEvent event = com.dotnt.booking_travel_backend.booking.internal.entity.BookingTimelineEvent.builder()
+                    .bookingId(bookingId)
+                    .actorId(actorId)
+                    .actorName(actorName)
+                    .eventType(eventType)
+                    .title(title)
+                    .description(description)
+                    .oldValue(oldValue)
+                    .newValue(newValue)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            bookingTimelineEventRepository.save(event);
+        } catch (Exception e) {
+            log.error("Failed to record timeline event for booking {}: {}", bookingId, e.getMessage());
+        }
     }
 
     @Override

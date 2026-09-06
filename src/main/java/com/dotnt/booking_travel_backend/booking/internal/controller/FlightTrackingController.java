@@ -37,9 +37,9 @@ public class FlightTrackingController {
         String cleanedNumber = flightNumber.trim().toUpperCase();
 
         if (apiKey == null || apiKey.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(
+            throw new IllegalArgumentException(
                 "Flight tracking service chưa được cấu hình. Vui lòng liên hệ quản trị viên."
-            ));
+            );
         }
 
         Optional<FlightTracking> cached = repository.findByFlightNumber(cleanedNumber);
@@ -60,17 +60,17 @@ public class FlightTrackingController {
     @GetMapping("/opensky/track")
     public ResponseEntity<?> trackOpenSky(@RequestParam("callsign") String callsign) {
         if (!openSkyService.isConfigured()) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(
+            throw new IllegalArgumentException(
                 "OpenSky chưa được cấu hình. Vui lòng nhập OpenSky Client ID và Secret."
-            ));
+            );
         }
         try {
             var result = openSkyService.findByCallsign(callsign);
             return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(
-                "OpenSky: " + e.getMessage()
-            ));
+            throw new IllegalArgumentException("OpenSky: " + e.getMessage());
         }
     }
 
@@ -129,9 +129,11 @@ public class FlightTrackingController {
                 return repository.save(tracking);
             }
 
-            throw new RuntimeException("Không tìm thấy thông tin chuyến bay " + flightNumber);
+            throw new IllegalArgumentException("Không tìm thấy thông tin chuyến bay " + flightNumber);
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Không thể kết nối dịch vụ flight tracking: " + e.getMessage());
+            throw new IllegalArgumentException("Không thể kết nối dịch vụ flight tracking: " + e.getMessage());
         }
     }
 
@@ -149,6 +151,4 @@ public class FlightTrackingController {
             }
         }
     }
-
-    private record ErrorResponse(String message) {}
 }
