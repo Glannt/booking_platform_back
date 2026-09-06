@@ -15,6 +15,7 @@ public class ContactSettingController {
     private final ContactSettingService service;
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ContactSetting> get() {
         return ResponseEntity.ok(service.getContactSetting());
     }
