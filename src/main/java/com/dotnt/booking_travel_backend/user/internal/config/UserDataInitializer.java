@@ -73,49 +73,84 @@ public class UserDataInitializer implements CommandLineRunner {
                         .build()));
 
         // Ensure CUSTOMER and STAFF exist
-        if (!roleRepository.existsByCode(Role.CODE_CUSTOMER)) {
-            roleRepository.save(Role.builder()
-                    .code(Role.CODE_CUSTOMER)
-                    .name("Khách hàng")
-                    .description("Người dùng thông thường")
-                    .build());
-        }
-        if (!roleRepository.existsByCode(Role.CODE_STAFF)) {
-            roleRepository.save(Role.builder()
-                    .code(Role.CODE_STAFF)
-                    .name("Nhân viên")
-                    .description("Nhân viên vận hành và chăm sóc khách hàng")
-                    .build());
+        Role customerRole = roleRepository.findByCode(Role.CODE_CUSTOMER)
+                .orElseGet(() -> roleRepository.save(Role.builder()
+                        .code(Role.CODE_CUSTOMER)
+                        .name("Khách hàng")
+                        .description("Người dùng thông thường")
+                        .build()));
+
+        Role staffRole = roleRepository.findByCode(Role.CODE_STAFF)
+                .orElseGet(() -> roleRepository.save(Role.builder()
+                        .code(Role.CODE_STAFF)
+                        .name("Nhân viên")
+                        .description("Nhân viên vận hành và chăm sóc khách hàng")
+                        .build()));
+
+        // MIGRATION: Backfill role_id for legacy users where role_id IS NULL
+        try {
+            jdbcTemplate.execute("UPDATE users SET role_id = (SELECT id FROM roles WHERE code = 'ADMIN') WHERE role_id IS NULL AND (role = 0 OR email LIKE '%admin%')");
+            jdbcTemplate.execute("UPDATE users SET role_id = (SELECT id FROM roles WHERE code = 'STAFF') WHERE role_id IS NULL AND (role = 2 OR email LIKE '%staff%')");
+            jdbcTemplate.execute("UPDATE users SET role_id = (SELECT id FROM roles WHERE code = 'CUSTOMER') WHERE role_id IS NULL AND (role = 1 OR email LIKE '%customer%')");
+            jdbcTemplate.execute("UPDATE users SET role_id = (SELECT id FROM roles WHERE code = 'MODERATOR') WHERE role_id IS NULL AND (role = 3 OR email LIKE '%moderator%')");
+        } catch (Exception e) {
+            log.warn("Notice on migrating legacy user role_id: {}", e.getMessage());
         }
 
-        // Seed Admin user if not exists
-        if (!userRepository.existsByEmail(adminEmail)) {
-            log.info("Seeding default admin user: {}", adminEmail);
-            User admin = User.builder()
-                    .email(adminEmail)
-                    .phone(adminPhone)
-                    .password(passwordEncoder.encode(adminPassword))
-                    .fullname(adminFullname)
-                    .role(adminRole)
-                    .status("active")
-                    .build();
-            userRepository.save(admin);
-            log.info("Successfully seeded admin user: {}", adminEmail);
-        }
+        // Seed Admin user if not exists, or ensure role is ADMIN if exists
+        userRepository.findByEmail(adminEmail).ifPresentOrElse(
+                admin -> {
+                    if (admin.getRole() == null || !Role.CODE_ADMIN.equals(admin.getRoleCode())) {
+                        admin.setRole(adminRole);
+                        userRepository.save(admin);
+                        log.info("Synchronized ADMIN role for: {}", adminEmail);
+                    }
+                },
+                () -> {
+                    log.info("Seeding default admin user: {}", adminEmail);
+                    User admin = User.builder()
+                            .email(adminEmail)
+                            .phone(adminPhone)
+                            .password(passwordEncoder.encode(adminPassword))
+                            .fullname(adminFullname)
+                            .role(adminRole)
+                            .status("active")
+                            .build();
+                    userRepository.save(admin);
+                    log.info("Successfully seeded admin user: {}", adminEmail);
+                }
+        );
 
-        // Seed Moderator user if not exists
-        if (!userRepository.existsByEmail(moderatorEmail)) {
-            log.info("Seeding default moderator user: {}", moderatorEmail);
-            User moderator = User.builder()
-                    .email(moderatorEmail)
-                    .phone(moderatorPhone)
-                    .password(passwordEncoder.encode(moderatorPassword))
-                    .fullname(moderatorFullname)
-                    .role(moderatorRole)
-                    .status("active")
-                    .build();
-            userRepository.save(moderator);
-            log.info("Successfully seeded moderator user: {}", moderatorEmail);
-        }
+        userRepository.findByEmail("admin@gmail.com").ifPresent(admin -> {
+            if (admin.getRole() == null || !Role.CODE_ADMIN.equals(admin.getRoleCode())) {
+                admin.setRole(adminRole);
+                userRepository.save(admin);
+                log.info("Synchronized ADMIN role for admin@gmail.com");
+            }
+        });
+
+        // Seed Moderator user if not exists, or ensure role is MODERATOR if exists
+        userRepository.findByEmail(moderatorEmail).ifPresentOrElse(
+                mod -> {
+                    if (mod.getRole() == null || !Role.CODE_MODERATOR.equals(mod.getRoleCode())) {
+                        mod.setRole(moderatorRole);
+                        userRepository.save(mod);
+                        log.info("Synchronized MODERATOR role for: {}", moderatorEmail);
+                    }
+                },
+                () -> {
+                    log.info("Seeding default moderator user: {}", moderatorEmail);
+                    User moderator = User.builder()
+                            .email(moderatorEmail)
+                            .phone(moderatorPhone)
+                            .password(passwordEncoder.encode(moderatorPassword))
+                            .fullname(moderatorFullname)
+                            .role(moderatorRole)
+                            .status("active")
+                            .build();
+                    userRepository.save(moderator);
+                    log.info("Successfully seeded moderator user: {}", moderatorEmail);
+                }
+        );
     }
 }

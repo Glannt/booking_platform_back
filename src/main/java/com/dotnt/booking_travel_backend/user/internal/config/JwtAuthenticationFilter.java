@@ -56,40 +56,47 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         final String finalJwt = jwt;
-        final String userEmail;
 
-        if (blacklistedTokenRepository.existsByToken(finalJwt)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        if (jwtService.validateToken(finalJwt)) {
-            userEmail = jwtService.getEmailFromToken(finalJwt);
-            String role = jwtService.getRoleFromToken(finalJwt);
-
-            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
-
-                // Load permissions for this role and add as authorities
-                try {
-                    List<String> permissions = permissionService.getPermissionsForRole(role.toUpperCase());
-                    for (String perm : permissions) {
-                        authorities.add(new SimpleGrantedAuthority(perm));
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to load permissions for role {}: {}", role, e.getMessage());
-                }
-
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userEmail,
-                        null,
-                        authorities
-                );
-
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+        try {
+            if (blacklistedTokenRepository.existsByToken(finalJwt)) {
+                filterChain.doFilter(request, response);
+                return;
             }
+
+            if (jwtService.validateToken(finalJwt)) {
+                String userEmail = jwtService.getEmailFromToken(finalJwt);
+                String role = jwtService.getRoleFromToken(finalJwt);
+
+                if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                    String normalizedRole = (role != null && !role.isBlank()) ? role.trim().toUpperCase() : "CUSTOMER";
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + normalizedRole));
+
+                    // Load permissions for this role and add as authorities
+                    try {
+                        List<String> permissions = permissionService.getPermissionsForRole(normalizedRole);
+                        if (permissions != null) {
+                            for (String perm : permissions) {
+                                authorities.add(new SimpleGrantedAuthority(perm));
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to load permissions for role {}: {}", normalizedRole, e.getMessage());
+                    }
+
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userEmail,
+                            null,
+                            authorities
+                    );
+
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to process JWT authentication: {}", e.getMessage());
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);

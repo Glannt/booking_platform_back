@@ -53,8 +53,9 @@ public class JwtService {
         try {
             SignedJWT signedJWT = SignedJWT.parse(token);
             return signedJWT.getJWTClaimsSet().getSubject();
-        } catch (ParseException e) {
-            throw new RuntimeException("Failed to parse JWT", e);
+        } catch (Exception e) {
+            log.warn("Failed to parse subject from JWT: {}", e.getMessage());
+            return null;
         }
     }
 
@@ -62,8 +63,9 @@ public class JwtService {
         try {
             SignedJWT signedJWT = SignedJWT.parse(token);
             return signedJWT.getJWTClaimsSet().getStringClaim("role");
-        } catch (ParseException e) {
-            throw new RuntimeException("Failed to parse JWT", e);
+        } catch (Exception e) {
+            log.warn("Failed to parse role from JWT: {}", e.getMessage());
+            return null;
         }
     }
 

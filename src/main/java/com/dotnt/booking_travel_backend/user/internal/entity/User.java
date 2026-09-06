@@ -30,7 +30,7 @@ public class User extends MasterEntity {
     private Role role;
 
     public String getRoleCode() {
-        return role != null ? role.getCode() : null;
+        return role != null ? role.getCode() : Role.CODE_CUSTOMER;
     }
 
     @Column(name = "status", length = 50)
