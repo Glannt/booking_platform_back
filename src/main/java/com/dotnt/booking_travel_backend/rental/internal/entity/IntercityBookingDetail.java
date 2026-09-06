@@ -23,8 +23,12 @@ public class IntercityBookingDetail extends MasterEntity {
     @Column(name = "route_id", nullable = false)
     private Long routeId;
 
-    @Column(name = "vehicle_category_id", nullable = false)
+    @Column(name = "vehicle_category_id")
     private Long vehicleCategoryId;
+
+    @Column(name = "service_type", length = 30)
+    @Builder.Default
+    private String serviceType = "PRIVATE";
 
     @Column(name = "trip_type", nullable = false, length = 20)
     private String tripType;

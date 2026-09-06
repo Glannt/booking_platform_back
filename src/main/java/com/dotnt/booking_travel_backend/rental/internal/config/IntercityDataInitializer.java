@@ -134,6 +134,10 @@ public class IntercityDataInitializer implements CommandLineRunner {
                 .destinationLng(destLng)
                 .active(true)
                 .hasDepartureTimes(hasDepartureTimes)
+                .supportsShared(true)
+                .sharedVehicleName("Dcar Limousine")
+                .sharedPriceOneWay(new BigDecimal("250000.00"))
+                .sharedPriceRoundTrip(new BigDecimal("500000.00"))
                 .build();
         route = routeRepository.save(route);
 
@@ -152,6 +156,7 @@ public class IntercityDataInitializer implements CommandLineRunner {
                     .route(route)
                     .vehicleCategoryId(vcIds[i])
                     .perKmAmount(new BigDecimal(perKmPrices[i]))
+                    .pricingType("PER_KM")
                     .currency("VND")
                     .active(true)
                     .build());
@@ -166,26 +171,28 @@ public class IntercityDataInitializer implements CommandLineRunner {
             if (!route.isHasDepartureTimes()) continue;
 
             boolean isNhaTrangToDaLat = "Nha Trang".equals(route.getOriginCity()) && "Đà Lạt".equals(route.getDestinationCity());
-            boolean isDaLatToNhaTrang = "Đà Lạt".equals(route.getOriginCity()) && "Nha Trang".equals(route.getDestinationCity());
 
             if (isNhaTrangToDaLat) {
-                saveDepartureTime(route, "08:00", 1);
-                saveDepartureTime(route, "11:00", 2);
-                saveDepartureTime(route, "13:00", 3);
-                saveDepartureTime(route, "17:00", 4);
-            } else if (isDaLatToNhaTrang) {
-                saveDepartureTime(route, "08:00", 1);
-                saveDepartureTime(route, "13:00", 2);
-                saveDepartureTime(route, "16:00", 3);
-                saveDepartureTime(route, "17:00", 4);
+                // Outbound: Nha Trang -> Đà Lạt
+                saveDepartureTime(route, "08:00", 1, "OUTBOUND");
+                saveDepartureTime(route, "11:00", 2, "OUTBOUND");
+                saveDepartureTime(route, "13:00", 3, "OUTBOUND");
+                saveDepartureTime(route, "17:00", 4, "OUTBOUND");
+
+                // Return: Đà Lạt -> Nha Trang
+                saveDepartureTime(route, "08:00", 1, "RETURN");
+                saveDepartureTime(route, "13:00", 2, "RETURN");
+                saveDepartureTime(route, "16:00", 3, "RETURN");
+                saveDepartureTime(route, "17:00", 4, "RETURN");
             }
         }
     }
 
-    private void saveDepartureTime(IntercityRoute route, String time, int orderIndex) {
+    private void saveDepartureTime(IntercityRoute route, String time, int orderIndex, String direction) {
         departureTimeRepository.save(IntercityDepartureTime.builder()
                 .route(route)
                 .departureTime(time)
+                .direction(direction != null ? direction : "OUTBOUND")
                 .orderIndex(orderIndex)
                 .active(true)
                 .build());

@@ -10,6 +10,7 @@ public class IntercityDepartureTimeDto {
     private Long id;
     private Long routeId;
     private String departureTime;
+    private String direction;
     private int orderIndex;
     private boolean active;
 }

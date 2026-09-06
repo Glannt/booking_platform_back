@@ -26,6 +26,22 @@ public class IntercityRoutePrice extends MasterEntity {
     @Column(name = "per_km_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal perKmAmount;
 
+    @Column(name = "pricing_type", length = 20)
+    @Builder.Default
+    private String pricingType = "PER_KM";
+
+    @Column(name = "fixed_price_one_way", precision = 15, scale = 2)
+    private BigDecimal fixedPriceOneWay;
+
+    @Column(name = "fixed_price_round_trip", precision = 15, scale = 2)
+    private BigDecimal fixedPriceRoundTrip;
+
+    @Column(name = "round_trip_price", precision = 15, scale = 2)
+    private BigDecimal roundTripPrice;
+
+    @Column(name = "round_trip_per_km_amount", precision = 15, scale = 2)
+    private BigDecimal roundTripPerKmAmount;
+
     @Column(name = "currency", length = 10, nullable = false)
     private String currency;
 

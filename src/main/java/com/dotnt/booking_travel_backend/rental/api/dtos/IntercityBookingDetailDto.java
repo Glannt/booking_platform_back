@@ -15,6 +15,7 @@ public class IntercityBookingDetailDto {
     private Long bookingItemId;
     private Long routeId;
     private Long vehicleCategoryId;
+    private String serviceType;
     private String tripType;
     private String pickupAddress;
     private String dropoffAddress;

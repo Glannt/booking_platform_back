@@ -20,6 +20,10 @@ public class IntercityDepartureTime extends MasterEntity {
     @Column(name = "departure_time", nullable = false, length = 5)
     private String departureTime;
 
+    @Column(name = "direction", length = 20)
+    @Builder.Default
+    private String direction = "OUTBOUND";
+
     @Column(name = "order_index", nullable = false)
     @Builder.Default
     private int orderIndex = 0;

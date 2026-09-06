@@ -17,13 +17,19 @@ public class IntercityDepartureTimeController {
     private final IIntercityDepartureTimeService departureTimeService;
 
     @GetMapping("/by-route/{routeId}")
-    public ResponseEntity<List<IntercityDepartureTimeDto>> listByRoute(@PathVariable Long routeId) {
-        return ResponseEntity.ok(departureTimeService.listByRoute(routeId));
+    public ResponseEntity<List<IntercityDepartureTimeDto>> listByRoute(
+            @PathVariable Long routeId,
+            @RequestParam(required = false) String direction
+    ) {
+        return ResponseEntity.ok(departureTimeService.listByRoute(routeId, direction));
     }
 
     @GetMapping("/active/by-route/{routeId}")
-    public ResponseEntity<List<IntercityDepartureTimeDto>> listActiveByRoute(@PathVariable Long routeId) {
-        return ResponseEntity.ok(departureTimeService.listActiveByRoute(routeId));
+    public ResponseEntity<List<IntercityDepartureTimeDto>> listActiveByRoute(
+            @PathVariable Long routeId,
+            @RequestParam(required = false) String direction
+    ) {
+        return ResponseEntity.ok(departureTimeService.listActiveByRoute(routeId, direction));
     }
 
     @GetMapping("/{id}")
@@ -46,7 +52,7 @@ public class IntercityDepartureTimeController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('INTERCITY_ROUTE_DELETE')")
+    @PreAuthorize("hasAnyAuthority('INTERCITY_ROUTE_DELETE', 'INTERCITY_ROUTE_UPDATE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         departureTimeService.delete(id);
         return ResponseEntity.noContent().build();

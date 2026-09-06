@@ -23,6 +23,10 @@ public class IntercityRouteDto {
     private String destinationName;
     private Boolean active;
     private Boolean hasDepartureTimes;
+    private Boolean supportsShared;
+    private String sharedVehicleName;
+    private BigDecimal sharedPriceOneWay;
+    private BigDecimal sharedPriceRoundTrip;
     private Long thumbnailId;
     private String thumbnailUrl;
     private List<Long> imageIds;

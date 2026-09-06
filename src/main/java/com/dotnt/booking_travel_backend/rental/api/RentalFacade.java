@@ -30,6 +30,17 @@ public class RentalFacade {
     private final IntercityRoutePriceRepository intercityRoutePriceRepository;
     private final IntercityBookingDetailRepository intercityBookingDetailRepository;
     private final SelfDriveBookingDetailRepository selfDriveBookingDetailRepository;
+    private final com.dotnt.booking_travel_backend.rental.internal.service.SelfDriveAvailabilityService availabilityService;
+
+    public com.dotnt.booking_travel_backend.rental.api.dtos.CategoryAvailabilityDto checkSelfDriveAvailability(
+            Long categoryId, java.time.LocalDate startDate, java.time.LocalDate endDate, String locale) {
+        return availabilityService.checkAvailability(categoryId, startDate, endDate, locale);
+    }
+
+    public java.util.List<com.dotnt.booking_travel_backend.rental.api.dtos.CategoryAvailabilityDto> getSelfDriveAvailabilityForAll(
+            java.time.LocalDate startDate, java.time.LocalDate endDate, String locale) {
+        return availabilityService.getAvailabilityForAllCategories(startDate, endDate, locale);
+    }
 
     public Long createIntercityBookingDetail(
             Long serviceOptionId,
@@ -44,41 +55,112 @@ public class RentalFacade {
             String dropoffAddress,
             String customerNotes
     ) {
+        return createIntercityBookingDetail(
+                "PRIVATE",
+                1,
+                serviceOptionId,
+                routeId,
+                tripType,
+                departureDateTime,
+                returnDate,
+                null,
+                clientUnitPrice,
+                clientBasePrice,
+                clientTotalPrice,
+                pickupLocation,
+                dropoffAddress,
+                customerNotes
+        );
+    }
+
+    public Long createIntercityBookingDetail(
+            String serviceType,
+            Integer passengerCount,
+            Long serviceOptionId,
+            Long routeId,
+            String tripType,
+            LocalDateTime departureDateTime,
+            LocalDate returnDate,
+            LocalTime returnTime,
+            BigDecimal clientUnitPrice,
+            BigDecimal clientBasePrice,
+            BigDecimal clientTotalPrice,
+            String pickupLocation,
+            String dropoffAddress,
+            String customerNotes
+    ) {
         BigDecimal basePrice = clientBasePrice;
         BigDecimal totalPrice = clientTotalPrice;
+        String resolvedServiceType = (serviceType != null && !serviceType.isBlank()) ? serviceType.toUpperCase() : "PRIVATE";
+        int resolvedPax = (passengerCount != null && passengerCount > 0) ? passengerCount : 1;
+        boolean roundTrip = "ROUND_TRIP".equalsIgnoreCase(tripType) || "round-trip".equalsIgnoreCase(tripType);
 
-        if (routeId != null && serviceOptionId != null) {
-            IntercityRoute intercityRoute = intercityRouteRepository.findById(routeId).orElse(null);
-            IntercityRoutePrice routePrice = intercityRoutePriceRepository
-                    .findByRouteIdAndVehicleCategoryId(routeId, serviceOptionId)
-                    .orElse(null);
+        if ("SHARED".equalsIgnoreCase(resolvedServiceType)) {
+            if (routeId != null) {
+                IntercityRoute intercityRoute = intercityRouteRepository.findById(routeId).orElse(null);
+                if (intercityRoute != null && intercityRoute.isSupportsShared()) {
+                    BigDecimal unitOneWay = intercityRoute.getSharedPriceOneWay();
+                    BigDecimal unitRoundTrip = intercityRoute.getSharedPriceRoundTrip();
+                    BigDecimal serverOneWay = IntercityPriceCalculator.priceShared(unitOneWay, unitRoundTrip, resolvedPax, false);
+                    BigDecimal serverTotal = IntercityPriceCalculator.priceShared(unitOneWay, unitRoundTrip, resolvedPax, roundTrip);
 
-            if (intercityRoute == null || routePrice == null) {
-                log.warn("No intercity price for route {} category {}; trusting client price", routeId, serviceOptionId);
-            } else {
-                boolean roundTrip = "ROUND_TRIP".equalsIgnoreCase(tripType) || "round-trip".equalsIgnoreCase(tripType);
-                BigDecimal serverOneWay = IntercityPriceCalculator.price(
-                        intercityRoute.getDistanceKm(), routePrice.getPerKmAmount(), false);
-                BigDecimal serverTotal = IntercityPriceCalculator.price(
-                        intercityRoute.getDistanceKm(), routePrice.getPerKmAmount(), roundTrip);
-
-                if (departureDateTime != null) {
-                    PricingContext pricingContext = PricingContext.builder()
-                            .basePrice(serverTotal)
-                            .serviceTime(departureDateTime)
-                            .routeId(routeId)
-                            .vehicleCategoryId(serviceOptionId)
-                            .tripType(tripType)
-                            .build();
-                    SurchargeResult surchargeResult = surchargeService.calculate("INTERCITY", pricingContext);
-                    if (surchargeResult != null && surchargeResult.getTotalSurcharge() != null) {
-                        serverTotal = serverTotal.add(surchargeResult.getTotalSurcharge());
-                    }
+                    validateServerPrice("intercity", serverOneWay, serverTotal, clientUnitPrice, clientBasePrice, clientTotalPrice);
+                    basePrice = serverOneWay;
+                    totalPrice = serverTotal;
+                } else {
+                    log.warn("Route {} does not support shared service or route not found; trusting client price", routeId);
                 }
+            }
+        } else {
+            // PRIVATE
+            if (routeId != null && serviceOptionId != null) {
+                IntercityRoute intercityRoute = intercityRouteRepository.findById(routeId).orElse(null);
+                IntercityRoutePrice routePrice = intercityRoutePriceRepository
+                        .findByRouteIdAndVehicleCategoryId(routeId, serviceOptionId)
+                        .orElse(null);
 
-                validateServerPrice("intercity", serverOneWay, serverTotal, clientUnitPrice, clientBasePrice, clientTotalPrice);
-                basePrice = serverOneWay;
-                totalPrice = serverTotal;
+                if (intercityRoute == null || routePrice == null) {
+                    log.warn("No intercity price for route {} category {}; trusting client price", routeId, serviceOptionId);
+                } else {
+                    BigDecimal serverOneWay = IntercityPriceCalculator.pricePrivate(
+                            intercityRoute.getDistanceKm(),
+                            routePrice.getPricingType(),
+                            routePrice.getPerKmAmount(),
+                            routePrice.getFixedPriceOneWay(),
+                            routePrice.getFixedPriceRoundTrip(),
+                            routePrice.getRoundTripPrice(),
+                            routePrice.getRoundTripPerKmAmount(),
+                            false
+                    );
+                    BigDecimal serverTotal = IntercityPriceCalculator.pricePrivate(
+                            intercityRoute.getDistanceKm(),
+                            routePrice.getPricingType(),
+                            routePrice.getPerKmAmount(),
+                            routePrice.getFixedPriceOneWay(),
+                            routePrice.getFixedPriceRoundTrip(),
+                            routePrice.getRoundTripPrice(),
+                            routePrice.getRoundTripPerKmAmount(),
+                            roundTrip
+                    );
+
+                    if (departureDateTime != null) {
+                        PricingContext pricingContext = PricingContext.builder()
+                                .basePrice(serverTotal)
+                                .serviceTime(departureDateTime)
+                                .routeId(routeId)
+                                .vehicleCategoryId(serviceOptionId)
+                                .tripType(tripType)
+                                .build();
+                        SurchargeResult surchargeResult = surchargeService.calculate("INTERCITY", pricingContext);
+                        if (surchargeResult != null && surchargeResult.getTotalSurcharge() != null) {
+                            serverTotal = serverTotal.add(surchargeResult.getTotalSurcharge());
+                        }
+                    }
+
+                    validateServerPrice("intercity", serverOneWay, serverTotal, clientUnitPrice, clientBasePrice, clientTotalPrice);
+                    basePrice = serverOneWay;
+                    totalPrice = serverTotal;
+                }
             }
         }
 
@@ -92,12 +174,16 @@ public class RentalFacade {
         IntercityBookingDetail detail = IntercityBookingDetail.builder()
                 .routeId(routeId)
                 .vehicleCategoryId(serviceOptionId)
+                .serviceType(resolvedServiceType)
+                .passengerCount(resolvedPax)
                 .tripType(tripType)
                 .pickupAddress(pickupLocation)
                 .dropoffAddress(dropoffAddress)
                 .departureDate(departureDate)
                 .departureTime(departureTime)
                 .returnDate(returnDate)
+                .returnTime(returnTime)
+                .note(customerNotes)
                 .basePrice(basePrice)
                 .surchargeAmount(surchargeAmount)
                 .totalPrice(totalPrice)
@@ -157,6 +243,14 @@ public class RentalFacade {
             detail.setBookingItemId(bookingItemId);
             selfDriveBookingDetailRepository.save(detail);
         }
+    }
+
+    public java.time.LocalDate[] getSelfDriveBookingDates(Long selfDriveBookingDetailId) {
+        SelfDriveBookingDetail detail = selfDriveBookingDetailRepository.findById(selfDriveBookingDetailId).orElse(null);
+        if (detail != null && detail.getStartDate() != null && detail.getEndDate() != null) {
+            return new java.time.LocalDate[]{detail.getStartDate(), detail.getEndDate()};
+        }
+        return null;
     }
 
     public Map<String, Object> getIntercityBookingEmailVariables(Long detailId, String locale) {
@@ -221,7 +315,17 @@ public class RentalFacade {
                                      BigDecimal clientUnitPrice, BigDecimal clientBasePrice, BigDecimal clientTotal) {
         checkPrice(label, "base price", serverOneWay, clientBasePrice);
         checkPrice(label, "total price", serverTotal, clientTotal);
-        checkPrice(label, "unit price", serverTotal, clientUnitPrice);
+        if (clientUnitPrice != null && clientUnitPrice.signum() > 0) {
+            if (!matchesPrice(serverOneWay, clientUnitPrice) && !matchesPrice(serverTotal, clientUnitPrice)) {
+                log.debug("Unit price {} differs from serverOneWay {} and serverTotal {}", clientUnitPrice, serverOneWay, serverTotal);
+            }
+        }
+    }
+
+    private boolean matchesPrice(BigDecimal server, BigDecimal client) {
+        if (server == null || client == null || client.signum() == 0) return true;
+        BigDecimal tolerance = BigDecimal.valueOf(5000).add(server.abs().multiply(new BigDecimal("0.01")));
+        return client.subtract(server).abs().compareTo(tolerance) <= 0;
     }
 
     private void checkPrice(String label, String field, BigDecimal server, BigDecimal client) {

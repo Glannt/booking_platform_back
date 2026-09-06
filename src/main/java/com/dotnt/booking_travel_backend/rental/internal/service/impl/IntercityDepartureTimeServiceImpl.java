@@ -26,15 +26,31 @@ public class IntercityDepartureTimeServiceImpl implements IIntercityDepartureTim
     @Override
     @Cacheable(value = "intercityDepartureTimes", key = "'route_' + #routeId")
     public List<IntercityDepartureTimeDto> listByRoute(Long routeId) {
-        return departureTimeRepository.findByRouteIdOrderByOrderIndexAsc(routeId)
-                .stream().map(this::toDto).collect(Collectors.toList());
+        return listByRoute(routeId, null);
+    }
+
+    @Override
+    @Cacheable(value = "intercityDepartureTimes", key = "'route_' + #routeId + '_' + (#direction != null ? #direction : 'ALL')")
+    public List<IntercityDepartureTimeDto> listByRoute(Long routeId, String direction) {
+        List<IntercityDepartureTime> list = (direction != null && !direction.isBlank())
+                ? departureTimeRepository.findByRouteIdAndDirectionOrderByOrderIndexAsc(routeId, direction.toUpperCase())
+                : departureTimeRepository.findByRouteIdOrderByOrderIndexAsc(routeId);
+        return list.stream().map(this::toDto).collect(Collectors.toList());
     }
 
     @Override
     @Cacheable(value = "intercityDepartureTimes", key = "'active_route_' + #routeId")
     public List<IntercityDepartureTimeDto> listActiveByRoute(Long routeId) {
-        return departureTimeRepository.findByRouteIdAndActiveTrueOrderByOrderIndexAsc(routeId)
-                .stream().map(this::toDto).collect(Collectors.toList());
+        return listActiveByRoute(routeId, null);
+    }
+
+    @Override
+    @Cacheable(value = "intercityDepartureTimes", key = "'active_route_' + #routeId + '_' + (#direction != null ? #direction : 'ALL')")
+    public List<IntercityDepartureTimeDto> listActiveByRoute(Long routeId, String direction) {
+        List<IntercityDepartureTime> list = (direction != null && !direction.isBlank())
+                ? departureTimeRepository.findByRouteIdAndDirectionAndActiveTrueOrderByOrderIndexAsc(routeId, direction.toUpperCase())
+                : departureTimeRepository.findByRouteIdAndActiveTrueOrderByOrderIndexAsc(routeId);
+        return list.stream().map(this::toDto).collect(Collectors.toList());
     }
 
     @Override
@@ -53,6 +69,7 @@ public class IntercityDepartureTimeServiceImpl implements IIntercityDepartureTim
         IntercityDepartureTime entity = IntercityDepartureTime.builder()
                 .route(route)
                 .departureTime(dto.getDepartureTime())
+                .direction(dto.getDirection() != null && !dto.getDirection().isBlank() ? dto.getDirection().toUpperCase() : "OUTBOUND")
                 .orderIndex(dto.getOrderIndex())
                 .active(dto.isActive())
                 .build();
@@ -70,6 +87,9 @@ public class IntercityDepartureTimeServiceImpl implements IIntercityDepartureTim
 
             entity.setRoute(route);
             entity.setDepartureTime(dto.getDepartureTime());
+            if (dto.getDirection() != null && !dto.getDirection().isBlank()) {
+                entity.setDirection(dto.getDirection().toUpperCase());
+            }
             entity.setOrderIndex(dto.getOrderIndex());
             entity.setActive(dto.isActive());
             entity = departureTimeRepository.save(entity);
@@ -89,6 +109,7 @@ public class IntercityDepartureTimeServiceImpl implements IIntercityDepartureTim
                 .id(entity.getId())
                 .routeId(entity.getRoute().getId())
                 .departureTime(entity.getDepartureTime())
+                .direction(entity.getDirection() != null ? entity.getDirection() : "OUTBOUND")
                 .orderIndex(entity.getOrderIndex())
                 .active(entity.isActive())
                 .build();

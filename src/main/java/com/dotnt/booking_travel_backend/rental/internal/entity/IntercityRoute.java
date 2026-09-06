@@ -70,6 +70,22 @@ public class IntercityRoute extends MasterEntity {
     @Builder.Default
     private boolean hasDepartureTimes = false;
 
+    @Column(name = "supports_shared", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+    @Builder.Default
+    private boolean supportsShared = true;
+
+    @Column(name = "shared_vehicle_name", length = 100)
+    @Builder.Default
+    private String sharedVehicleName = "Dcar Limousine";
+
+    @Column(name = "shared_price_one_way", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal sharedPriceOneWay = new BigDecimal("250000.00");
+
+    @Column(name = "shared_price_round_trip", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal sharedPriceRoundTrip = new BigDecimal("500000.00");
+
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<IntercityRouteTranslation> translations = new ArrayList<>();

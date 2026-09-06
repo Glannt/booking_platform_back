@@ -11,4 +11,8 @@ public interface IntercityDepartureTimeRepository extends JpaRepository<Intercit
     List<IntercityDepartureTime> findByRouteIdAndActiveTrueOrderByOrderIndexAsc(Long routeId);
 
     List<IntercityDepartureTime> findByRouteIdOrderByOrderIndexAsc(Long routeId);
+
+    List<IntercityDepartureTime> findByRouteIdAndDirectionAndActiveTrueOrderByOrderIndexAsc(Long routeId, String direction);
+
+    List<IntercityDepartureTime> findByRouteIdAndDirectionOrderByOrderIndexAsc(Long routeId, String direction);
 }

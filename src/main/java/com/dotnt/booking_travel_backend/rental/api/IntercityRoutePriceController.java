@@ -45,6 +45,11 @@ public class IntercityRoutePriceController {
                 .route(route)
                 .vehicleCategoryId(dto.getVehicleCategoryId())
                 .perKmAmount(dto.getPerKmAmount())
+                .pricingType(dto.getPricingType() != null && !dto.getPricingType().isBlank() ? dto.getPricingType().toUpperCase() : "PER_KM")
+                .fixedPriceOneWay(dto.getFixedPriceOneWay())
+                .fixedPriceRoundTrip(dto.getFixedPriceRoundTrip())
+                .roundTripPrice(dto.getRoundTripPrice())
+                .roundTripPerKmAmount(dto.getRoundTripPerKmAmount())
                 .currency(dto.getCurrency() != null ? dto.getCurrency() : "VND")
                 .active(dto.isActive())
                 .build();
@@ -58,6 +63,13 @@ public class IntercityRoutePriceController {
         return priceRepository.findById(id).map(price -> {
             price.setVehicleCategoryId(dto.getVehicleCategoryId());
             price.setPerKmAmount(dto.getPerKmAmount());
+            if (dto.getPricingType() != null && !dto.getPricingType().isBlank()) {
+                price.setPricingType(dto.getPricingType().toUpperCase());
+            }
+            price.setFixedPriceOneWay(dto.getFixedPriceOneWay());
+            price.setFixedPriceRoundTrip(dto.getFixedPriceRoundTrip());
+            price.setRoundTripPrice(dto.getRoundTripPrice());
+            price.setRoundTripPerKmAmount(dto.getRoundTripPerKmAmount());
             price.setCurrency(dto.getCurrency());
             price.setActive(dto.isActive());
             return ResponseEntity.ok(toDto(priceRepository.save(price)));
@@ -65,7 +77,7 @@ public class IntercityRoutePriceController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('INTERCITY_PRICE_DELETE')")
+    @PreAuthorize("hasAnyAuthority('INTERCITY_PRICE_DELETE', 'INTERCITY_PRICE_UPDATE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         priceRepository.deleteById(id);
         return ResponseEntity.noContent().build();
@@ -77,6 +89,11 @@ public class IntercityRoutePriceController {
                 .routeId(p.getRoute() != null ? p.getRoute().getId() : null)
                 .vehicleCategoryId(p.getVehicleCategoryId())
                 .perKmAmount(p.getPerKmAmount())
+                .pricingType(p.getPricingType())
+                .fixedPriceOneWay(p.getFixedPriceOneWay())
+                .fixedPriceRoundTrip(p.getFixedPriceRoundTrip())
+                .roundTripPrice(p.getRoundTripPrice())
+                .roundTripPerKmAmount(p.getRoundTripPerKmAmount())
                 .currency(p.getCurrency())
                 .active(p.isActive())
                 .build();

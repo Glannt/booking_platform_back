@@ -64,6 +64,10 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                 .destinationLng(dto.getDestinationLng())
                 .active(Boolean.TRUE.equals(dto.getActive()))
                 .hasDepartureTimes(Boolean.TRUE.equals(dto.getHasDepartureTimes()))
+                .supportsShared(dto.getSupportsShared() != null ? dto.getSupportsShared() : true)
+                .sharedVehicleName(dto.getSharedVehicleName() != null ? dto.getSharedVehicleName() : "Dcar Limousine")
+                .sharedPriceOneWay(dto.getSharedPriceOneWay())
+                .sharedPriceRoundTrip(dto.getSharedPriceRoundTrip())
                 .thumbnailId(dto.getThumbnailId())
                 .thumbnailUrl(dto.getThumbnailUrl())
                 .images(routeImages)
@@ -91,6 +95,11 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                         .route(route)
                         .vehicleCategoryId(pr.getVehicleCategoryId())
                         .perKmAmount(pr.getPerKmAmount())
+                        .pricingType(pr.getPricingType() != null && !pr.getPricingType().isBlank() ? pr.getPricingType().toUpperCase() : "PER_KM")
+                        .fixedPriceOneWay(pr.getFixedPriceOneWay())
+                        .fixedPriceRoundTrip(pr.getFixedPriceRoundTrip())
+                        .roundTripPrice(pr.getRoundTripPrice())
+                        .roundTripPerKmAmount(pr.getRoundTripPerKmAmount())
                         .currency(pr.getCurrency() != null ? pr.getCurrency() : "VND")
                         .active(pr.isActive())
                         .build());
@@ -134,6 +143,18 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
             route.setDestinationLng(dto.getDestinationLng());
             route.setActive(dto.getActive() != null ? dto.getActive() : route.isActive());
             route.setHasDepartureTimes(dto.getHasDepartureTimes() != null ? dto.getHasDepartureTimes() : route.isHasDepartureTimes());
+            if (dto.getSupportsShared() != null) {
+                route.setSupportsShared(dto.getSupportsShared());
+            }
+            if (dto.getSharedVehicleName() != null) {
+                route.setSharedVehicleName(dto.getSharedVehicleName());
+            }
+            if (dto.getSharedPriceOneWay() != null) {
+                route.setSharedPriceOneWay(dto.getSharedPriceOneWay());
+            }
+            if (dto.getSharedPriceRoundTrip() != null) {
+                route.setSharedPriceRoundTrip(dto.getSharedPriceRoundTrip());
+            }
             route.setThumbnailId(dto.getThumbnailId());
             route.setThumbnailUrl(dto.getThumbnailUrl());
             if (dto.getImageIds() != null) {
@@ -166,6 +187,11 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                             .route(route)
                             .vehicleCategoryId(pr.getVehicleCategoryId())
                             .perKmAmount(pr.getPerKmAmount())
+                            .pricingType(pr.getPricingType() != null && !pr.getPricingType().isBlank() ? pr.getPricingType().toUpperCase() : "PER_KM")
+                            .fixedPriceOneWay(pr.getFixedPriceOneWay())
+                            .fixedPriceRoundTrip(pr.getFixedPriceRoundTrip())
+                            .roundTripPrice(pr.getRoundTripPrice())
+                            .roundTripPerKmAmount(pr.getRoundTripPerKmAmount())
                             .currency(pr.getCurrency() != null ? pr.getCurrency() : "VND")
                             .active(pr.isActive())
                             .build());
@@ -227,12 +253,18 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                 .map(pr -> IntercityRoutePriceDto.builder()
                         .id(pr.getId()).routeId(route.getId()).vehicleCategoryId(pr.getVehicleCategoryId())
                         .perKmAmount(pr.getPerKmAmount())
+                        .pricingType(pr.getPricingType())
+                        .fixedPriceOneWay(pr.getFixedPriceOneWay())
+                        .fixedPriceRoundTrip(pr.getFixedPriceRoundTrip())
+                        .roundTripPrice(pr.getRoundTripPrice())
+                        .roundTripPerKmAmount(pr.getRoundTripPerKmAmount())
                         .currency(pr.getCurrency()).active(pr.isActive()).build())
                 .collect(Collectors.toList());
 
         var departureTimes = departureTimeRepository.findByRouteIdOrderByOrderIndexAsc(route.getId()).stream()
                 .map(dt -> IntercityDepartureTimeDto.builder()
                         .id(dt.getId()).routeId(route.getId()).departureTime(dt.getDepartureTime())
+                        .direction(dt.getDirection() != null ? dt.getDirection() : "OUTBOUND")
                         .orderIndex(dt.getOrderIndex()).active(dt.isActive()).build())
                 .collect(Collectors.toList());
 
@@ -252,6 +284,10 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                 .destinationLng(route.getDestinationLng())
                 .active(route.isActive())
                 .hasDepartureTimes(route.isHasDepartureTimes())
+                .supportsShared(route.isSupportsShared())
+                .sharedVehicleName(route.getSharedVehicleName())
+                .sharedPriceOneWay(route.getSharedPriceOneWay())
+                .sharedPriceRoundTrip(route.getSharedPriceRoundTrip())
                 .thumbnailId(route.getThumbnailId())
                 .thumbnailUrl(resolveThumbnailUrl(route.getThumbnailId()))
                 .imageIds(imageIds)

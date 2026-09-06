@@ -13,6 +13,11 @@ public class IntercityRoutePriceDto {
     private Long routeId;
     private Long vehicleCategoryId;
     private BigDecimal perKmAmount;
+    private String pricingType;
+    private BigDecimal fixedPriceOneWay;
+    private BigDecimal fixedPriceRoundTrip;
+    private BigDecimal roundTripPrice;
+    private BigDecimal roundTripPerKmAmount;
     private String currency;
     private boolean active;
 }
