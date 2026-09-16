@@ -31,15 +31,16 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 seedToursHeroBanner();
                 seedSelfDriveHeroBanner();
                 seedAirportTransferHeroBanner();
-                seedRentCarHeroBanner();
+                seedIntercityHeroBanner();
                 seedSlideCard();
                 seedSlideReview();
                 seedInspiration();
                 seedBookingProcess();
                 seedSelfDriveBookingProcess();
                 seedSelfDriveIntro();
-                seedRentCarRoutesHeroBanner();
-                seedRentCarFaq();
+                seedIntercityRoutesHeroBanner();
+                seedIntercityFaq();
+                seedIntercityFeatures();
                 log.info("Section initialization complete.");
             } catch (Exception e) {
                 log.error("Failed to initialize sections", e);
@@ -129,13 +130,13 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
     }
 
     @Transactional
-    public void seedRentCarHeroBanner() {
-        if (sectionRepository.existsByPagePathAndSectionType("/rent-car", "HERO_BANNER")) {
-            log.info("HERO_BANNER for /rent-car already exists, skipping.");
+    public void seedIntercityHeroBanner() {
+        if (sectionRepository.existsByPagePathAndSectionType("/intercity", "HERO_BANNER")) {
+            log.info("HERO_BANNER for /intercity already exists, skipping.");
             return;
         }
-        sectionRepository.save(buildRentCarHeroBanner());
-        log.info("Seeded HERO_BANNER for /rent-car.");
+        sectionRepository.save(buildIntercityHeroBanner());
+        log.info("Seeded HERO_BANNER for /intercity.");
     }
 
     @Transactional
@@ -151,7 +152,7 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 .pagePath("/")
                 .orderIndex(5)
                 .active(true)
-                .contentData("{\"badgeTitle\":{\"vi\":\"Đề xuất\",\"en\":\"Featured\"},\"cards\":[{\"title\":{\"vi\":\"Sân bay Cam Ranh đi Nha Trang\",\"en\":\"Cam Ranh Airport to Nha Trang\"},\"description\":{\"vi\":\"Trung chuyển nhanh chóng, dòng xe hiện đại, hủy chuyến miễn phí.\",\"en\":\"Fast & reliable transfer, modern sedan, free cancellation.\"},\"badge\":{\"vi\":\"Trung chuyển sân bay\",\"en\":\"Airport Transfer\"},\"price\":{\"vi\":\"350,000đ\",\"en\":\"$15\"},\"imageUrl\":\"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600\",\"linkUrl\":\"/airport-transfer\"},{\"title\":{\"vi\":\"Đà Nẵng đi Phố cổ Hội An\",\"en\":\"Da Nang to Hoi An Ancient Town\"},\"description\":{\"vi\":\"Tuyến đường đẹp, tài xế thân thiện, dừng chân ngắm cảnh tùy chọn.\",\"en\":\"Scenic route transfer, English-speaking driver, scenic stops.\"},\"badge\":{\"vi\":\"Thuê xe liên tỉnh\",\"en\":\"Inter-provincial\"},\"price\":{\"vi\":\"450,000đ\",\"en\":\"$19\"},\"imageUrl\":\"https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600\",\"linkUrl\":\"/rent-car\"},{\"title\":{\"vi\":\"Sân bay Nội Bài đi Trung tâm Hà Nội\",\"en\":\"Noi Bai Airport to Hanoi Center\"},\"description\":{\"vi\":\"Xe riêng đi thẳng, đã bao gồm phí cầu đường, không phí ẩn.\",\"en\":\"Direct private car service, meet & greet included, no hidden fees.\"},\"badge\":{\"vi\":\"Trung chuyển sân bay\",\"en\":\"Airport Transfer\"},\"price\":{\"vi\":\"280,000đ\",\"en\":\"$12\"},\"imageUrl\":\"https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600\",\"linkUrl\":\"/airport-transfer\"},{\"title\":{\"vi\":\"Sân bay Phú Quốc đi Dương Đông\",\"en\":\"Phu Quoc Airport to Duong Dong\"},\"description\":{\"vi\":\"Đón ngay tại sảnh ra, xe đời mới máy lạnh êm ái.\",\"en\":\"Instant pickup at terminal, air-conditioned comfortable ride.\"},\"badge\":{\"vi\":\"Trung chuyển sân bay\",\"en\":\"Airport Transfer\"},\"price\":{\"vi\":\"200,000đ\",\"en\":\"$9\"},\"imageUrl\":\"https://images.unsplash.com/photo-1506929562872-bb421503ef21?q=80&w=600\",\"linkUrl\":\"/airport-transfer\"},{\"title\":{\"vi\":\"Tân Sơn Nhất đi Biển Vũng Tàu\",\"en\":\"Tan Son Nhat to Vung Tau Beach\"},\"description\":{\"vi\":\"Dòng xe Limousine rộng rãi, trang bị nước uống và Wi-Fi miễn phí.\",\"en\":\"Limousine private car service, spacious seats, water & Wi-Fi.\"},\"badge\":{\"vi\":\"Thuê xe liên tỉnh\",\"en\":\"Inter-provincial\"},\"price\":{\"vi\":\"1,200,000đ\",\"en\":\"$50\"},\"imageUrl\":\"https://images.unsplash.com/photo-1449965408869-ebd3fee46565?q=80&w=600\",\"linkUrl\":\"/rent-car\"}]}")
+                .contentData("{\"badgeTitle\":{\"vi\":\"Đề xuất\",\"en\":\"Featured\"},\"cards\":[{\"title\":{\"vi\":\"Sân bay Cam Ranh đi Nha Trang\",\"en\":\"Cam Ranh Airport to Nha Trang\"},\"description\":{\"vi\":\"Trung chuyển nhanh chóng, dòng xe hiện đại, hủy chuyến miễn phí.\",\"en\":\"Fast & reliable transfer, modern sedan, free cancellation.\"},\"badge\":{\"vi\":\"Trung chuyển sân bay\",\"en\":\"Airport Transfer\"},\"price\":{\"vi\":\"350,000đ\",\"en\":\"$15\"},\"imageUrl\":\"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600\",\"linkUrl\":\"/airport-transfer\"},{\"title\":{\"vi\":\"Đà Nẵng đi Phố cổ Hội An\",\"en\":\"Da Nang to Hoi An Ancient Town\"},\"description\":{\"vi\":\"Tuyến đường đẹp, tài xế thân thiện, dừng chân ngắm cảnh tùy chọn.\",\"en\":\"Scenic route transfer, English-speaking driver, scenic stops.\"},\"badge\":{\"vi\":\"Thuê xe liên tỉnh\",\"en\":\"Inter-provincial\"},\"price\":{\"vi\":\"450,000đ\",\"en\":\"$19\"},\"imageUrl\":\"https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600\",\"linkUrl\":\"/intercity\"},{\"title\":{\"vi\":\"Sân bay Nội Bài đi Trung tâm Hà Nội\",\"en\":\"Noi Bai Airport to Hanoi Center\"},\"description\":{\"vi\":\"Xe riêng đi thẳng, đã bao gồm phí cầu đường, không phí ẩn.\",\"en\":\"Direct private car service, meet & greet included, no hidden fees.\"},\"badge\":{\"vi\":\"Trung chuyển sân bay\",\"en\":\"Airport Transfer\"},\"price\":{\"vi\":\"280,000đ\",\"en\":\"$12\"},\"imageUrl\":\"https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600\",\"linkUrl\":\"/airport-transfer\"},{\"title\":{\"vi\":\"Sân bay Phú Quốc đi Dương Đông\",\"en\":\"Phu Quoc Airport to Duong Dong\"},\"description\":{\"vi\":\"Đón ngay tại sảnh ra, xe đời mới máy lạnh êm ái.\",\"en\":\"Instant pickup at terminal, air-conditioned comfortable ride.\"},\"badge\":{\"vi\":\"Trung chuyển sân bay\",\"en\":\"Airport Transfer\"},\"price\":{\"vi\":\"200,000đ\",\"en\":\"$9\"},\"imageUrl\":\"https://images.unsplash.com/photo-1506929562872-bb421503ef21?q=80&w=600\",\"linkUrl\":\"/airport-transfer\"},{\"title\":{\"vi\":\"Tân Sơn Nhất đi Biển Vũng Tàu\",\"en\":\"Tan Son Nhat to Vung Tau Beach\"},\"description\":{\"vi\":\"Dòng xe Limousine rộng rãi, trang bị nước uống và Wi-Fi miễn phí.\",\"en\":\"Limousine private car service, spacious seats, water & Wi-Fi.\"},\"badge\":{\"vi\":\"Thuê xe liên tỉnh\",\"en\":\"Inter-provincial\"},\"price\":{\"vi\":\"1,200,000đ\",\"en\":\"$50\"},\"imageUrl\":\"https://images.unsplash.com/photo-1449965408869-ebd3fee46565?q=80&w=600\",\"linkUrl\":\"/rent-car\"}]}")
                 .translations(new ArrayList<>())
                 .build();
 
@@ -486,11 +487,11 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
         return section;
     }
 
-    private Section buildRentCarHeroBanner() {
+    private Section buildIntercityHeroBanner() {
         Section section = Section.builder()
-                .sectionName("Hero Banner - Rent Car with Driver")
+                .sectionName("Hero Banner - Intercity")
                 .sectionType("HERO_BANNER")
-                .pagePath("/rent-car")
+                .pagePath("/intercity")
                 .orderIndex(0)
                 .active(true)
                 .bgColor("#1a1a2e")
@@ -542,15 +543,15 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
 
     @Transactional
     public void seedBookingProcess() {
-        if (sectionRepository.existsBySectionType("BOOKING_PROCESS")) {
-            log.info("BOOKING_PROCESS sections already exist, skipping.");
+        if (sectionRepository.existsByPagePathAndSectionType("/intercity", "BOOKING_PROCESS")) {
+            log.info("BOOKING_PROCESS for /intercity already exists, skipping.");
             return;
         }
 
         Section section = Section.builder()
-                .sectionName("Booking Process - Rent Car")
+                .sectionName("Booking Process - Intercity")
                 .sectionType("BOOKING_PROCESS")
-                .pagePath("/rent-car")
+                .pagePath("/intercity")
                 .orderIndex(2)
                 .active(true)
                 .contentData("{\"steps\":[{\"step\":1,\"icon\":\"Phone\",\"title\":{\"vi\":\"Liên hệ & báo giá chính xác\",\"en\":\"Contact & Exact Quote\"},\"description\":{\"vi\":\"Liên hệ Hotline/Zalo: 0764971971 để báo giá theo ngày giờ, loại xe và điểm đón – trả. Có hỗ trợ định tuyến sân bay Cam Ranh.\",\"en\":\"Contact Hotline/Zalo: 0764971971 for exact quote based on date, time, vehicle type and pickup/dropoff points. Cam Ranh airport routing supported.\"}},{\"step\":2,\"icon\":\"CreditCard\",\"title\":{\"vi\":\"Xác nhận & đặt cọc 20%\",\"en\":\"Confirm & 20% Deposit\"},\"description\":{\"vi\":\"Xe riêng: cọc khi chốt lịch. Dcar: cọc sau khi bộ phận điều hành công ty xác nhận và cấp số ghế.\",\"en\":\"Private car: deposit upon schedule confirmation. Dcar: deposit after operations team confirms and assigns seat number.\"}},{\"step\":3,\"icon\":\"Car\",\"title\":{\"vi\":\"Gửi thông tin xe & tài xế\",\"en\":\"Send Vehicle & Driver Info\"},\"description\":{\"vi\":\"Xe riêng: gửi thông tin trước 30 phút. Dcar: tài xế liên hệ trước 30 phút.\",\"en\":\"Private car: info sent 30 minutes before. Dcar: driver contacts you 30 minutes before departure.\"}},{\"step\":4,\"icon\":\"Wallet\",\"title\":{\"vi\":\"Thanh toán\",\"en\":\"Payment\"},\"description\":{\"vi\":\"Thanh toán tiền mặt hoặc chuyển khoản khi đến nơi. Hỗ trợ hóa đơn VAT 8% khi yêu cầu.\",\"en\":\"Pay cash or bank transfer upon arrival. VAT 8% invoice available upon request.\"}},{\"step\":5,\"icon\":\"Handshake\",\"title\":{\"vi\":\"Hỗ trợ sau chuyến\",\"en\":\"Post-Trip Support\"},\"description\":{\"vi\":\"Sẵn sàng tiếp nhận phản hồi & cung cấp chứng từ khi cần.\",\"en\":\"Ready to receive feedback & provide documentation when needed.\"}}],\"notes\":{\"title\":{\"vi\":\"Lưu ý (áp dụng cho Dcar Limousine)\",\"en\":\"Notes (applies to Dcar Limousine)\"},\"items\":[{\"vi\":\"Vui lòng sử dụng đúng số ghế đã được cấp.\",\"en\":\"Please use the assigned seat number.\"},{\"vi\":\"Phí trung chuyển khách sạn/sân bay (nếu có) sẽ được thông báo trước.\",\"en\":\"Hotel/airport shuttle fee (if any) will be notified in advance.\"},{\"vi\":\"Giờ khởi hành cố định:\",\"en\":\"Fixed departure times:\"}],\"schedules\":[{\"direction\":{\"vi\":\"Nha Trang → Đà Lạt\",\"en\":\"Nha Trang → Da Lat\"},\"times\":[\"08:00\",\"11:00\",\"13:00\",\"17:00\"]},{\"direction\":{\"vi\":\"Đà Lạt → Nha Trang\",\"en\":\"Da Lat → Nha Trang\"},\"times\":[\"08:00\",\"13:00\",\"16:00\",\"17:00\"]}]}}")
@@ -679,16 +680,16 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
     }
 
     @Transactional
-    public void seedRentCarRoutesHeroBanner() {
-        if (sectionRepository.existsByPagePathAndSectionType("/rent-car/routes", "HERO_BANNER")) {
-            log.info("HERO_BANNER for /rent-car/routes already exists, skipping.");
+    public void seedIntercityRoutesHeroBanner() {
+        if (sectionRepository.existsByPagePathAndSectionType("/intercity/routes", "HERO_BANNER")) {
+            log.info("HERO_BANNER for /intercity/routes already exists, skipping.");
             return;
         }
 
         Section section = Section.builder()
-                .sectionName("Hero Banner - Rent Car Routes")
+                .sectionName("Hero Banner - Intercity Routes")
                 .sectionType("HERO_BANNER")
-                .pagePath("/rent-car/routes")
+                .pagePath("/intercity/routes")
                 .orderIndex(0)
                 .active(true)
                 .bgColor("#0f172a")
@@ -727,13 +728,13 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 .build());
 
         sectionRepository.save(section);
-        log.info("Seeded HERO_BANNER for /rent-car/routes.");
+        log.info("Seeded HERO_BANNER for /intercity/routes.");
     }
 
     @Transactional
-    public void seedRentCarFaq() {
-        if (sectionRepository.existsByPagePathAndSectionType("/rent-car", "FAQ")) {
-            log.info("FAQ for /rent-car already exists, skipping.");
+    public void seedIntercityFaq() {
+        if (sectionRepository.existsByPagePathAndSectionType("/intercity", "FAQ")) {
+            log.info("FAQ for /intercity already exists, skipping.");
             return;
         }
 
@@ -758,9 +759,9 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 + "]}";
 
         Section section = Section.builder()
-                .sectionName("FAQ - Rent Car")
+                .sectionName("FAQ - Intercity")
                 .sectionType("FAQ")
-                .pagePath("/rent-car")
+                .pagePath("/intercity")
                 .orderIndex(8)
                 .active(true)
                 .contentData(faqData)
@@ -792,6 +793,58 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 .build());
 
         sectionRepository.save(section);
-        log.info("Seeded FAQ for /rent-car.");
+        log.info("Seeded FAQ for /intercity.");
+    }
+
+    @Transactional
+    public void seedIntercityFeatures() {
+        if (sectionRepository.existsByPagePathAndSectionType("/intercity", "FEATURES")) {
+            log.info("FEATURES section for /intercity already exists, skipping.");
+            return;
+        }
+
+        String featuresData = "{\"features\":["
+                + "{\"icon\":\"MapPin\",\"title\":{\"vi\":\"Đón tận nơi, trả tận chốn\",\"en\":\"Door-to-door Pick up & Drop off\",\"ko\":\"도어 투 도어 픽업 및 드롭\",\"ru\":\"Посадка и высадка от двери до двери\"},\"description\":{\"vi\":\"Đưa đón tận nhà, khách sạn hoặc sân bay mà không cần trung chuyển.\",\"en\":\"Pick up & drop off at your hotel, home or airport without extra hassle.\",\"ko\":\"추가 번거로움 없이 호텔, 집 또는 공항에서 픽업 및 드롭 서비스를 제공합니다.\",\"ru\":\"Посадка и высадка у отеля, дома или в аэропорту без лишних пересадок.\"}},"
+                + "{\"icon\":\"Car\",\"title\":{\"vi\":\"Đội xe đời mới tiện nghi\",\"en\":\"Modern & Luxury Fleet\",\"ko\":\"최신 고급 차량\",\"ru\":\"Современный автопарк\"},\"description\":{\"vi\":\"Dcar Limousine ghế massage và các dòng xe riêng từ 4 đến 45 chỗ hiện đại.\",\"en\":\"Dcar Limousine with massage seats and modern private cars from 4 to 45 seats.\",\"ko\":\"마사지 좌석이 있는 Dcar 리무진 및 4-45인승 현대식 프라이빗 차량.\",\"ru\":\"Dcar Limousine с массажными креслами и современные частные автомобили от 4 до 45 мест.\"}},"
+                + "{\"icon\":\"ShieldCheck\",\"title\":{\"vi\":\"Giá trọn gói minh bạch\",\"en\":\"Transparent All-inclusive Price\",\"ko\":\"투명한 올인클루시브 가격\",\"ru\":\"Прозрачная цена 'все включено'\"},\"description\":{\"vi\":\"Bao gồm toàn bộ phí cầu đường, nhiên liệu và bảo hiểm hành khách, không phí ẩn.\",\"en\":\"Includes all toll fees, fuel, and passenger insurance with no hidden costs.\",\"ko\":\"모든 통행료, 유류비, 승객 보험이 포함되어 있으며 숨겨진 비용이 없습니다.\",\"ru\":\"Включает все дорожные сборы, топливо и страховку пассажиров без скрытых платежей.\"}},"
+                + "{\"icon\":\"Clock\",\"title\":{\"vi\":\"Linh hoạt & Đúng giờ\",\"en\":\"Flexible & Punctual\",\"ko\":\"유연함과 정시성\",\"ru\":\"Гибкость и пунктуальность\"},\"description\":{\"vi\":\"Xe riêng chạy theo lịch hẹn cá nhân; xe ghép khởi hành đúng khung giờ cố định.\",\"en\":\"Private cars follow your schedule; shared limousines depart on exact schedules.\",\"ko\":\"프라이빗 카는 개인 일정에 맞춰 운행되며, 셰어드 리무진은 정해진 시간에 출발합니다.\",\"ru\":\"Индивидуальные авто следуют вашему графику; маршрутки отправляются строго по расписанию.\"}}"
+                + "]}";
+
+        Section section = Section.builder()
+                .sectionName("Intercity Features - Benefits")
+                .sectionType("FEATURES")
+                .pagePath("/intercity")
+                .orderIndex(1)
+                .active(true)
+                .contentData(featuresData)
+                .translations(new ArrayList<>())
+                .build();
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("vi")
+                .title("Lợi ích dịch vụ xe liên tỉnh")
+                .subtitle("Minh Khoa Travel — Trải nghiệm di chuyển an toàn, tiện nghi & tiết kiệm")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("en")
+                .title("Intercity Travel Benefits")
+                .subtitle("Minh Khoa Travel — Safe, comfortable & cost-effective transfers")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ko")
+                .title("시외 이동 서비스 혜택")
+                .subtitle("민 코아 트래블 — 안전하고 편안하며 경제적인 여행 경험")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ru")
+                .title("Преимущества междугородних поездок")
+                .subtitle("Минь Коа Трэвел — Безопасные, комфортные и выгодные поездки")
+                .build());
+
+        sectionRepository.save(section);
+        log.info("Seeded FEATURES for /intercity.");
     }
 }

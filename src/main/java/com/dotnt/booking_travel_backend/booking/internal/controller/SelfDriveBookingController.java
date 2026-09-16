@@ -22,7 +22,7 @@ public class SelfDriveBookingController {
 
     private final BookingService bookingService;
     private final ObjectMapper objectMapper;
-    private final com.dotnt.booking_travel_backend.rental.api.RentalFacade rentalFacade;
+    private final com.dotnt.booking_travel_backend.selfdrive.api.SelfDriveFacade selfDriveFacade;
 
     @PostMapping
     @SuccessResponse("Self-drive booking created successfully!")
@@ -33,25 +33,29 @@ public class SelfDriveBookingController {
                 : (int) java.time.temporal.ChronoUnit.DAYS.between(req.getStartDate(), endDate) + 1;
 
         // Availability Guard (P0-01)
-        com.dotnt.booking_travel_backend.rental.api.dtos.CategoryAvailabilityDto availability =
-                rentalFacade.checkSelfDriveAvailability(req.getVehicleCategoryId(), req.getStartDate(), endDate, "vi");
+        com.dotnt.booking_travel_backend.selfdrive.api.dtos.CategoryAvailabilityDto availability =
+                selfDriveFacade.checkSelfDriveAvailability(req.getVehicleCategoryId(), req.getStartDate(), endDate, "vi");
         if (availability == null || !Boolean.TRUE.equals(availability.getIsAvailable()) || availability.getAvailableVehicles() <= 0) {
             throw new org.springframework.web.server.ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Phân khúc xe " + (availability != null ? availability.getCategoryName() : "") + " đã hết xe khả dụng trong khoảng thời gian từ " + req.getStartDate() + " đến " + endDate + ". Vui lòng chọn ngày khác hoặc phân khúc khác.");
         }
 
-        String dynamicDetails = objectMapper.writeValueAsString(Map.of(
-                "vehicleCategoryId", req.getVehicleCategoryId(),
-                "startDate", req.getStartDate().toString(),
-                "endDate", endDate.toString(),
-                "rentalDays", rentalDays,
-                "basePrice", req.getBasePrice(),
-                "deposit", req.getDeposit(),
-                "totalPrice", req.getTotalPrice(),
-                "pickupLocation", req.getPickupLocation(),
-                "dropoffLocation", req.getDropoffLocation() != null ? req.getDropoffLocation() : ""
-        ));
+        java.util.Map<String, Object> detailsMap = new java.util.HashMap<>();
+        detailsMap.put("vehicleCategoryId", req.getVehicleCategoryId());
+        detailsMap.put("startDate", req.getStartDate().toString());
+        detailsMap.put("endDate", endDate.toString());
+        detailsMap.put("rentalDays", rentalDays);
+        detailsMap.put("basePrice", req.getBasePrice());
+        detailsMap.put("deposit", req.getDeposit());
+        detailsMap.put("totalPrice", req.getTotalPrice());
+        detailsMap.put("pickupLocation", req.getPickupLocation());
+        detailsMap.put("dropoffLocation", req.getDropoffLocation() != null ? req.getDropoffLocation() : "");
+        if (req.getSeatAddOnId() != null) detailsMap.put("seatAddOnId", req.getSeatAddOnId());
+        if (req.getFuelAddOnId() != null) detailsMap.put("fuelAddOnId", req.getFuelAddOnId());
+        if (req.getAddOnIds() != null) detailsMap.put("addOnIds", req.getAddOnIds());
+
+        String dynamicDetails = objectMapper.writeValueAsString(detailsMap);
 
         CreateBookingRequest generic = CreateBookingRequest.builder()
                 .customerName(req.getCustomerName())
@@ -64,6 +68,9 @@ public class SelfDriveBookingController {
                 .zaloId(req.getZaloId())
                 .kakaoTalkId(req.getKakaoTalkId())
                 .whatsapp(req.getWhatsapp())
+                .depositType(req.getDepositType())
+                .depositRate(req.getDepositRate())
+                .depositAmount(req.getDepositAmount())
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(103L)
                         .serviceOptionId(req.getVehicleCategoryId())

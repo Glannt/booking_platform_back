@@ -7,6 +7,7 @@ import com.dotnt.booking_travel_backend.airport.internal.entity.AirportTranslati
 import com.dotnt.booking_travel_backend.airport.internal.repository.AirportRepository;
 import com.dotnt.booking_travel_backend.airport.internal.repository.AirportTranslationRepository;
 import com.dotnt.booking_travel_backend.airport.internal.service.IAirportService;
+import com.dotnt.booking_travel_backend.shared.utils.EntityMergeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -49,24 +50,21 @@ public class AirportServiceImpl implements IAirportService {
                         .build();
                 saved.getTranslations().add(tr);
             }
-            repository.save(saved);
+            saved = repository.save(saved);
         }
         return toDto(saved);
     }
 
     @Override
     public Page<AirportDto> list(Pageable pageable) {
-        Page<Airport> page = repository.findAll(pageable);
-        return new PageImpl<>(
-                page.getContent().stream().map(this::toDto).collect(Collectors.toList()),
-                pageable,
-                page.getTotalElements()
-        );
+        return repository.findAll(pageable).map(this::toDto);
     }
 
     @Override
     public List<AirportDto> listActive() {
-        return repository.findByActiveTrue().stream().map(this::toDto).collect(Collectors.toList());
+        return repository.findByActiveTrue().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -87,17 +85,23 @@ public class AirportServiceImpl implements IAirportService {
             a.setDefault(dto.isDefault());
 
             if (dto.getTranslations() != null) {
-                a.getTranslations().clear();
-                repository.saveAndFlush(a);
-                for (AirportTranslationDto tDto : dto.getTranslations()) {
-                    AirportTranslation tr = AirportTranslation.builder()
-                            .airport(a)
-                            .locale(tDto.getLocale())
-                            .name(tDto.getName())
-                            .description(tDto.getDescription())
-                            .build();
-                    a.getTranslations().add(tr);
-                }
+                final Airport finalAirport = a;
+                EntityMergeUtils.mergeCollection(
+                        a.getTranslations(),
+                        dto.getTranslations(),
+                        tr -> tr.getLocale() != null ? tr.getLocale().toLowerCase() : null,
+                        trDto -> trDto.getLocale() != null ? trDto.getLocale().toLowerCase() : null,
+                        (existing, trDto) -> {
+                            existing.setName(trDto.getName());
+                            existing.setDescription(trDto.getDescription());
+                        },
+                        trDto -> AirportTranslation.builder()
+                                .airport(finalAirport)
+                                .locale(trDto.getLocale().toLowerCase())
+                                .name(trDto.getName())
+                                .description(trDto.getDescription())
+                                .build()
+                );
             }
             return toDto(repository.save(a));
         }).orElse(null);

@@ -25,6 +25,8 @@ public class UpdateBookingRequest {
     private String paymentStatus;
     private String paymentMethod;
     private BigDecimal paidAmount;
+    private String depositType; // "FIXED" | "RATE"
+    private BigDecimal depositRate;
     private BigDecimal depositAmount;
     private BigDecimal receivedAmount;
     private String deletionReason;

@@ -94,6 +94,7 @@ bootRun {
     ]
 }
 tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
     options.compilerArgs += [
             '-Amapstruct.defaultComponentModel=spring', // Biến các Mapper thành Spring @Component mặc định
             '-Amapstruct.unmappedTargetPolicy=IGNORE'   // Bỏ qua cảnh báo nếu Entity có trường mà Record/DTO không có

@@ -21,8 +21,8 @@ public class BookingMapper {
     private final ObjectMapper objectMapper;
     private final com.dotnt.booking_travel_backend.tour.internal.repository.TourBookingDetailRepository tourBookingDetailRepository;
     private final com.dotnt.booking_travel_backend.airport.internal.repository.AirportBookingDetailRepository airportBookingDetailRepository;
-    private final com.dotnt.booking_travel_backend.rental.internal.repository.IntercityBookingDetailRepository intercityBookingDetailRepository;
-    private final com.dotnt.booking_travel_backend.rental.internal.repository.SelfDriveBookingDetailRepository selfDriveBookingDetailRepository;
+    private final com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityBookingDetailRepository intercityBookingDetailRepository;
+    private final com.dotnt.booking_travel_backend.selfdrive.internal.repository.SelfDriveBookingDetailRepository selfDriveBookingDetailRepository;
     private final com.dotnt.booking_travel_backend.tour.api.TourBookingService tourBookingService;
 
     public BookingDto toDto(Booking booking) {
@@ -55,10 +55,16 @@ public class BookingMapper {
                 .internalNotes(booking.getInternalNotes())
                 .paymentStatus(booking.getPaymentStatus())
                 .paymentMethod(booking.getPaymentMethod())
+                .depositType(booking.getDepositType())
+                .depositRate(booking.getDepositRate())
                 .paidAmount(paid)
                 .depositAmount(dep)
                 .receivedAmount(rec)
                 .remainingAmount(remaining)
+                .discountCode(booking.getDiscountCode())
+                .discountAmount(booking.getDiscountAmount())
+                .discountType(booking.getDiscountType())
+                .discountRate(booking.getDiscountRate())
                 .deletionReason(booking.getDeletionReason())
                 .assignedDriver(booking.getAssignedDriver())
                 .assignedVehicle(booking.getAssignedVehicle())

@@ -8,6 +8,7 @@ import com.dotnt.booking_travel_backend.setting.internal.entity.CurrencyTranslat
 import com.dotnt.booking_travel_backend.setting.internal.repository.CurrencyRepository;
 import com.dotnt.booking_travel_backend.setting.internal.repository.CurrencyTranslationRepository;
 import com.dotnt.booking_travel_backend.setting.internal.service.ICurrencyService;
+import com.dotnt.booking_travel_backend.shared.utils.EntityMergeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -94,24 +95,26 @@ public class CurrencyServiceImpl implements ICurrencyService {
         existing.setSymbol(dto.getSymbol());
         existing.setRateToVnd(dto.getRateToVnd());
         existing.setActive(dto.isActive());
-        currencyRepository.save(existing);
-
-        // Clear and recreate translations
-        List<CurrencyTranslation> existingTrans = currencyTranslationRepository.findByCurrencyId(id);
-        currencyTranslationRepository.deleteAll(existingTrans);
-        currencyTranslationRepository.flush();
 
         if (dto.getTranslations() != null) {
-            for (CurrencyTranslationDto transDto : dto.getTranslations()) {
-                CurrencyTranslation trans = CurrencyTranslation.builder()
-                        .currency(existing)
-                        .locale(transDto.getLocale())
-                        .name(transDto.getName())
-                        .build();
-                currencyTranslationRepository.save(trans);
-            }
+            final Currency finalCurrency = existing;
+            EntityMergeUtils.mergeCollection(
+                    existing.getTranslations(),
+                    dto.getTranslations(),
+                    t -> t.getLocale() != null ? t.getLocale().toLowerCase() : null,
+                    tDto -> tDto.getLocale() != null ? tDto.getLocale().toLowerCase() : null,
+                    (tr, tDto) -> {
+                        tr.setName(tDto.getName());
+                    },
+                    tDto -> CurrencyTranslation.builder()
+                            .currency(finalCurrency)
+                            .locale(tDto.getLocale().toLowerCase())
+                            .name(tDto.getName())
+                            .build()
+            );
         }
 
+        currencyRepository.save(existing);
         return getCurrency(id);
     }
 

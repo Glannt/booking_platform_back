@@ -77,11 +77,29 @@ public class Booking extends MasterEntity {
     @Column(name = "paid_amount", precision = 15, scale = 2)
     private BigDecimal paidAmount;
 
+    @Column(name = "deposit_type", length = 20)
+    private String depositType; // "FIXED" | "RATE"
+
+    @Column(name = "deposit_rate", precision = 5, scale = 2)
+    private BigDecimal depositRate; // e.g. 20.00 (%)
+
     @Column(name = "deposit_amount", precision = 15, scale = 2)
     private BigDecimal depositAmount;
 
     @Column(name = "received_amount", precision = 15, scale = 2)
     private BigDecimal receivedAmount;
+
+    @Column(name = "discount_code", length = 50)
+    private String discountCode;
+
+    @Column(name = "discount_amount", precision = 15, scale = 2)
+    private BigDecimal discountAmount;
+
+    @Column(name = "discount_type", length = 20)
+    private String discountType; // "PERCENT" | "FIXED_AMOUNT"
+
+    @Column(name = "discount_rate", precision = 5, scale = 2)
+    private BigDecimal discountRate;
 
     @Column(name = "deletion_reason", length = 500)
     private String deletionReason;

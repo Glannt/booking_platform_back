@@ -11,14 +11,7 @@
             <div th:replace="~{email/fragments :: header('Minh Khoa Travel', 'Yêu cầu đặt dịch vụ Thuê xe Liên tỉnh')}"></div>
 
             <!-- Status Banner -->
-            <div class="status-banner">
-                <div>
-                    <div class="status-banner-title">Đang Chờ Điều Phối &amp; Xác Nhận</div>
-                    <div class="status-banner-desc">
-                        Cảm ơn <strong th:text="${booking.customerName}">Quý khách</strong>. Minh Khoa Travel đã nhận được thông tin chuyến liên tỉnh. Nhân viên điều hành sẽ liên hệ để xác nhận lịch trình trong ít phút.
-                    </div>
-                </div>
-            </div>
+            <div th:replace="~{email/fragments :: statusBanner('thông tin chuyến liên tỉnh')}"></div>
 
             <div class="content-body">
                 <!-- Customer Info -->
@@ -26,12 +19,6 @@
 
                 <!-- Booking Details -->
                 <h3 class="section-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">
-                        <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
-                        <path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
-                        <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6"></path>
-                        <path d="M6 9h10"></path>
-                    </svg>
                     Chi tiết Dịch vụ Thuê xe Liên tỉnh
                 </h3>
                 <div class="detail-card">
@@ -54,7 +41,7 @@
                     <!-- Departure details -->
                     <div class="detail-row">
                         <span class="detail-row-label">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
@@ -64,7 +51,7 @@
                     </div>
                     <div class="detail-row" th:if="${detail.departureTime != null}">
                         <span class="detail-row-label">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
@@ -74,7 +61,7 @@
                     </div>
                     <div class="detail-row" th:if="${detail.tripType == 'ROUND_TRIP' and detail.returnDate != null}">
                         <span class="detail-row-label">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#78350f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
@@ -84,7 +71,7 @@
                     </div>
                     <div class="detail-row" th:if="${detail.tripType == 'ROUND_TRIP' and detail.returnTime != null}">
                         <span class="detail-row-label">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#78350f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 4px;">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
@@ -111,11 +98,6 @@
 
                 <!-- Pricing Table -->
                 <h3 class="section-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">
-                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                        <path d="M9 14l2 2 4-4"></path>
-                    </svg>
                     Chi tiết thanh toán
                 </h3>
                 <table class="price-table">

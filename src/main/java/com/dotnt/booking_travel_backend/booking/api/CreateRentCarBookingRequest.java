@@ -31,7 +31,10 @@ public class CreateRentCarBookingRequest {
     private LocalDate returnDate;
     private String returnTime;
     @NotBlank private String pickupAddress;
-    @NotBlank private String dropoffAddress;
+    private String dropoffAddress;
     @DecimalMin("0.0") private BigDecimal basePrice;
     @NotNull @DecimalMin("0.0") private BigDecimal totalPrice;
+    private String depositType;
+    private BigDecimal depositRate;
+    private BigDecimal depositAmount;
 }

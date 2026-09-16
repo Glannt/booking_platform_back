@@ -2,8 +2,7 @@ package com.dotnt.booking_travel_backend.airport.internal.config;
 
 import com.dotnt.booking_travel_backend.airport.internal.entity.*;
 import com.dotnt.booking_travel_backend.airport.internal.repository.*;
-import com.dotnt.booking_travel_backend.fleet.internal.entity.VehicleCategory;
-import com.dotnt.booking_travel_backend.fleet.internal.repository.VehicleCategoryRepository;
+import com.dotnt.booking_travel_backend.fleet.api.FleetFacade;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -24,7 +23,7 @@ public class AirportDataInitializer implements CommandLineRunner {
     private final AirportRepository airportRepository;
     private final AirportRouteRepository airportRouteRepository;
     private final AirportTransferPriceRepository airportTransferPriceRepository;
-    private final VehicleCategoryRepository vehicleCategoryRepository;
+    private final FleetFacade fleetFacade;
 
     @Override
     public void run(String... args) throws Exception {
@@ -67,9 +66,9 @@ public class AirportDataInitializer implements CommandLineRunner {
                 .build());
         airportRepository.save(cxr);
 
-        VehicleCategory cat4 = vehicleCategoryRepository.findByCode("4-seater").orElse(null);
-        VehicleCategory cat7 = vehicleCategoryRepository.findByCode("7-seater").orElse(null);
-        VehicleCategory cat16 = vehicleCategoryRepository.findByCode("16-seater").orElse(null);
+        Long cat4Id = fleetFacade.findCategoryIdByCode("4-seater");
+        Long cat7Id = fleetFacade.findCategoryIdByCode("7-seater");
+        Long cat16Id = fleetFacade.findCategoryIdByCode("16-seater");
 
         AirportRoute route1 = airportRouteRepository.save(AirportRoute.builder()
                 .code("CXR-NT-CENTER")
@@ -95,10 +94,10 @@ public class AirportDataInitializer implements CommandLineRunner {
         BigDecimal defaultZoneBufferKm = new BigDecimal("2.00");
         BigDecimal defaultFeeFixed = new BigDecimal("100000");
         for (AirportRoute route : routes) {
-            if (cat4 != null) {
+            if (cat4Id != null) {
                 airportTransferPriceRepository.save(AirportTransferPrice.builder()
                         .airportRouteId(route.getId())
-                        .vehicleCategoryId(cat4.getId())
+                        .vehicleCategoryId(cat4Id)
                         .baseKm(baseKm)
                         .zoneBufferKm(defaultZoneBufferKm)
                         .baseAmount(new BigDecimal("300000"))
@@ -109,10 +108,10 @@ public class AirportDataInitializer implements CommandLineRunner {
                         .active(true)
                         .build());
             }
-            if (cat7 != null) {
+            if (cat7Id != null) {
                 airportTransferPriceRepository.save(AirportTransferPrice.builder()
                         .airportRouteId(route.getId())
-                        .vehicleCategoryId(cat7.getId())
+                        .vehicleCategoryId(cat7Id)
                         .baseKm(baseKm)
                         .zoneBufferKm(defaultZoneBufferKm)
                         .baseAmount(new BigDecimal("450000"))
@@ -123,10 +122,10 @@ public class AirportDataInitializer implements CommandLineRunner {
                         .active(true)
                         .build());
             }
-            if (cat16 != null) {
+            if (cat16Id != null) {
                 airportTransferPriceRepository.save(AirportTransferPrice.builder()
                         .airportRouteId(route.getId())
-                        .vehicleCategoryId(cat16.getId())
+                        .vehicleCategoryId(cat16Id)
                         .baseKm(baseKm)
                         .zoneBufferKm(defaultZoneBufferKm)
                         .baseAmount(new BigDecimal("700000"))

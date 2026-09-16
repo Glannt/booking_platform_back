@@ -1,14 +1,14 @@
 package com.dotnt.booking_travel_backend.sections.internal.service;
 
-import com.dotnt.booking_travel_backend.media.internal.entity.Image;
-import com.dotnt.booking_travel_backend.media.internal.repository.ImageRepository;
-import com.dotnt.booking_travel_backend.media.internal.service.MediaService;
+import com.dotnt.booking_travel_backend.media.api.MediaDto;
 import com.dotnt.booking_travel_backend.sections.api.CreateSectionRequest;
 import com.dotnt.booking_travel_backend.sections.api.SectionDto;
 import com.dotnt.booking_travel_backend.sections.api.SectionTranslationDto;
 import com.dotnt.booking_travel_backend.sections.internal.entity.Section;
 import com.dotnt.booking_travel_backend.sections.internal.entity.SectionTranslation;
 import com.dotnt.booking_travel_backend.sections.internal.repository.SectionRepository;
+import com.dotnt.booking_travel_backend.shared.module.ModuleEventPublisher;
+import com.dotnt.booking_travel_backend.shared.utils.EntityMergeUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -26,8 +27,7 @@ import java.util.List;
 public class SectionServiceImpl implements SectionService {
 
     private final SectionRepository sectionRepository;
-    private final ImageRepository imageRepository;
-    private final MediaService mediaService;
+    private final ModuleEventPublisher moduleEventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -76,8 +76,7 @@ public class SectionServiceImpl implements SectionService {
                 .build();
 
         if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
-            List<Image> images = imageRepository.findAllById(request.getImageIds());
-            String imagesJson = images.stream().map(Image::getId).map(String::valueOf)
+            String imagesJson = request.getImageIds().stream().map(String::valueOf)
                     .reduce((a, b) -> a + "," + b).orElse("");
             section.setImages(imagesJson);
         }
@@ -129,24 +128,36 @@ public class SectionServiceImpl implements SectionService {
                     .reduce((a, b) -> a + "," + b).orElse("");
             section.setImages(imagesJson);
             List<Long> newIds = request.getImageIds();
-            oldIds.stream().filter(oldId -> !newIds.contains(oldId)).forEach(mediaService::deleteImage);
+            List<Long> toDelete = oldIds.stream().filter(oldId -> !newIds.contains(oldId)).toList();
+            if (!toDelete.isEmpty()) {
+                moduleEventPublisher.publishRequest("media.image.deleteAll", toDelete, Boolean.class);
+            }
         }
 
-        section.getTranslations().clear();
-        sectionRepository.saveAndFlush(section);
         if (request.getTranslations() != null) {
-            for (CreateSectionRequest.TranslationRequest tr : request.getTranslations()) {
-                SectionTranslation translation = SectionTranslation.builder()
-                        .section(section)
-                        .locale(tr.getLocale())
-                        .title(tr.getTitle())
-                        .subtitle(tr.getSubtitle())
-                        .description(tr.getDescription())
-                        .btnText(tr.getBtnText())
-                        .btnLink(tr.getBtnLink())
-                        .build();
-                section.getTranslations().add(translation);
-            }
+            final Section finalSection = section;
+            EntityMergeUtils.mergeCollection(
+                    section.getTranslations(),
+                    request.getTranslations(),
+                    t -> t.getLocale() != null ? t.getLocale().toLowerCase() : null,
+                    tDto -> tDto.getLocale() != null ? tDto.getLocale().toLowerCase() : null,
+                    (existing, tDto) -> {
+                        existing.setTitle(tDto.getTitle());
+                        existing.setSubtitle(tDto.getSubtitle());
+                        existing.setDescription(tDto.getDescription());
+                        existing.setBtnText(tDto.getBtnText());
+                        existing.setBtnLink(tDto.getBtnLink());
+                    },
+                    tDto -> SectionTranslation.builder()
+                            .section(finalSection)
+                            .locale(tDto.getLocale().toLowerCase())
+                            .title(tDto.getTitle())
+                            .subtitle(tDto.getSubtitle())
+                            .description(tDto.getDescription())
+                            .btnText(tDto.getBtnText())
+                            .btnLink(tDto.getBtnLink())
+                            .build()
+            );
         }
 
         Section saved = sectionRepository.save(section);
@@ -176,30 +187,27 @@ public class SectionServiceImpl implements SectionService {
     }
 
     private void cleanupSectionImages(Section section) {
-        parseImageIds(section.getImages()).forEach(id -> {
-            try { mediaService.deleteImage(id); } catch (Exception e) {
-                log.warn("Failed to delete image {} during section cleanup: {}", id, e.getMessage());
+        List<Long> ids = parseImageIds(section.getImages());
+        if (!ids.isEmpty()) {
+            try {
+                moduleEventPublisher.publishRequest("media.image.deleteAll", ids, Boolean.class);
+            } catch (Exception e) {
+                log.warn("Failed to delete images {} during section cleanup: {}", ids, e.getMessage());
             }
-        });
+        }
     }
 
     private SectionDto mapToDto(Section section, String locale) {
         List<String> imageUrls = new ArrayList<>();
-        if (section.getImages() != null && !section.getImages().isEmpty()) {
-            imageUrls = java.util.Arrays.stream(section.getImages().split(","))
-                    .filter(s -> !s.trim().isEmpty())
-                    .map(s -> {
-                        try {
-                            Long imageId = Long.parseLong(s.trim());
-                            return imageRepository.findById(imageId)
-                                    .map(Image::getFilePath)
-                                    .orElse(null);
-                        } catch (NumberFormatException e) {
-                            return null;
-                        }
-                    })
-                    .filter(s -> s != null)
-                    .toList();
+        List<Long> imgIds = parseImageIds(section.getImages());
+        if (!imgIds.isEmpty()) {
+            List<MediaDto> mediaList = moduleEventPublisher.publishRequest("media.image.findAllByIds", imgIds, List.class);
+            if (mediaList != null) {
+                imageUrls = mediaList.stream()
+                        .map(MediaDto::getFilePath)
+                        .filter(Objects::nonNull)
+                        .toList();
+            }
         }
 
         List<SectionTranslationDto> translations = section.getTranslations().stream()

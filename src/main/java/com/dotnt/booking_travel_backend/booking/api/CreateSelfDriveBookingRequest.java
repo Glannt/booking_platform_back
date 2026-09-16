@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -30,4 +31,12 @@ public class CreateSelfDriveBookingRequest {
     @DecimalMin("0.0") private BigDecimal basePrice;
     @DecimalMin("0.0") private BigDecimal deposit;
     @NotNull @DecimalMin("0.0") private BigDecimal totalPrice;
+
+    private Long seatAddOnId;
+    private Long fuelAddOnId;
+    private List<Long> addOnIds;
+
+    private String depositType;
+    private BigDecimal depositRate;
+    private BigDecimal depositAmount;
 }

@@ -46,4 +46,8 @@ public class CreateAirportTransferBookingRequest {
 
     private Integer passengerCount;
     private BigDecimal luggageWeight;
+
+    private String depositType;
+    private BigDecimal depositRate;
+    private BigDecimal depositAmount;
 }

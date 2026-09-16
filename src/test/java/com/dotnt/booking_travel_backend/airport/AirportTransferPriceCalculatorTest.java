@@ -15,6 +15,7 @@ class AirportTransferPriceCalculatorTest {
                 .baseKm(new BigDecimal(baseKm))
                 .baseAmount(new BigDecimal(baseAmount))
                 .perKmAmount(new BigDecimal(perKmAmount))
+                .zoneBufferKm(BigDecimal.ZERO)
                 .currency("VND")
                 .active(true)
                 .build();

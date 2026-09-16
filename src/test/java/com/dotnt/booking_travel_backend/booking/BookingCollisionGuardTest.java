@@ -11,7 +11,8 @@ import com.dotnt.booking_travel_backend.booking.internal.repository.BookingItemR
 import com.dotnt.booking_travel_backend.booking.internal.repository.BookingRepository;
 import com.dotnt.booking_travel_backend.booking.internal.service.BookingServiceImpl;
 import com.dotnt.booking_travel_backend.fleet.api.FleetFacade;
-import com.dotnt.booking_travel_backend.rental.api.RentalFacade;
+import com.dotnt.booking_travel_backend.intercity.api.IntercityFacade;
+import com.dotnt.booking_travel_backend.selfdrive.api.SelfDriveFacade;
 import com.dotnt.booking_travel_backend.tour.api.TourBookingService;
 import com.dotnt.booking_travel_backend.shared.mailer.MailService;
 import com.dotnt.booking_travel_backend.shared.module.ModuleEventPublisher;
@@ -58,7 +59,9 @@ class BookingCollisionGuardTest {
     @Mock
     private AirportFacade airportFacade;
     @Mock
-    private RentalFacade rentalFacade;
+    private IntercityFacade intercityFacade;
+    @Mock
+    private SelfDriveFacade selfDriveFacade;
 
     @InjectMocks
     private BookingServiceImpl bookingService;
@@ -91,9 +94,9 @@ class BookingCollisionGuardTest {
                 .build();
         targetBooking.setId(2L);
 
-        lenient().when(rentalFacade.getSelfDriveBookingDates(101L))
+        lenient().when(selfDriveFacade.getSelfDriveBookingDates(101L))
                 .thenReturn(new LocalDate[]{LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 15)});
-        lenient().when(rentalFacade.getSelfDriveBookingDates(102L))
+        lenient().when(selfDriveFacade.getSelfDriveBookingDates(102L))
                 .thenReturn(new LocalDate[]{LocalDate.of(2026, 9, 12), LocalDate.of(2026, 9, 16)});
     }
 
@@ -136,7 +139,7 @@ class BookingCollisionGuardTest {
     @Test
     void whenDatesDoNotOverlap_assignmentSucceeds() {
         // Change target booking dates to Sept 16 to Sept 20 (no overlap with Sept 10 - Sept 15)
-        when(rentalFacade.getSelfDriveBookingDates(102L))
+        when(selfDriveFacade.getSelfDriveBookingDates(102L))
                 .thenReturn(new LocalDate[]{LocalDate.of(2026, 9, 16), LocalDate.of(2026, 9, 20)});
 
         when(bookingRepository.findById(2L)).thenReturn(Optional.of(targetBooking));

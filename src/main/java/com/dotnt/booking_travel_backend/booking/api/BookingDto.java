@@ -31,9 +31,15 @@ public class BookingDto {
     private String paymentStatus;
     private String paymentMethod;
     private BigDecimal paidAmount;
+    private String depositType;
+    private BigDecimal depositRate;
     private BigDecimal depositAmount;
     private BigDecimal receivedAmount;
     private BigDecimal remainingAmount;
+    private String discountCode;
+    private BigDecimal discountAmount;
+    private String discountType;
+    private BigDecimal discountRate;
     private String deletionReason;
     private String assignedDriver;
     private String assignedVehicle;

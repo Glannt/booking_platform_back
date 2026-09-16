@@ -34,4 +34,7 @@ public class CreateTourBookingRequest {
     private String startTime;
     private String endTime;
     @NotNull @DecimalMin("0.0") private BigDecimal totalPrice;
+    private String depositType;
+    private BigDecimal depositRate;
+    private BigDecimal depositAmount;
 }

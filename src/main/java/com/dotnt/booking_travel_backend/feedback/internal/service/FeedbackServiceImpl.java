@@ -6,6 +6,7 @@ import com.dotnt.booking_travel_backend.feedback.internal.entity.Feedback;
 import com.dotnt.booking_travel_backend.feedback.internal.entity.FeedbackTranslation;
 import com.dotnt.booking_travel_backend.feedback.internal.repository.FeedbackRepository;
 import com.dotnt.booking_travel_backend.feedback.internal.repository.FeedbackTranslationRepository;
+import com.dotnt.booking_travel_backend.shared.utils.EntityMergeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,9 +40,9 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Override
     @Transactional(readOnly = true)
     public FeedbackDto getFeedbackById(Long id) {
-        Feedback feedback = feedbackRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Feedback not found with id: " + id));
-        return mapToDto(feedback);
+        return feedbackRepository.findById(id)
+                .map(this::mapToDto)
+                .orElse(null);
     }
 
     @Override
@@ -60,7 +61,7 @@ public class FeedbackServiceImpl implements FeedbackService {
 
         Feedback saved = feedbackRepository.save(feedback);
 
-        if (dto.getTranslations() != null) {
+        if (dto.getTranslations() != null && !dto.getTranslations().isEmpty()) {
             List<FeedbackTranslation> translations = dto.getTranslations().stream()
                     .map(t -> FeedbackTranslation.builder()
                             .feedback(saved)
@@ -90,20 +91,24 @@ public class FeedbackServiceImpl implements FeedbackService {
         feedback.setShowOnIndex(dto.getShowOnIndex() != null ? dto.getShowOnIndex() : false);
         feedback.setOrderIndex(dto.getOrderIndex() != null ? dto.getOrderIndex() : 0);
 
-        feedback.getTranslations().clear();
-        feedbackRepository.saveAndFlush(feedback);
-
         if (dto.getTranslations() != null) {
-            List<FeedbackTranslation> translations = dto.getTranslations().stream()
-                    .map(t -> FeedbackTranslation.builder()
-                            .feedback(feedback)
-                            .locale(t.getLocale())
-                            .title(t.getTitle())
-                            .description(t.getDescription())
-                            .build())
-                    .toList();
-            feedbackTranslationRepository.saveAll(translations);
-            feedback.getTranslations().addAll(translations);
+            final Feedback finalFeedback = feedback;
+            EntityMergeUtils.mergeCollection(
+                    feedback.getTranslations(),
+                    dto.getTranslations(),
+                    t -> t.getLocale() != null ? t.getLocale().toLowerCase() : null,
+                    tDto -> tDto.getLocale() != null ? tDto.getLocale().toLowerCase() : null,
+                    (existing, tDto) -> {
+                        existing.setTitle(tDto.getTitle());
+                        existing.setDescription(tDto.getDescription());
+                    },
+                    tDto -> FeedbackTranslation.builder()
+                            .feedback(finalFeedback)
+                            .locale(tDto.getLocale().toLowerCase())
+                            .title(tDto.getTitle())
+                            .description(tDto.getDescription())
+                            .build()
+            );
         }
 
         Feedback saved = feedbackRepository.save(feedback);

@@ -8,11 +8,13 @@ import com.dotnt.booking_travel_backend.booking.internal.repository.BookingItemR
 import com.dotnt.booking_travel_backend.booking.internal.repository.BookingRepository;
 import com.dotnt.booking_travel_backend.tour.api.TourBookingService;
 import com.dotnt.booking_travel_backend.shared.mailer.MailService;
+import com.dotnt.booking_travel_backend.shared.mailer.MailerProperties;
 import com.dotnt.booking_travel_backend.shared.module.ModuleEventPublisher;
 import com.dotnt.booking_travel_backend.user.api.UserFacade;
 import com.dotnt.booking_travel_backend.fleet.api.FleetFacade;
 import com.dotnt.booking_travel_backend.airport.api.AirportFacade;
-import com.dotnt.booking_travel_backend.rental.api.RentalFacade;
+import com.dotnt.booking_travel_backend.intercity.api.IntercityFacade;
+import com.dotnt.booking_travel_backend.selfdrive.api.SelfDriveFacade;
 import lombok.RequiredArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -42,11 +44,16 @@ public class BookingServiceImpl implements BookingService {
     private final BookingMapper bookingMapper;
     private final TourBookingService tourBookingService;
     private final MailService mailService;
+    private final MailerProperties mailerProperties;
     private final BookingEmailBuilder bookingEmailBuilder;
     private final UserFacade userFacade;
     private final FleetFacade fleetFacade;
     private final AirportFacade airportFacade;
-    private final RentalFacade rentalFacade;
+    private final IntercityFacade intercityFacade;
+    private final SelfDriveFacade selfDriveFacade;
+    private final com.dotnt.booking_travel_backend.discount.api.DiscountService discountService;
+    private final com.dotnt.booking_travel_backend.promotion.api.PromotionValidationService promotionValidationService;
+    private final com.dotnt.booking_travel_backend.promotion.api.PromotionRedemptionService promotionRedemptionService;
     private final com.dotnt.booking_travel_backend.booking.internal.repository.BookingTimelineEventRepository bookingTimelineEventRepository;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -112,6 +119,7 @@ public class BookingServiceImpl implements BookingService {
         booking = bookingRepository.save(booking);
 
         BigDecimal calculatedTotal = BigDecimal.ZERO;
+        String dominantServiceType = null;
         if (request.getItems() != null) {
             for (var itemReq : request.getItems()) {
                 int quantity = itemReq.getQuantity() != null ? itemReq.getQuantity() : 1;
@@ -126,8 +134,17 @@ public class BookingServiceImpl implements BookingService {
                 boolean isTour = tourBookingService.isTour(itemReq.getServiceId());
                 boolean isAirport = airportFacade.existsTransferPriceById(itemReq.getServiceId())
                         || (itemReq.getServiceId() != null && itemReq.getServiceId().equals(101L));
-                boolean isIntercity = itemReq.getServiceId() != null && itemReq.getServiceId().equals(102L);
-                boolean isSelfDrive = itemReq.getServiceId() != null && itemReq.getServiceId().equals(103L);
+                boolean isIntercity = (itemReq.getServiceId() != null && itemReq.getServiceId().equals(102L))
+                        || (itemReq.getDynamicDetails() != null && itemReq.getDynamicDetails().contains("\"routeId\""));
+                boolean isSelfDrive = (itemReq.getServiceId() != null && itemReq.getServiceId().equals(103L))
+                        || (itemReq.getDynamicDetails() != null && (itemReq.getDynamicDetails().contains("\"rentalId\"") || (itemReq.getDynamicDetails().contains("\"vehicleCategoryId\"") && !isIntercity && !isAirport)));
+
+                if (dominantServiceType == null) {
+                    if (isTour) dominantServiceType = "TOUR";
+                    else if (isSelfDrive) dominantServiceType = "SELF_DRIVE";
+                    else if (isIntercity) dominantServiceType = "INTERCITY";
+                    else if (isAirport) dominantServiceType = "AIRPORT";
+                }
 
                 if (isTour) {
                     if (itemReq.getServiceOptionId() != null) {
@@ -391,7 +408,7 @@ public class BookingServiceImpl implements BookingService {
 
                     String dropoffAddress = ad.get("dropoffAddress") != null ? ad.get("dropoffAddress").toString() : null;
 
-                    intercityBookingDetailId = rentalFacade.createIntercityBookingDetail(
+                    intercityBookingDetailId = intercityFacade.createIntercityBookingDetail(
                             serviceType,
                             passengerCount,
                             vehicleCategoryId,
@@ -457,7 +474,7 @@ public class BookingServiceImpl implements BookingService {
 
                     String dropoffLocation = ad.get("dropoffLocation") != null ? ad.get("dropoffLocation").toString() : null;
 
-                    selfDriveBookingDetailId = rentalFacade.createSelfDriveBookingDetail(
+                    selfDriveBookingDetailId = selfDriveFacade.createSelfDriveBookingDetail(
                             vehicleCategoryId,
                             startDate,
                             endDate,
@@ -488,16 +505,95 @@ public class BookingServiceImpl implements BookingService {
                 } else if (isAirport && airportTransferBookingDetailId != null) {
                     airportFacade.updateAirportBookingItemId(airportTransferBookingDetailId, item.getId());
                 } else if (isIntercity && intercityBookingDetailId != null) {
-                    rentalFacade.updateIntercityBookingItemId(intercityBookingDetailId, item.getId());
+                    intercityFacade.updateIntercityBookingItemId(intercityBookingDetailId, item.getId());
                 } else if (isSelfDrive && selfDriveBookingDetailId != null) {
-                    rentalFacade.updateSelfDriveBookingItemId(selfDriveBookingDetailId, item.getId());
+                    selfDriveFacade.updateSelfDriveBookingItemId(selfDriveBookingDetailId, item.getId());
                 }
             }
         }
 
+        // Apply discount / promotion if provided
+        Long appliedPromoId = null;
+        Long appliedGrantId = null;
+        if (request.getDiscountCode() != null && !request.getDiscountCode().isBlank()) {
+            try {
+                var promoReq = com.dotnt.booking_travel_backend.promotion.api.dtos.ValidatePromotionRequest.builder()
+                        .code(request.getDiscountCode().trim())
+                        .customerId(resolvedUserId)
+                        .scopeType(dominantServiceType != null ? dominantServiceType : "GLOBAL")
+                        .orderAmount(calculatedTotal)
+                        .build();
+                var promoRes = promotionValidationService.validateAndApplyPromotion(promoReq);
+                if (promoRes != null && promoRes.isValid()) {
+                    booking.setDiscountCode(promoRes.getDiscountCode());
+                    booking.setDiscountType(promoRes.getDiscountType());
+                    booking.setDiscountRate(promoRes.getDiscountValue());
+                    booking.setDiscountAmount(promoRes.getDiscountAmount());
+                    calculatedTotal = promoRes.getFinalAmount();
+                    appliedPromoId = promoRes.getPromotionId();
+                    appliedGrantId = promoRes.getGrantId();
+                } else {
+                    // Fallback to legacy discount service
+                    var discountReq = com.dotnt.booking_travel_backend.discount.api.dtos.ValidateDiscountRequest.builder()
+                            .code(request.getDiscountCode().trim())
+                            .scopeType(dominantServiceType != null ? dominantServiceType : "GLOBAL")
+                            .orderAmount(calculatedTotal)
+                            .build();
+                    var discountRes = discountService.validateAndApplyDiscount(discountReq);
+                    if (discountRes != null && discountRes.isValid()) {
+                        booking.setDiscountCode(discountRes.getDiscountCode());
+                        booking.setDiscountType(discountRes.getDiscountType());
+                        booking.setDiscountRate(discountRes.getDiscountValue());
+                        booking.setDiscountAmount(discountRes.getDiscountAmount());
+                        calculatedTotal = discountRes.getFinalAmount();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to apply discount code {}: {}", request.getDiscountCode(), e.getMessage());
+            }
+        }
+
+        // Deposit calculation (calculated from total price after any discount)
+        String depType = request.getDepositType() != null && !request.getDepositType().isBlank()
+                ? request.getDepositType().toUpperCase()
+                : "PERCENT";
+        if ("RATE".equalsIgnoreCase(depType)) {
+            depType = "PERCENT";
+        }
+
+        BigDecimal depRate = request.getDepositRate() != null && request.getDepositRate().compareTo(BigDecimal.ZERO) > 0
+                ? request.getDepositRate()
+                : ("PERCENT".equalsIgnoreCase(depType) ? DepositPolicy.getDefaultRate(dominantServiceType) : null);
+
+        var depResult = com.dotnt.booking_travel_backend.shared.deposit.DepositEngine.calculateDeposit(
+                com.dotnt.booking_travel_backend.shared.deposit.dto.DepositCalculationRequest.builder()
+                        .depositType(depType)
+                        .depositRate(depRate)
+                        .fixedDepositAmount(request.getDepositAmount())
+                        .totalAmount(calculatedTotal)
+                        .serviceType(dominantServiceType)
+                        .build()
+        );
+
+        BigDecimal depAmount = depResult.getDepositAmount();
+        booking.setDepositType(depResult.getDepositType());
+        booking.setDepositRate(depResult.getDepositRate() != null ? depResult.getDepositRate() : depRate);
+        booking.setDepositAmount(depAmount);
+        booking.setPaidAmount(BigDecimal.ZERO);
+        booking.setReceivedAmount(BigDecimal.ZERO);
         booking.setTotalAmount(calculatedTotal);
         booking.setTotalPrice(calculatedTotal);
         booking = bookingRepository.save(booking);
+
+        // Record promotion redemption & update counter/grant atomically
+        if (appliedPromoId != null) {
+            try {
+                promotionRedemptionService.redeemPromotion(
+                        appliedPromoId, appliedGrantId, resolvedUserId, booking.getId(), booking.getDiscountAmount());
+            } catch (Exception e) {
+                log.warn("Failed to record promotion redemption for booking {}: {}", booking.getBookingCode(), e.getMessage());
+            }
+        }
 
         recordTimelineEvent(booking.getId(), "CREATED", "Tạo đơn đặt", 
                 "Đơn đặt " + booking.getBookingCode() + " được tạo thành công cho " + booking.getCustomerName(), 
@@ -510,12 +606,24 @@ public class BookingServiceImpl implements BookingService {
 
     private void sendBookingEmail(Booking booking) {
         try {
-            String htmlContent = bookingEmailBuilder.buildEmailHtml(booking);
+            // 1. Email cho Customer (xác nhận tiếp nhận đơn đặt chỗ thành công)
+            String customerHtml = bookingEmailBuilder.buildEmailHtml(booking, false);
             mailService.send(
-                    "tongnguyenthanhdo@gmail.com",
-                    "[Minh Khoa Travel] Yêu cầu đặt dịch vụ mới - " + booking.getBookingCode(),
-                    htmlContent);
-            log.info("Sent booking email confirmation for {}", booking.getBookingCode());
+                    booking.getCustomerEmail(),
+                    "[Minh Khoa Travel] Tiếp nhận đơn đặt chỗ thành công - " + booking.getBookingCode(),
+                    customerHtml);
+            log.info("Sent customer booking email to {} for {}", booking.getCustomerEmail(), booking.getBookingCode());
+
+            // 2. Email cho Admin (thông báo có đơn mới cần xử lý)
+            String adminHtml = bookingEmailBuilder.buildEmailHtml(booking, true);
+            String formattedTotal = booking.getTotalAmount() != null
+                    ? String.format("%,d ₫", booking.getTotalAmount().longValue())
+                    : "0 ₫";
+            mailService.send(
+                    mailerProperties.getFrom(),
+                    "[ĐƠN MỚI] " + booking.getBookingCode() + " - Khách: " + booking.getCustomerName() + " (" + formattedTotal + ")",
+                    adminHtml);
+            log.info("Sent admin notification email for {}", booking.getBookingCode());
         } catch (Exception e) {
             log.error("Failed to send booking email", e);
         }
@@ -587,8 +695,44 @@ public class BookingServiceImpl implements BookingService {
         if (request.getPaymentMethod() != null)
             booking.setPaymentMethod(request.getPaymentMethod());
 
-        if (request.getDepositAmount() != null)
+        if (request.getDepositType() != null && !request.getDepositType().isBlank()) {
+            booking.setDepositType(request.getDepositType().toUpperCase());
+        }
+        if (request.getDepositRate() != null) {
+            booking.setDepositRate(request.getDepositRate());
+        }
+
+        String dominantServiceType = null;
+        if (booking.getItems() != null && !booking.getItems().isEmpty()) {
+            BookingItem firstItem = booking.getItems().iterator().next();
+            if (firstItem.getTourBookingDetailId() != null) dominantServiceType = "TOUR";
+            else if (firstItem.getSelfDriveBookingDetailId() != null) dominantServiceType = "SELF_DRIVE";
+            else if (firstItem.getAirportTransferBookingDetailId() != null) dominantServiceType = "AIRPORT";
+            else if (firstItem.getIntercityBookingDetailId() != null) dominantServiceType = "INTERCITY";
+        }
+
+        if (DepositPolicy.TYPE_RATE.equalsIgnoreCase(booking.getDepositType())
+                || DepositPolicy.TYPE_PERCENT.equalsIgnoreCase(booking.getDepositType())) {
+            BigDecimal rate = booking.getDepositRate() != null && booking.getDepositRate().compareTo(BigDecimal.ZERO) > 0
+                    ? booking.getDepositRate()
+                    : DepositPolicy.getDefaultRate(dominantServiceType);
+            booking.setDepositRate(rate);
+            if (booking.getTotalAmount() != null) {
+                booking.setDepositAmount(DepositPolicy.calculateDeposit(
+                        DepositPolicy.TYPE_PERCENT, rate, null, booking.getTotalAmount(), dominantServiceType));
+            }
+        } else if (DepositPolicy.TYPE_FIXED.equalsIgnoreCase(booking.getDepositType())) {
+            BigDecimal fixed = request.getDepositAmount() != null
+                    ? request.getDepositAmount()
+                    : booking.getDepositAmount();
+            if (booking.getTotalAmount() != null) {
+                booking.setDepositAmount(DepositPolicy.calculateDeposit(
+                        DepositPolicy.TYPE_FIXED, null, fixed, booking.getTotalAmount(), dominantServiceType));
+            }
+        } else if (request.getDepositAmount() != null) {
             booking.setDepositAmount(request.getDepositAmount());
+        }
+
         if (request.getReceivedAmount() != null)
             booking.setReceivedAmount(request.getReceivedAmount());
 
@@ -598,10 +742,11 @@ public class BookingServiceImpl implements BookingService {
 
         if (request.getPaymentStatus() != null && !request.getPaymentStatus().isBlank()) {
             booking.setPaymentStatus(request.getPaymentStatus());
-        } else if (booking.getPaymentStatus() == null || booking.getPaymentStatus().isBlank()) {
+        } else {
+            BigDecimal total = booking.getTotalAmount() != null ? booking.getTotalAmount() : BigDecimal.ZERO;
             if (booking.getPaidAmount().compareTo(BigDecimal.ZERO) == 0) {
                 booking.setPaymentStatus("UNPAID");
-            } else if (booking.getPaidAmount().compareTo(booking.getTotalAmount() != null ? booking.getTotalAmount() : BigDecimal.ZERO) >= 0) {
+            } else if (booking.getPaidAmount().compareTo(total) >= 0 && total.compareTo(BigDecimal.ZERO) > 0) {
                 booking.setPaymentStatus("PAID");
             } else {
                 booking.setPaymentStatus("DEPOSITED");
@@ -650,6 +795,14 @@ public class BookingServiceImpl implements BookingService {
             recordTimelineEvent(booking.getId(), "STATUS_CHANGE", "Thay đổi trạng thái",
                     "Trạng thái đơn chuyển từ " + oldStatus + " sang " + booking.getBookingStatus(),
                     oldStatus != null ? oldStatus.name() : null, booking.getBookingStatus().name());
+
+            if (booking.getBookingStatus() == BookingStatus.cancelled) {
+                try {
+                    promotionRedemptionService.reverseRedemption(booking.getId());
+                } catch (Exception e) {
+                    log.warn("Failed reversing promotion redemption for booking {}: {}", booking.getId(), e.getMessage());
+                }
+            }
         }
 
         boolean driverChanged = !java.util.Objects.equals(oldDriver, booking.getAssignedDriver());
@@ -682,7 +835,7 @@ public class BookingServiceImpl implements BookingService {
         if (b.getItems() == null) return null;
         for (BookingItem item : b.getItems()) {
             if (item.getSelfDriveBookingDetailId() != null) {
-                java.time.LocalDate[] dates = rentalFacade.getSelfDriveBookingDates(item.getSelfDriveBookingDetailId());
+                java.time.LocalDate[] dates = selfDriveFacade.getSelfDriveBookingDates(item.getSelfDriveBookingDetailId());
                 if (dates != null) return dates;
             }
             if (item.getDynamicDetails() != null && !item.getDynamicDetails().isBlank()) {

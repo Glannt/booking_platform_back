@@ -14,7 +14,8 @@ import com.dotnt.booking_travel_backend.booking.internal.repository.BookingTimel
 import com.dotnt.booking_travel_backend.booking.internal.service.BookingEmailBuilder;
 import com.dotnt.booking_travel_backend.booking.internal.service.BookingServiceImpl;
 import com.dotnt.booking_travel_backend.fleet.api.FleetFacade;
-import com.dotnt.booking_travel_backend.rental.api.RentalFacade;
+import com.dotnt.booking_travel_backend.intercity.api.IntercityFacade;
+import com.dotnt.booking_travel_backend.selfdrive.api.SelfDriveFacade;
 import com.dotnt.booking_travel_backend.shared.mailer.MailService;
 import com.dotnt.booking_travel_backend.shared.module.ModuleEventPublisher;
 import com.dotnt.booking_travel_backend.tour.api.TourBookingService;
@@ -61,7 +62,9 @@ class BookingOperationsAndTimelineTest {
     @Mock
     private AirportFacade airportFacade;
     @Mock
-    private RentalFacade rentalFacade;
+    private IntercityFacade intercityFacade;
+    @Mock
+    private SelfDriveFacade selfDriveFacade;
     @Mock
     private BookingTimelineEventRepository bookingTimelineEventRepository;
 

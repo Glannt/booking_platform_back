@@ -5,13 +5,15 @@ import com.dotnt.booking_travel_backend.booking.internal.entity.BookingItem;
 import com.dotnt.booking_travel_backend.tour.api.TourBookingService;
 import com.dotnt.booking_travel_backend.fleet.api.FleetFacade;
 import com.dotnt.booking_travel_backend.airport.api.AirportFacade;
-import com.dotnt.booking_travel_backend.rental.api.RentalFacade;
+import com.dotnt.booking_travel_backend.intercity.api.IntercityFacade;
+import com.dotnt.booking_travel_backend.selfdrive.api.SelfDriveFacade;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import org.springframework.beans.factory.annotation.Value;
 import java.util.Map;
 
 @Service
@@ -23,16 +25,26 @@ public class BookingEmailBuilder {
     private final TourBookingService tourBookingService;
     private final FleetFacade fleetFacade;
     private final AirportFacade airportFacade;
-    private final RentalFacade rentalFacade;
+    private final IntercityFacade intercityFacade;
+    private final SelfDriveFacade selfDriveFacade;
+
+    @Value("${app.portal-url:http://localhost:3000/portal/bookings}")
+    private String portalUrl;
 
     public String buildEmailHtml(Booking booking) {
+        return buildEmailHtml(booking, false);
+    }
+
+    public String buildEmailHtml(Booking booking, boolean isAdminNotification) {
         if (booking == null || booking.getItems() == null || booking.getItems().isEmpty()) {
-            return buildFallbackHtml(booking);
+            return buildFallbackHtml(booking, isAdminNotification);
         }
 
         BookingItem item = booking.getItems().get(0);
         Context context = new Context();
         context.setVariable("booking", booking);
+        context.setVariable("isAdmin", isAdminNotification);
+        context.setVariable("portalUrl", portalUrl);
 
         try {
             if (item.getAirportTransferBookingDetailId() != null || isAirportTransferItem(item)) {
@@ -59,7 +71,7 @@ public class BookingEmailBuilder {
                     return templateEngine.process("email/booking-airport-transfer", context);
                 }
             } else if (item.getIntercityBookingDetailId() != null) {
-                Map<String, Object> vars = rentalFacade.getIntercityBookingEmailVariables(
+                Map<String, Object> vars = intercityFacade.getIntercityBookingEmailVariables(
                         item.getIntercityBookingDetailId(), "vi");
                 if (vars != null && !vars.isEmpty()) {
                     vars.forEach(context::setVariable);
@@ -76,7 +88,7 @@ public class BookingEmailBuilder {
                     return templateEngine.process("email/booking-intercity", context);
                 }
             } else if (item.getSelfDriveBookingDetailId() != null) {
-                Map<String, Object> vars = rentalFacade.getSelfDriveBookingEmailVariables(
+                Map<String, Object> vars = selfDriveFacade.getSelfDriveBookingEmailVariables(
                         item.getSelfDriveBookingDetailId(), "vi");
                 if (vars != null && !vars.isEmpty()) {
                     vars.forEach(context::setVariable);
@@ -117,7 +129,7 @@ public class BookingEmailBuilder {
             log.error("Error processing booking email template, falling back to default styling", e);
         }
 
-        return buildFallbackHtml(booking);
+        return buildFallbackHtml(booking, isAdminNotification);
     }
 
     private boolean isAirportTransferItem(BookingItem item) {
@@ -202,69 +214,154 @@ public class BookingEmailBuilder {
         return null;
     }
 
-    private String buildFallbackHtml(Booking booking) {
+    private String resolveItemServiceName(BookingItem item) {
+        String serviceName = "Dịch vụ đặt xe / du lịch";
+        if (item == null || item.getDynamicDetails() == null || item.getDynamicDetails().isBlank()) {
+            return serviceName;
+        }
+
+        String raw = item.getDynamicDetails().trim();
+        if (raw.startsWith("{") && raw.endsWith("}")) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                Map<String, Object> map = om.readValue(raw, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+                if (map.containsKey("outboundPickupAddress")) {
+                    return "Đưa đón sân bay: " + map.get("outboundPickupAddress") + " ➔ " + map.get("outboundDropoffAddress");
+                } else if (map.containsKey("tourName")) {
+                    return "Tour: " + map.get("tourName");
+                } else if (map.containsKey("pickupAddress") && map.containsKey("dropoffAddress")) {
+                    return "Thuê xe liên tỉnh: " + map.get("pickupAddress") + " ➔ " + map.get("dropoffAddress");
+                } else if (map.containsKey("rentalDays")) {
+                    return "Thuê xe tự lái (" + map.get("rentalDays") + " ngày)";
+                }
+            } catch (Exception ignored) {}
+        } else {
+            // Parse plain-text details format: "Category ID: 2, StartDate: ..., Pickup: A, Dropoff: B"
+            try {
+                String pickup = null;
+                String dropoff = null;
+                for (String part : raw.split(",")) {
+                    String trimmed = part.trim();
+                    if (trimmed.toLowerCase().startsWith("pickup:")) {
+                        pickup = trimmed.substring("pickup:".length()).trim();
+                    } else if (trimmed.toLowerCase().startsWith("dropoff:")) {
+                        dropoff = trimmed.substring("dropoff:".length()).trim();
+                    }
+                }
+                if (pickup != null && !pickup.isEmpty() && dropoff != null && !dropoff.isEmpty()) {
+                    return "Thuê xe: " + pickup + " ➔ " + dropoff;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        return serviceName;
+    }
+
+    private String buildFallbackHtml(Booking booking, boolean isAdminNotification) {
         StringBuilder itemsHtml = new StringBuilder();
         for (BookingItem item : booking.getItems()) {
-            String serviceName = "Dịch vụ đặt xe / du lịch";
-            if (item.getDynamicDetails() != null) {
-                try {
-                    com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
-                    Map<String, Object> map = om.readValue(item.getDynamicDetails(), new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
-                    if (map.containsKey("outboundPickupAddress")) {
-                        serviceName = "Đưa đón sân bay: " + map.get("outboundPickupAddress") + " ➔ " + map.get("outboundDropoffAddress");
-                    } else if (map.containsKey("tourName")) {
-                        serviceName = "Tour: " + map.get("tourName");
-                    } else if (map.containsKey("pickupAddress")) {
-                        serviceName = "Thuê xe: " + map.get("pickupAddress") + " ➔ " + map.get("dropoffAddress");
-                    }
-                } catch (Exception ignored) {}
-            }
+            String serviceName = resolveItemServiceName(item);
             itemsHtml.append("<tr>")
-                    .append("<td style='padding: 10px; border-bottom: 1px solid #eee;'><strong>").append(serviceName).append("</strong></td>")
-                    .append("<td style='padding: 10px; border-bottom: 1px solid #eee; text-align: center;'>").append(item.getQuantity()).append("</td>")
-                    .append("<td style='padding: 10px; border-bottom: 1px solid #eee; text-align: right;'>").append(String.format("%,d ₫", item.getUnitPrice() != null ? item.getUnitPrice().longValue() : 0)).append("</td>")
-                    .append("<td style='padding: 10px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;'>").append(String.format("%,d ₫", item.getTotalPrice() != null ? item.getTotalPrice().longValue() : 0)).append("</td>")
+                    .append("<td style='padding: 12px 10px; border-bottom: 1px solid #e2e8f0;'><strong>").append(serviceName).append("</strong></td>")
+                    .append("<td style='padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: center;'>").append(item.getQuantity()).append("</td>")
+                    .append("<td style='padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: right;'>").append(String.format("%,d ₫", item.getUnitPrice() != null ? item.getUnitPrice().longValue() : 0)).append("</td>")
+                    .append("<td style='padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: 700;'>").append(String.format("%,d ₫", item.getTotalPrice() != null ? item.getTotalPrice().longValue() : 0)).append("</td>")
                     .append("</tr>");
         }
 
         String contactInfo = "Không có";
-        if (booking.getContactChannel() != null && booking.getContactId() != null) {
+        if (booking.getContactChannel() != null && booking.getContactId() != null && !booking.getContactId().isEmpty()) {
             contactInfo = booking.getContactChannel().toUpperCase() + " (" + booking.getContactId() + ")";
         }
 
-        return "<!DOCTYPE html><html><body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; background-color: #f1f5f9; padding: 20px;'>" +
-                "<div style='max-width: 600px; margin: 0 auto; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);'>" +
-                "<div style='background: linear-gradient(135deg, #0f172a, #2563eb); color: #fff; padding: 24px; text-align: center;'>" +
-                "<h2 style='margin: 0; font-size: 20px;'>MINH KHOA TRAVEL</h2>" +
-                "<p style='margin: 4px 0 0 0; font-size: 13px; color: #bfdbfe;'>Xác Nhận Yêu Cầu Đặt Chuyến</p>" +
+        String safeCustomerName = booking.getCustomerName() != null ? booking.getCustomerName() : "Quý khách";
+        String safeBookingCode = booking.getBookingCode() != null ? booking.getBookingCode() : "N/A";
+        String safePortalUrl = (portalUrl != null && !portalUrl.isBlank()) ? portalUrl : "http://localhost:3000/portal/bookings";
+
+        String headerSubtitle = isAdminNotification
+                ? "Hệ Thống Quản Trị · Thông Báo Đơn Đặt Mới"
+                : "Xác Nhận Tiếp Nhận Yêu Cầu Đặt Chuyến";
+
+        String statusBannerHtml;
+        String actionButtonHtml = "";
+        String footerHtml;
+
+        if (isAdminNotification) {
+            statusBannerHtml =
+                "<div style='background: #fff7ed; border-left: 4px solid #ea580c; padding: 14px 16px; border-radius: 8px; font-size: 13px; color: #9a3412; margin-bottom: 18px;'>" +
+                "<strong style='display: block; font-size: 14px; margin-bottom: 4px; color: #c2410c;'>CÓ ĐƠN ĐẶT CHỖ MỚI CẦN XỬ LÝ</strong>" +
+                "Hệ thống vừa tiếp nhận đơn đặt mới từ khách hàng <strong>" + safeCustomerName + "</strong> (Mã đơn: <strong>" + safeBookingCode + "</strong>). " +
+                "Vui lòng kiểm tra thông tin và đăng nhập trang quản trị để xem chi tiết và xác nhận đơn." +
+                "</div>";
+
+            actionButtonHtml =
+                "<div style='text-align: center; margin-top: 24px; margin-bottom: 8px;'>" +
+                "<a href='" + safePortalUrl + "' style='display: inline-block; background-color: #d97706; color: #ffffff; padding: 12px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 13px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.2);'>Vào Trang Quản Trị Xử Lý Đơn ➔</a>" +
+                "</div>";
+
+            footerHtml =
+                "<div style='background: #09090b; color: #a1a1aa; padding: 18px 20px; text-align: center; font-size: 11px; line-height: 1.6;'>" +
+                "<strong style='color: #fff;'>MINH KHOA TRAVEL · HỆ THỐNG QUẢN TRỊ NỘI BỘ</strong><br>" +
+                "Email tự động gửi từ hệ thống điều hành Minh Khoa Travel khi phát sinh đơn đặt mới." +
+                "</div>";
+        } else {
+            statusBannerHtml =
+                "<div style='background: #fffbeb; border-left: 4px solid #d97706; padding: 14px 16px; border-radius: 8px; font-size: 13px; color: #92400e; margin-bottom: 18px;'>" +
+                "<strong style='display: block; font-size: 14px; margin-bottom: 4px; color: #78350f;'>ĐÃ TIẾP NHẬN ĐƠN ĐẶT CHỖ</strong>" +
+                "Cảm ơn Quý khách <strong>" + safeCustomerName + "</strong> đã tin tưởng đặt dịch vụ tại Minh Khoa Travel. " +
+                "Đơn đặt chỗ của Quý khách đã được ghi nhận thành công trên hệ thống. Nhân viên CSKH sẽ liên hệ qua điện thoại hoặc Zalo trong ít phút để xác nhận chi tiết lịch trình và hướng dẫn chu đáo." +
+                "</div>";
+
+            actionButtonHtml =
+                "<div style='background: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #52525b; margin-top: 18px; line-height: 1.6;'>" +
+                "Hotline hỗ trợ 24/7: <strong style='color: #18181b;'>0987.654.321</strong> | Zalo tư vấn: <strong style='color: #18181b;'>0368.761.064</strong><br>" +
+                "Nhân viên CSKH của Minh Khoa Travel sẽ chủ động liên hệ trước giờ khởi hành để gửi thông tin xe và tài xế." +
+                "</div>";
+
+            footerHtml =
+                "<div style='background: #09090b; color: #a1a1aa; padding: 18px 20px; text-align: center; font-size: 11px; line-height: 1.6;'>" +
+                "<strong style='color: #fff;'>CÔNG TY TNHH MINH KHOA TRAVEL</strong><br>" +
+                "Nha Trang, Khánh Hòa · Hotline 24/7: 0987.654.321 · Email: tongnguyenthanhdo@gmail.com" +
+                "</div>";
+        }
+
+        return "<!DOCTYPE html><html><body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; background-color: #fafafa; padding: 24px 10px; margin: 0; color: #18181b;'>" +
+                "<div style='max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e4e4e7; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06);'>" +
+                "<div style='background: linear-gradient(135deg, #09090b 0%, #18181b 50%, #27272a 100%); border-top: 4px solid #d97706; color: #fff; padding: 28px 24px; text-align: center;'>" +
+                "<div style='display: inline-block; background: rgba(245, 158, 11, 0.15); color: #fde68a; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 4px 12px; border-radius: 9999px; margin-bottom: 8px; border: 1px solid rgba(245, 158, 11, 0.3);'>MINH KHOA TRAVEL</div>" +
+                "<h2 style='margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;'>MINH KHOA TRAVEL</h2>" +
+                "<p style='margin: 6px 0 0 0; font-size: 13px; color: #fde68a;'>" + headerSubtitle + "</p>" +
                 "</div>" +
-                "<div style='padding: 20px;'>" +
-                "<div style='background: #fffbeb; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 6px; font-size: 13px; color: #92400e; margin-bottom: 16px;'>" +
-                "⏳ <strong>Đang chờ xác nhận:</strong> Đơn đặt chỗ của Quý khách đã được ghi nhận. Nhân viên CSKH sẽ liên hệ trong ít phút." +
+                "<div style='padding: 24px;'>" +
+                statusBannerHtml +
+                "<div style='background: #fafafa; border: 1px solid #e4e4e7; border-radius: 12px; padding: 16px; margin-bottom: 20px;'>" +
+                "<div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e4e4e7; padding-bottom: 8px;'>" +
+                "<span style='font-weight: 700; font-size: 14px; color: #18181b;'>Thông tin khách hàng</span>" +
+                "<span style='background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 6px; font-weight: 800; font-size: 13px; border: 1px solid #fde68a;'>" + safeBookingCode + "</span>" +
                 "</div>" +
-                "<p style='margin: 6px 0; font-size: 13px;'><strong>Mã đặt chỗ:</strong> <span style='color: #2563eb; font-weight: bold;'>" + booking.getBookingCode() + "</span></p>" +
-                "<p style='margin: 6px 0; font-size: 13px;'><strong>Khách hàng:</strong> " + booking.getCustomerName() + "</p>" +
-                "<p style='margin: 6px 0; font-size: 13px;'><strong>Số điện thoại:</strong> " + booking.getCustomerPhone() + "</p>" +
-                "<p style='margin: 6px 0; font-size: 13px;'><strong>Email:</strong> " + booking.getCustomerEmail() + "</p>" +
-                "<p style='margin: 6px 0; font-size: 13px;'><strong>Kênh liên hệ phụ:</strong> " + contactInfo + "</p>" +
-                (booking.getCustomerNotes() != null && !booking.getCustomerNotes().isEmpty() ? "<p style='margin: 6px 0; font-size: 13px;'><strong>Ghi chú:</strong> " + booking.getCustomerNotes() + "</p>" : "") +
-                "<table style='width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px;'>" +
-                "<thead><tr style='background-color: #f8fafc; color: #475569;'>" +
-                "<th style='padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: left;'>Dịch vụ</th>" +
-                "<th style='padding: 10px; border-bottom: 1px solid #e2e8f0;'>Số lượng</th>" +
-                "<th style='padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;'>Đơn giá</th>" +
-                "<th style='padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;'>Thành tiền</th>" +
+                "<p style='margin: 6px 0; font-size: 13px;'><strong>Họ và tên:</strong> " + safeCustomerName + "</p>" +
+                "<p style='margin: 6px 0; font-size: 13px;'><strong>Số điện thoại:</strong> <a href='tel:" + (booking.getCustomerPhone() != null ? booking.getCustomerPhone() : "") + "' style='color: #d97706; text-decoration: none; font-weight: 600;'>" + (booking.getCustomerPhone() != null ? booking.getCustomerPhone() : "N/A") + "</a></p>" +
+                "<p style='margin: 6px 0; font-size: 13px;'><strong>Email:</strong> " + (booking.getCustomerEmail() != null ? booking.getCustomerEmail() : "N/A") + "</p>" +
+                "<p style='margin: 6px 0; font-size: 13px;'><strong>Kênh liên hệ:</strong> " + contactInfo + "</p>" +
+                (booking.getCustomerNotes() != null && !booking.getCustomerNotes().isEmpty() ? "<p style='margin: 6px 0; font-size: 13px;'><strong>Ghi chú:</strong> <span style='color: #71717a; font-style: italic;'>" + booking.getCustomerNotes() + "</span></p>" : "") +
+                "</div>" +
+                "<h3 style='margin: 20px 0 10px 0; font-size: 15px; font-weight: 700; color: #18181b; border-bottom: 1px solid #f4f4f5; padding-bottom: 8px;'>Chi tiết đơn đặt</h3>" +
+                "<table style='width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden;'>" +
+                "<thead><tr style='background-color: #f4f4f5; color: #52525b;'>" +
+                "<th style='padding: 10px; border-bottom: 1px solid #e4e4e7; text-align: left;'>Dịch vụ</th>" +
+                "<th style='padding: 10px; border-bottom: 1px solid #e4e4e7; text-align: center;'>Số lượng</th>" +
+                "<th style='padding: 10px; border-bottom: 1px solid #e4e4e7; text-align: right;'>Đơn giá</th>" +
+                "<th style='padding: 10px; border-bottom: 1px solid #e4e4e7; text-align: right;'>Thành tiền</th>" +
                 "</tr></thead>" +
                 "<tbody>" + itemsHtml.toString() + "</tbody>" +
-                "<tfoot><tr>" +
-                "<td colspan='3' style='padding: 12px 10px; border-top: 2px solid #e2e8f0; text-align: right; font-weight: bold;'>Tổng thanh toán:</td>" +
-                "<td style='padding: 12px 10px; border-top: 2px solid #e2e8f0; text-align: right; color: #ea580c; font-size: 16px; font-weight: 800;'>" + String.format("%,d ₫", booking.getTotalAmount() != null ? booking.getTotalAmount().longValue() : 0) + "</td>" +
+                "<tfoot><tr style='background-color: #fefce8; font-weight: bold;'>" +
+                "<td colspan='3' style='padding: 12px 10px; border-top: 2px solid #e4e4e7; text-align: right; font-weight: 700; color: #18181b;'>Tổng thanh toán:</td>" +
+                "<td style='padding: 12px 10px; border-top: 2px solid #e4e4e7; text-align: right; color: #d97706; font-size: 17px; font-weight: 800;'>" + String.format("%,d ₫", booking.getTotalAmount() != null ? booking.getTotalAmount().longValue() : 0) + "</td>" +
                 "</tr></tfoot>" +
                 "</table>" +
+                actionButtonHtml +
                 "</div>" +
-                "<div style='background: #0f172a; color: #94a3b8; padding: 16px; text-align: center; font-size: 11px;'>" +
-                "<strong style='color: #fff;'>MINH KHOA TRAVEL</strong> · Hotline 24/7: 0987.654.321" +
-                "</div>" +
+                footerHtml +
                 "</div></body></html>";
     }
 }

@@ -60,9 +60,7 @@ public class TourBookingController {
             dynamicDetailsJson = req.getDescription() != null ? req.getDescription() : "";
         }
 
-        Long serviceOptionId = req.getTourPackageId() != null
-                ? req.getTourPackageId()
-                : req.getVehicleCategoryId();
+        Long serviceOptionId = req.getTourPackageId();
 
         CreateBookingRequest generic = CreateBookingRequest.builder()
                 .customerName(req.getCustomerName())
@@ -75,6 +73,9 @@ public class TourBookingController {
                 .zaloId(req.getZaloId())
                 .kakaoTalkId(req.getKakaoTalkId())
                 .whatsapp(req.getWhatsapp())
+                .depositType(req.getDepositType())
+                .depositRate(req.getDepositRate())
+                .depositAmount(req.getDepositAmount())
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(req.getTourId())
                         .quantity(req.getGuestCount())

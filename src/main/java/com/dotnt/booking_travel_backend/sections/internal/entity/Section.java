@@ -35,7 +35,7 @@ public class Section extends MasterEntity {
     @Builder.Default
     private boolean active = true;
 
-    @Column(name = "icon_url", length = 500)
+    @Column(name = "icon_url", columnDefinition = "TEXT")
     private String iconUrl;
 
     @Column(name = "images", columnDefinition = "TEXT")

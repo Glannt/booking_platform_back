@@ -30,6 +30,11 @@ public class CreateBookingRequest {
     @DecimalMin(value = "0.0", message = "Total amount must be non-negative")
     private BigDecimal totalAmount;
 
+    private String depositType; // "FIXED" | "RATE"
+    private BigDecimal depositRate;
+    private BigDecimal depositAmount;
+    private String discountCode;
+
     @Size(max = 500, message = "Notes must not exceed 500 characters")
     private String customerNotes;
 

@@ -77,15 +77,21 @@ public class SecurityConfig {
                                 "/api/v1/sections", "/api/v1/sections/**",
                                 "/api/v1/intercity-routes", "/api/v1/intercity-routes/**",
                                 "/api/v1/intercity-route-prices", "/api/v1/intercity-route-prices/**",
+                                "/api/v1/shared-routes", "/api/v1/shared-routes/**",
+                                "/api/v1/shared-bookings", "/api/v1/shared-bookings/**",
                                 "/api/v1/locations", "/api/v1/locations/**",
+                                "/api/v1/self-drive-rentals", "/api/v1/self-drive-rentals/**",
+                                "/api/v1/self-drive-types", "/api/v1/self-drive-types/**",
+                                "/api/v1/discounts", "/api/v1/discounts/**",
                                 "/api/v1/rentals", "/api/v1/rentals/**",
                                 "/api/v1/rental-types", "/api/v1/rental-types/**",
+                                "/api/v1/self-drive-policies", "/api/v1/self-drive-policies/**",
                                 "/api/v1/surcharge/public/**",
                                 "/api/v1/surcharges/public/**",
                                 "/api/v1/auth/whoami"
                         ).permitAll()
                         // Allow guest/public booking and surcharge calculation
-                        .requestMatchers(HttpMethod.POST, "/api/v1/bookings", "/api/v1/surcharge/public/calculate").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/public/**", "/api/v1/bookings", "/api/v1/surcharge/public/calculate", "/api/v1/shared-bookings").permitAll()
                         // Require authentication for other requests
                         .anyRequest().authenticated()
                 )
