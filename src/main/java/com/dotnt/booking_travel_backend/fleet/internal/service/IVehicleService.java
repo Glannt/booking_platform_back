@@ -2,6 +2,7 @@ package com.dotnt.booking_travel_backend.fleet.internal.service;
 
 import com.dotnt.booking_travel_backend.fleet.api.dtos.CreateVehicleRequest;
 import com.dotnt.booking_travel_backend.fleet.api.dtos.VehicleDTO;
+import com.dotnt.booking_travel_backend.fleet.api.dtos.VehicleMatchingCriteria;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -14,4 +15,6 @@ public interface IVehicleService {
     VehicleDTO updateVehicle(Long id, CreateVehicleRequest request);
     void deleteVehicle(Long id);
     List<VehicleDTO> getRentableVehiclesByCategory(Long categoryId);
+    List<VehicleDTO> matchVehicles(VehicleMatchingCriteria criteria);
+    List<com.dotnt.booking_travel_backend.media.api.MediaDto> getCategoryImages(Long categoryId);
 }

@@ -40,12 +40,6 @@ public class FleetFacade {
                 .orElse(null);
     }
 
-    public Integer getVehicleCategoryLuggageWeight(Long id) {
-        return vehicleCategoryRepository.findById(id)
-                .map(VehicleCategory::getLuggageWeight)
-                .orElse(null);
-    }
-
     public String getVehicleCategoryName(Long id, String locale) {
         VehicleCategory category = vehicleCategoryRepository.findById(id).orElse(null);
         if (category == null) {
@@ -64,5 +58,11 @@ public class FleetFacade {
                             .orElse(category.getCode() != null ? category.getCode() : "Xe " + id + " chỗ"));
         }
         return category.getCode() != null ? category.getCode() : "Xe " + id + " chỗ";
+    }
+
+    public Long findCategoryIdByCode(String code) {
+        return vehicleCategoryRepository.findByCode(code)
+                .map(VehicleCategory::getId)
+                .orElse(null);
     }
 }

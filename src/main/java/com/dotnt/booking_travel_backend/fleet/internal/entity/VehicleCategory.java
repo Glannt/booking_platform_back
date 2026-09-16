@@ -14,8 +14,8 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true, exclude = {"translations"})
-@ToString(exclude = {"translations"})
+@EqualsAndHashCode(callSuper = true, exclude = {"translations", "addOns"})
+@ToString(exclude = {"translations", "addOns"})
 @Builder
 public class VehicleCategory extends MasterEntity {
     @Column(name = "code", unique = true, nullable = false, length = 50)
@@ -36,9 +36,6 @@ public class VehicleCategory extends MasterEntity {
     @Column(name = "unit_luggage", nullable = true, length = 50)
     private String unitLuggage;
 
-    @Column(name = "luggage_weight", nullable = true)
-    private Integer luggageWeight;
-
     @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active;
 
@@ -58,4 +55,29 @@ public class VehicleCategory extends MasterEntity {
     @BatchSize(size = 50)
     @Builder.Default
     private List<VehicleCategoryTranslation> translations = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "vehicle_category_addons",
+        joinColumns = @JoinColumn(name = "vehicle_category_id"),
+        inverseJoinColumns = @JoinColumn(name = "addon_id")
+    )
+    @BatchSize(size = 50)
+    @Builder.Default
+    private List<AddOn> addOns = new ArrayList<>();
+
+    // Domain helper methods
+    public void addAddOn(AddOn addOn) {
+        if (!addOns.contains(addOn)) {
+            addOns.add(addOn);
+            if (!addOn.getVehicleCategories().contains(this)) {
+                addOn.getVehicleCategories().add(this);
+            }
+        }
+    }
+
+    public void removeAddOn(AddOn addOn) {
+        addOns.remove(addOn);
+        addOn.getVehicleCategories().remove(this);
+    }
 }

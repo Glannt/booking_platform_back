@@ -1,5 +1,8 @@
 package com.dotnt.booking_travel_backend.fleet.api.dtos;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import java.util.List;
+
 public record CreateVehicleRequest(
         String brand,
         String model,
@@ -8,11 +11,13 @@ public record CreateVehicleRequest(
         String fuelType,
         Boolean active,
         Boolean canRent,
+        @JsonAlias({"typeId", "vehicleCategoryId"})
         Long vehicleCategoryId,
         Integer luggage,
         String luggageUnit,
-        Integer luggageWeight,
         Long thumbnailId,
-        java.util.List<Long> imageIds
+        List<Long> imageIds,
+        List<Long> addOnIds,
+        List<Long> amenityIds
 ) {
 }

@@ -9,9 +9,10 @@ import com.dotnt.booking_travel_backend.fleet.internal.repository.VehicleCategor
 import com.dotnt.booking_travel_backend.fleet.internal.repository.VehicleCategoryTranslationRepository;
 import com.dotnt.booking_travel_backend.fleet.internal.service.IVehicleCategoryService;
 import com.dotnt.booking_travel_backend.fleet.internal.service.specs.VehicleCategorySpecification;
-import com.dotnt.booking_travel_backend.media.internal.repository.ImageRepository;
+import com.dotnt.booking_travel_backend.shared.module.ModuleEventPublisher;
 import com.dotnt.booking_travel_backend.shared.specs.GenericSpecification;
 import com.dotnt.booking_travel_backend.shared.specs.SearchOperation;
+import com.dotnt.booking_travel_backend.shared.utils.EntityMergeUtils;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +41,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
 
     private final VehicleCategoryRepository vehicleCategoryRepository;
     private final VehicleCategoryTranslationRepository vehicleCategoryTranslationRepository;
-    private final ImageRepository imageRepository;
+    private final ModuleEventPublisher moduleEventPublisher;
     private final com.dotnt.booking_travel_backend.fleet.internal.repository.VehicleRepository vehicleRepository;
 
     private Integer resolveTotalVehicles(VehicleCategory cat) {
@@ -60,9 +61,13 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
 
     private String resolveThumbnailUrl(Long thumbnailId) {
         if (thumbnailId == null) return null;
-        return imageRepository.findById(thumbnailId)
-                .map(img -> img.getFilePath())
-                .orElse(null);
+        try {
+            return moduleEventPublisher.publishRequest(
+                    "media.image.resolveThumbnailUrl", thumbnailId, String.class);
+        } catch (Exception e) {
+            log.debug("Could not resolve thumbnail url for id {}: {}", thumbnailId, e.getMessage());
+            return null;
+        }
     }
     @Override
     @CacheEvict(value = "vehicleCategories", allEntries = true)
@@ -82,7 +87,6 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
             .minLuggage(request.minLuggage())
             .maxLuggage(request.maxLuggage())
             .unitLuggage(request.unitLuggage())
-            .luggageWeight(request.luggageWeight())
             .active(request.active() != null ? request.active() : true)
             .isDefault(request.isDefault() != null ? request.isDefault() : false)
             .thumbnailId(request.thumbnailId())
@@ -113,7 +117,6 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                 .minLuggage(vehicleCategory.getMinLuggage())
                 .maxLuggage(vehicleCategory.getMaxLuggage())
                 .unitLuggage(vehicleCategory.getUnitLuggage())
-                .luggageWeight(vehicleCategory.getLuggageWeight())
                 .active(vehicleCategory.isActive())
                 .isDefault(vehicleCategory.isDefault())
                 .thumbnailId(vehicleCategory.getThumbnailId())
@@ -167,7 +170,6 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                     .minLuggage(vehicleCategory.getMinLuggage())
                     .maxLuggage(vehicleCategory.getMaxLuggage())
                     .unitLuggage(vehicleCategory.getUnitLuggage())
-                    .luggageWeight(vehicleCategory.getLuggageWeight())
                     .active(vehicleCategory.isActive())
                     .isDefault(vehicleCategory.isDefault())
                     .thumbnailId(vehicleCategory.getThumbnailId())
@@ -186,6 +188,7 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
         if (slug == null || slug.isBlank()) return null;
         return vehicleCategoryTranslationRepository.findBySlug(slug)
                 .map(tr -> getVehicleCategoryById(tr.getVehicleCategory().getId()))
+                .or(() -> vehicleCategoryRepository.findByCode(slug).map(c -> getVehicleCategoryById(c.getId())))
                 .orElseGet(() -> {
                     try {
                         Long id = Long.parseLong(slug);
@@ -214,7 +217,6 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
             existingVehicleCategory.setMinLuggage(vehicleCategoryDTO.getMinLuggage());
             existingVehicleCategory.setMaxLuggage(vehicleCategoryDTO.getMaxLuggage());
             existingVehicleCategory.setUnitLuggage(vehicleCategoryDTO.getUnitLuggage());
-            existingVehicleCategory.setLuggageWeight(vehicleCategoryDTO.getLuggageWeight());
             if (vehicleCategoryDTO.getIsDefault() != null) {
                 existingVehicleCategory.setDefault(vehicleCategoryDTO.getIsDefault());
             }
@@ -233,43 +235,27 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                 existingVehicleCategory.setCode(vehicleCategoryDTO.getCode());
             }
 
-            // 3. Cập nhật danh sách bảng con (Translations)
-            if (vehicleCategoryDTO.getTranslations() != null && !vehicleCategoryDTO.getTranslations().isEmpty()) {
-
-                // Chuyển danh sách translations hiện tại trong DB thành Map để tìm kiếm nhanh theo locale (O(1))
-                Map<String, VehicleCategoryTranslation> existingTranslationsMap = existingVehicleCategory.getTranslations()
-                        .stream()
-                        .collect(Collectors.toMap(VehicleCategoryTranslation::getLocale, t -> t));
-
-                for (VehicleCategoryTranslationDTO translationDTO : vehicleCategoryDTO.getTranslations()) {
-                    String locale = translationDTO.getLocale();
-
-                    if (existingTranslationsMap.containsKey(locale)) {
-                        // Trường hợp 1: Đã tồn tại ngôn ngữ này -> Cập nhật thông tin
-                        VehicleCategoryTranslation existingTranslation = existingTranslationsMap.get(locale);
-                        if (translationDTO.getName() != null) {
-                            existingTranslation.setName(translationDTO.getName());
-                        }
-                        if (translationDTO.getSlug() != null) {
-                            existingTranslation.setSlug(translationDTO.getSlug());
-                        }
-                        if (translationDTO.getDescription() != null) {
-                            existingTranslation.setDescription(translationDTO.getDescription());
-                        }
-                    } else {
-                        // Trường hợp 2: Ngôn ngữ mới hoàn toàn -> Tạo mới và map mối quan hệ với cha
-                        VehicleCategoryTranslation newTranslation = VehicleCategoryTranslation.builder()
-                                .vehicleCategory(existingVehicleCategory) // Gắn quan hệ với cha
-                                .locale(locale)
-                                .name(translationDTO.getName())
-                                .slug(translationDTO.getSlug())
-                                .description(translationDTO.getDescription())
-                                .build();
-
-                        // Thêm vào list của cha, nhờ `cascade = CascadeType.ALL` nó sẽ tự động lưu xuống DB
-                        existingVehicleCategory.getTranslations().add(newTranslation);
-                    }
-                }
+            // 3. Cập nhật danh sách bảng con (Translations) với 3-way diff
+            if (vehicleCategoryDTO.getTranslations() != null) {
+                final VehicleCategory finalCategory = existingVehicleCategory;
+                EntityMergeUtils.mergeCollection(
+                        existingVehicleCategory.getTranslations(),
+                        vehicleCategoryDTO.getTranslations(),
+                        t -> t.getLocale() != null ? t.getLocale().toLowerCase() : null,
+                        tDto -> tDto.getLocale() != null ? tDto.getLocale().toLowerCase() : null,
+                        (existing, tDto) -> {
+                            if (tDto.getName() != null) existing.setName(tDto.getName());
+                            if (tDto.getSlug() != null) existing.setSlug(tDto.getSlug());
+                            if (tDto.getDescription() != null) existing.setDescription(tDto.getDescription());
+                        },
+                        tDto -> VehicleCategoryTranslation.builder()
+                                .vehicleCategory(finalCategory)
+                                .locale(tDto.getLocale().toLowerCase())
+                                .name(tDto.getName())
+                                .slug(tDto.getSlug())
+                                .description(tDto.getDescription())
+                                .build()
+                );
             }
 
             // 4. Lưu lại (Nhờ @Transactional, thực chất hàm .save này có thể bỏ qua vì Hibernate tự detect thay đổi để update)
@@ -305,7 +291,6 @@ public class VehicleCategoryServiceImpl implements IVehicleCategoryService {
                 .minLuggage(vehicleCategory.getMinLuggage())
                 .maxLuggage(vehicleCategory.getMaxLuggage())
                 .unitLuggage(vehicleCategory.getUnitLuggage())
-                .luggageWeight(vehicleCategory.getLuggageWeight())
                 .active(vehicleCategory.isActive())
                 .isDefault(vehicleCategory.isDefault())
                 .thumbnailId(vehicleCategory.getThumbnailId())

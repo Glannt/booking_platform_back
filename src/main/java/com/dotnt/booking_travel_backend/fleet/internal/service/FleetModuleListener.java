@@ -20,20 +20,25 @@ public class FleetModuleListener {
         if (!(event instanceof ModuleRequestEvent ev)) return;
 
         switch (ev.getRequestType()) {
-            case "fleet.vehicleCategory.exists" -> {
+            case "fleet.vehicleCategory.exists", "vehicleCategory.exists" -> {
                 Object payload = ev.getPayload();
                 Long id = toLong(payload);
                 boolean exists = id != null && vehicleCategoryRepository.findById(id).isPresent();
                 ev.getFuture().complete(exists);
             }
-            case "fleet.vehicleCategory.findById" -> {
+            case "fleet.vehicleCategory.findById", "vehicleCategory.findById" -> {
                 Long id = toLong(ev.getPayload());
                 VehicleCategory result = id != null ? vehicleCategoryRepository.findById(id).orElse(null) : null;
                 ev.getFuture().complete(result);
             }
-            case "fleet.vehicleCategory.findByCode" -> {
+            case "fleet.vehicleCategory.findByCode", "vehicleCategory.findByCode" -> {
                 String code = ev.getPayload() instanceof String s ? s : null;
                 VehicleCategory result = code != null ? vehicleCategoryRepository.findByCode(code).orElse(null) : null;
+                ev.getFuture().complete(result);
+            }
+            case "fleet.vehicleCategory.findIdByCode", "vehicleCategory.findIdByCode" -> {
+                String code = ev.getPayload() instanceof String s ? s : null;
+                Long result = code != null ? vehicleCategoryRepository.findByCode(code).map(VehicleCategory::getId).orElse(null) : null;
                 ev.getFuture().complete(result);
             }
         }

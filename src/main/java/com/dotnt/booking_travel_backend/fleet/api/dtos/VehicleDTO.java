@@ -21,10 +21,11 @@ public class VehicleDTO {
     private boolean canRent;
     private int luggage;
     private String luggageUnit;
-    private Integer luggageWeight;
     private Long thumbnailId;
     private String thumbnailUrl;
     private List<Long> imageIds;
     private List<MediaDto> images;
     private VehicleCategoryDTO type;
+    private List<AddOnDTO> addOns;
+    private List<AmenityDTO> amenities;
 }

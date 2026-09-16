@@ -1,10 +1,10 @@
 package com.dotnt.booking_travel_backend.fleet.internal.entity;
 
-import com.dotnt.booking_travel_backend.media.internal.entity.Image;
 import com.dotnt.booking_travel_backend.shared.entity.MasterEntity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +15,8 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"imageIds", "category", "addOns", "amenities"})
+@ToString(exclude = {"imageIds", "category", "addOns", "amenities"})
 @Builder
 public class Vehicle extends MasterEntity {
     @Column(name = "brand")
@@ -45,23 +46,70 @@ public class Vehicle extends MasterEntity {
     @Column(name = "luggage_unit", nullable = true, length = 50)
     private String luggageUnit;
 
-    @Column(name = "luggage_weight", nullable = true)
-    private Integer luggageWeight;
-
     @Column(name = "thumbnail_id", nullable = true)
     private Long thumbnailId;
 
-    @ManyToMany
-    @JoinTable(
+    @ElementCollection
+    @CollectionTable(
         name = "vehicle_images",
-        joinColumns = @JoinColumn(name = "vehicle_id"),
-        inverseJoinColumns = @JoinColumn(name = "image_id")
+        joinColumns = @JoinColumn(name = "vehicle_id")
     )
+    @Column(name = "image_id")
+    @BatchSize(size = 50)
     @Builder.Default
-    private List<Image> images = new ArrayList<>();
+    private List<Long> imageIds = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "vehicle_category_id", nullable = false)
     @JsonIgnoreProperties({"vehicles"})
     private VehicleCategory category;
+
+    @ManyToMany
+    @JoinTable(
+        name = "vehicle_addons",
+        joinColumns = @JoinColumn(name = "vehicle_id"),
+        inverseJoinColumns = @JoinColumn(name = "addon_id")
+    )
+    @BatchSize(size = 50)
+    @Builder.Default
+    private List<AddOn> addOns = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "vehicle_amenities",
+        joinColumns = @JoinColumn(name = "vehicle_id"),
+        inverseJoinColumns = @JoinColumn(name = "amenity_id")
+    )
+    @BatchSize(size = 50)
+    @Builder.Default
+    private List<Amenity> amenities = new ArrayList<>();
+
+    // Domain helper methods
+    public void addAddOn(AddOn addOn) {
+        if (!addOns.contains(addOn)) {
+            addOns.add(addOn);
+            if (!addOn.getVehicles().contains(this)) {
+                addOn.getVehicles().add(this);
+            }
+        }
+    }
+
+    public void removeAddOn(AddOn addOn) {
+        addOns.remove(addOn);
+        addOn.getVehicles().remove(this);
+    }
+
+    public void addAmenity(Amenity amenity) {
+        if (!amenities.contains(amenity)) {
+            amenities.add(amenity);
+            if (!amenity.getVehicles().contains(this)) {
+                amenity.getVehicles().add(this);
+            }
+        }
+    }
+
+    public void removeAmenity(Amenity amenity) {
+        amenities.remove(amenity);
+        amenity.getVehicles().remove(this);
+    }
 }
