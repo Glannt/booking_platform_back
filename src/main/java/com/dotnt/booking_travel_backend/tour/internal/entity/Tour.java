@@ -1,6 +1,7 @@
 package com.dotnt.booking_travel_backend.tour.internal.entity;
 
-import com.dotnt.booking_travel_backend.media.internal.entity.Image;
+import com.dotnt.booking_travel_backend.shared.component.Component;
+import com.dotnt.booking_travel_backend.shared.component.ComponentListConverter;
 import com.dotnt.booking_travel_backend.shared.entity.MasterEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -37,14 +38,14 @@ public class Tour extends MasterEntity {
     @Column(name = "thumbnail_id")
     private Long thumbnailId;
 
-    @ManyToMany
-    @JoinTable(
+    @ElementCollection
+    @CollectionTable(
         name = "tour_images",
-        joinColumns = @JoinColumn(name = "tour_id"),
-        inverseJoinColumns = @JoinColumn(name = "image_id")
+        joinColumns = @JoinColumn(name = "tour_id")
     )
+    @Column(name = "image_id")
     @Builder.Default
-    private List<Image> images = new ArrayList<>();
+    private List<Long> imageIds = new ArrayList<>();
 
     @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active;
@@ -53,11 +54,23 @@ public class Tour extends MasterEntity {
     @Builder.Default
     private String status = "ACTIVE";
 
+    @Column(name = "slug", unique = true, length = 255)
+    private String slug;
+
     @Column(name = "inclusions", columnDefinition = "TEXT")
     private String inclusions;
 
     @Column(name = "exclusions", columnDefinition = "TEXT")
     private String exclusions;
+
+    @Column(name = "is_recommended")
+    @Builder.Default
+    private Boolean isRecommended = Boolean.FALSE;
+
+    @Convert(converter = ComponentListConverter.class)
+    @Column(name = "components", columnDefinition = "TEXT")
+    @Builder.Default
+    private List<Component> components = new ArrayList<>();
 
     @OneToMany(mappedBy = "tour", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -74,4 +87,23 @@ public class Tour extends MasterEntity {
     @OneToMany(mappedBy = "tour", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<TourDay> days = new ArrayList<>();
+
+    @PrePersist
+    @PreUpdate
+    public void ensureSlug() {
+        if (this.slug == null || this.slug.trim().isEmpty()) {
+            if (this.translations != null && !this.translations.isEmpty()) {
+                String candidate = this.translations.stream()
+                        .filter(t -> t.getSlug() != null && !t.getSlug().trim().isEmpty())
+                        .map(TourTranslation::getSlug)
+                        .findFirst()
+                        .orElse(null);
+                if (candidate != null && !candidate.trim().isEmpty()) {
+                    this.slug = candidate.trim();
+                    return;
+                }
+            }
+            this.slug = "tour-" + (getId() != null ? getId() : System.currentTimeMillis());
+        }
+    }
 }

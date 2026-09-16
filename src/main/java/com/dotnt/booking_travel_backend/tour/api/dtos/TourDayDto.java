@@ -11,7 +11,10 @@ import java.util.List;
 public class TourDayDto {
     private Long id;
     private Long tourId;
-    private int dayNumber;
+
+    @Builder.Default
+    private Integer dayNumber = 1;
+
     private List<TourDayTranslationDto> translations;
     private List<TourActivityDto> activities;
 }

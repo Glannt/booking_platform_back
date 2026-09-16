@@ -1,5 +1,6 @@
 package com.dotnt.booking_travel_backend.tour.internal.service.impl;
 
+import com.dotnt.booking_travel_backend.shared.utils.EntityMergeUtils;
 import com.dotnt.booking_travel_backend.tour.api.dtos.CreateTourCategoryRequest;
 import com.dotnt.booking_travel_backend.tour.api.dtos.TourCategoryDTO;
 import com.dotnt.booking_travel_backend.tour.api.dtos.TourCategoryTranslationDTO;
@@ -46,8 +47,6 @@ public class TourCategoryServiceImpl implements ITourCategoryService {
     @Transactional
     @CacheEvict(value = "tourCategories", allEntries = true)
     public TourCategoryDTO create(CreateTourCategoryRequest request) {
-        boolean active = request.getActive() != null ? request.getActive() :
-                (request.getIsActive() != null ? request.getIsActive() : true);
 
         String code = request.getCode();
         if (code == null || code.isBlank()) {
@@ -58,8 +57,7 @@ public class TourCategoryServiceImpl implements ITourCategoryService {
                 .code(code)
                 .icon(request.getIcon() != null ? request.getIcon() : "compass")
                 .sortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0)
-                .active(active)
-                .isActive(active)
+                .isActive(request.getIsActive())
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .translations(new ArrayList<>())
@@ -110,11 +108,7 @@ public class TourCategoryServiceImpl implements ITourCategoryService {
         if (request.getSortOrder() != null) {
             category.setSortOrder(request.getSortOrder());
         }
-        if (request.getActive() != null) {
-            category.setActive(request.getActive());
-            category.setActive(request.getActive());
-        } else if (request.getIsActive() != null) {
-            category.setActive(request.getIsActive());
+        if (request.getIsActive() != null) {
             category.setActive(request.getIsActive());
         }
         if (request.getTitle() != null) {
@@ -125,43 +119,43 @@ public class TourCategoryServiceImpl implements ITourCategoryService {
         }
 
         if (request.getTranslations() != null) {
-            Map<String, TourCategoryTranslation> existingTranslations = category.getTranslations().stream()
-                    .collect(Collectors.toMap(t -> t.getLocale().toLowerCase(), Function.identity(), (a, b) -> a));
-
-            List<TourCategoryTranslation> updatedList = new ArrayList<>();
-            for (TourCategoryTranslationDTO tDto : request.getTranslations()) {
-                if (tDto.getLocale() == null || tDto.getName() == null) continue;
-                String loc = tDto.getLocale().toLowerCase();
-                String slug = tDto.getSlug();
-                if (slug == null || slug.isBlank()) {
-                    slug = tDto.getName().toLowerCase().replaceAll("[^a-zA-Z0-9-]", "-");
-                }
-
-                TourCategoryTranslation trans = existingTranslations.get(loc);
-                if (trans != null) {
-                    trans.setName(tDto.getName());
-                    trans.setSlug(slug);
-                    trans.setDescription(tDto.getDescription());
-                    updatedList.add(trans);
-                } else {
-                    TourCategoryTranslation newTrans = TourCategoryTranslation.builder()
-                            .tourCategory(category)
-                            .locale(loc)
-                            .name(tDto.getName())
-                            .slug(slug)
-                            .description(tDto.getDescription())
-                            .build();
-                    updatedList.add(newTrans);
-                }
-
-                if ("vi".equalsIgnoreCase(loc)) {
-                    category.setTitle(tDto.getName());
-                    category.setDescription(tDto.getDescription());
-                }
-            }
-
-            category.getTranslations().clear();
-            category.getTranslations().addAll(updatedList);
+            final TourCategory finalCategory = category;
+            EntityMergeUtils.mergeCollection(
+                    category.getTranslations(),
+                    request.getTranslations(),
+                    t -> t.getLocale() != null ? t.getLocale().toLowerCase() : null,
+                    tDto -> tDto.getLocale() != null ? tDto.getLocale().toLowerCase() : null,
+                    (existing, tDto) -> {
+                        existing.setName(tDto.getName());
+                        String slug = tDto.getSlug();
+                        if (slug == null || slug.isBlank()) {
+                            slug = tDto.getName() != null ? tDto.getName().toLowerCase().replaceAll("[^a-zA-Z0-9-]", "-") : "";
+                        }
+                        existing.setSlug(slug);
+                        existing.setDescription(tDto.getDescription());
+                        if ("vi".equalsIgnoreCase(tDto.getLocale())) {
+                            finalCategory.setTitle(tDto.getName());
+                            finalCategory.setDescription(tDto.getDescription());
+                        }
+                    },
+                    tDto -> {
+                        String slug = tDto.getSlug();
+                        if (slug == null || slug.isBlank()) {
+                            slug = tDto.getName() != null ? tDto.getName().toLowerCase().replaceAll("[^a-zA-Z0-9-]", "-") : "";
+                        }
+                        if ("vi".equalsIgnoreCase(tDto.getLocale())) {
+                            finalCategory.setTitle(tDto.getName());
+                            finalCategory.setDescription(tDto.getDescription());
+                        }
+                        return TourCategoryTranslation.builder()
+                                .tourCategory(finalCategory)
+                                .locale(tDto.getLocale().toLowerCase())
+                                .name(tDto.getName())
+                                .slug(slug)
+                                .description(tDto.getDescription())
+                                .build();
+                    }
+            );
         }
 
         category = tourCategoryRepository.save(category);

@@ -1,5 +1,7 @@
 package com.dotnt.booking_travel_backend.tour.api.dtos;
 
+import com.dotnt.booking_travel_backend.shared.component.Component;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.time.Instant;
@@ -10,14 +12,27 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class CreateTourRequest {
-	private int durationDays;
-	private int durationNights;
-	private int minGuest;
-	private int maxGuest;
-	private boolean active;
+	@Builder.Default
+	private Integer durationDays = 1;
+
+	@Builder.Default
+	private Integer durationNights = 0;
+
+	@Builder.Default
+	private Integer minGuest = 1;
+
+	@Builder.Default
+	private Integer maxGuest = 20;
+
+	@Builder.Default
+	private Boolean active = true;
+
 	private String status;
+	private String slug;
 	private String inclusions;
 	private String exclusions;
+	private List<Component> components;
+	private Boolean isRecommended;
 	private List<TourDayDto> tourDays;
 	private Long tourCategoryId;
 	private Long thumbnailId;
@@ -26,4 +41,9 @@ public class CreateTourRequest {
 	private List<TourTranslationDto> translations;
 	private List<TourPriceDto> prices;
 	private List<TourPackageDto> packages;
+
+	@JsonIgnore
+	public boolean isActive() {
+		return active == null || active;
+	}
 }

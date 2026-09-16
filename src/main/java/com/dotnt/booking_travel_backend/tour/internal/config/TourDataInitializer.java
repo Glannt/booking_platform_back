@@ -1,7 +1,5 @@
 package com.dotnt.booking_travel_backend.tour.internal.config;
 
-import com.dotnt.booking_travel_backend.fleet.internal.entity.VehicleCategory;
-import com.dotnt.booking_travel_backend.fleet.internal.repository.VehicleCategoryRepository;
 import com.dotnt.booking_travel_backend.tour.internal.entity.*;
 import com.dotnt.booking_travel_backend.tour.internal.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -26,11 +24,9 @@ public class TourDataInitializer implements CommandLineRunner {
 
     private final TourRepository tourRepository;
     private final TourCategoryRepository tourCategoryRepository;
-    private final VehicleCategoryRepository vehicleCategoryRepository;
     private final TourOptionRepository tourOptionRepository;
     private final TourOptionTranslationRepository tourOptionTranslationRepository;
     private final TourTranslationRepository tourTranslationRepository;
-    private final TourPriceRepository tourPriceRepository;
     private final TourDayRepository tourDayRepository;
     private final TourDayTranslationRepository tourDayTranslationRepository;
     private final TourDayActivityRepository tourDayActivityRepository;
@@ -54,7 +50,6 @@ public class TourDataInitializer implements CommandLineRunner {
                     .code("island-cano")
                     .icon("ship")
                     .sortOrder(1)
-                    .active(true)
                     .isActive(true)
                     .title("Tour Đảo (Cano / Thuyền)")
                     .description("Khám phá các hòn đảo xinh đẹp vịnh Nha Trang bằng cano cao tốc")
@@ -76,7 +71,6 @@ public class TourDataInitializer implements CommandLineRunner {
                     .code("land-car")
                     .icon("car")
                     .sortOrder(2)
-                    .active(true)
                     .isActive(true)
                     .title("Tour Xe / Đất Liền")
                     .description("Khám phá danh lam thắng cảnh và thành phố bằng xe ô tô du lịch")
@@ -92,13 +86,10 @@ public class TourDataInitializer implements CommandLineRunner {
             tourCategoryTranslationRepository.saveAll(carTrans);
         }
 
-        VehicleCategory cat4 = vehicleCategoryRepository.findByCode("4-seater").orElse(null);
-        VehicleCategory cat7 = vehicleCategoryRepository.findByCode("7-seater").orElse(null);
-        VehicleCategory cat16 = vehicleCategoryRepository.findByCode("16-seater").orElse(null);
-
         // Tour 1
         Tour tour1 = Tour.builder()
                 .category(canoCategory)
+                .slug("tour-3-dao-nha-trang-vip")
                 .durationDays(1)
                 .durationNights(0)
                 .minGuest(2)
@@ -156,13 +147,10 @@ public class TourDataInitializer implements CommandLineRunner {
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t1Act2).locale("vi").name("Tự do tắm biển & Chụp ảnh").description("Quý khách tham quan chụp ảnh check-in và tắm biển Bãi Tranh.").build());
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t1Act2).locale("en").name("Free Swim & Photography").description("Enjoy swimming, relaxing and checking in at Bãi Tranh Beach.").build());
 
-        if (cat4 != null) tourPriceRepository.save(TourPrice.builder().tourId(tour1.getId()).vehicleCategoryId(cat4.getId()).currency("VND").amount(new BigDecimal("600000")).active(true).build());
-        if (cat7 != null) tourPriceRepository.save(TourPrice.builder().tourId(tour1.getId()).vehicleCategoryId(cat7.getId()).currency("VND").amount(new BigDecimal("900000")).active(true).build());
-        if (cat16 != null) tourPriceRepository.save(TourPrice.builder().tourId(tour1.getId()).vehicleCategoryId(cat16.getId()).currency("VND").amount(new BigDecimal("1500000")).active(true).build());
-
         // Tour 2
         Tour tour2 = Tour.builder()
                 .category(canoCategory)
+                .slug("tour-du-thuyen-5-sao-ngam-hoang-hon-vinh-nha-trang")
                 .durationDays(1)
                 .durationNights(0)
                 .minGuest(2)
@@ -218,10 +206,6 @@ public class TourDataInitializer implements CommandLineRunner {
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t2Act2).locale("vi").name("Tiệc tối & Nghe nhạc Live").description("Thưởng thức tiệc buffet và ngắm nhìn hoàng hôn rực rỡ.").build());
         tourDayActivityTranslationRepository.save(TourDayActivityTranslation.builder().tourDayActivity(t2Act2).locale("en").name("Dinner & Live Music").description("Enjoy buffet dinner and witness the magnificent sunset over Nha Trang Bay.").build());
 
-        if (cat4 != null) tourPriceRepository.save(TourPrice.builder().tourId(tour2.getId()).vehicleCategoryId(cat4.getId()).currency("VND").amount(new BigDecimal("1200000")).active(true).build());
-        if (cat7 != null) tourPriceRepository.save(TourPrice.builder().tourId(tour2.getId()).vehicleCategoryId(cat7.getId()).currency("VND").amount(new BigDecimal("1800000")).active(true).build());
-        if (cat16 != null) tourPriceRepository.save(TourPrice.builder().tourId(tour2.getId()).vehicleCategoryId(cat16.getId()).currency("VND").amount(new BigDecimal("2800000")).active(true).build());
-
         log.info("Successfully seeded tour data!");
         seedPackagesIfMissing();
     }
@@ -254,13 +238,15 @@ public class TourDataInitializer implements CommandLineRunner {
                 tourRepository.save(tour);
 
                 // Gói 1: Cano ghép – Tiêu chuẩn
+                List<PriceListPerPerson> p1Prices = new ArrayList<>(List.of(
+                        PriceListPerPerson.builder().passengerType("ADULT").pricePerPerson(new BigDecimal("650000")).minPax(1).maxPax(30).active(true).build(),
+                        PriceListPerPerson.builder().passengerType("CHILD").pricePerPerson(new BigDecimal("450000")).minPax(1).maxPax(30).active(true).build(),
+                        PriceListPerPerson.builder().passengerType("INFANT").pricePerPerson(BigDecimal.ZERO).minPax(1).maxPax(30).active(true).build()
+                ));
                 TourPackage pkg1 = TourPackage.builder()
                         .tour(tour)
                         .name("Cano ghép – Tiêu chuẩn")
-                        .pricingType("PER_PERSON")
-                        .adultPrice(new BigDecimal("650000"))
-                        .childPrice(new BigDecimal("450000"))
-                        .infantPrice(BigDecimal.ZERO)
+                        .prices(p1Prices)
                         .childPolicyNote("Trẻ em 1m–1m29: 450.000đ")
                         .infantPolicyNote("Dưới 1m: Miễn phí")
                         .highlights(
@@ -296,13 +282,15 @@ public class TourDataInitializer implements CommandLineRunner {
                         .childPolicyNote("Children 1m–1m29: 450,000 VND").infantPolicyNote("Under 1m: Free").build());
 
                 // Gói 2: Hòn Tằm – Tắm Bùn
+                List<PriceListPerPerson> p2Prices = new ArrayList<>(List.of(
+                        PriceListPerPerson.builder().passengerType("ADULT").pricePerPerson(new BigDecimal("950000")).minPax(1).maxPax(30).active(true).build(),
+                        PriceListPerPerson.builder().passengerType("CHILD").pricePerPerson(new BigDecimal("700000")).minPax(1).maxPax(30).active(true).build(),
+                        PriceListPerPerson.builder().passengerType("INFANT").pricePerPerson(BigDecimal.ZERO).minPax(1).maxPax(30).active(true).build()
+                ));
                 TourPackage pkg2 = TourPackage.builder()
                         .tour(tour)
                         .name("Hòn Tằm – Tắm Bùn")
-                        .pricingType("PER_PERSON")
-                        .adultPrice(new BigDecimal("950000"))
-                        .childPrice(new BigDecimal("700000"))
-                        .infantPrice(BigDecimal.ZERO)
+                        .prices(p2Prices)
                         .childPolicyNote("Trẻ em 1m–1m29: 700.000đ")
                         .infantPolicyNote("Dưới 1m: Miễn phí")
                         .highlights(
@@ -341,11 +329,8 @@ public class TourDataInitializer implements CommandLineRunner {
                 TourPackage pkg3 = TourPackage.builder()
                         .tour(tour)
                         .name("Cano riêng – Linh hoạt")
-                        .pricingType("CONTACT")
                         .isContactOnly(true)
-                        .adultPrice(BigDecimal.ZERO)
-                        .childPrice(BigDecimal.ZERO)
-                        .infantPrice(BigDecimal.ZERO)
+                        .prices(new ArrayList<>())
                         .highlights(
                                 "- Cano riêng cao tốc đời mới\n" +
                                 "- Phục vụ riêng theo đoàn\n" +
@@ -387,13 +372,15 @@ public class TourDataInitializer implements CommandLineRunner {
                 );
                 tourRepository.save(tour);
 
+                List<PriceListPerPerson> pCruisePrices = new ArrayList<>(List.of(
+                        PriceListPerPerson.builder().passengerType("ADULT").pricePerPerson(new BigDecimal("1200000")).minPax(1).maxPax(20).active(true).build(),
+                        PriceListPerPerson.builder().passengerType("CHILD").pricePerPerson(new BigDecimal("850000")).minPax(1).maxPax(20).active(true).build(),
+                        PriceListPerPerson.builder().passengerType("INFANT").pricePerPerson(BigDecimal.ZERO).minPax(1).maxPax(20).active(true).build()
+                ));
                 TourPackage pkg1 = TourPackage.builder()
                         .tour(tour)
                         .name("Tiêu Chuẩn Du Thuyền Hoàng Hôn")
-                        .pricingType("PER_PERSON")
-                        .adultPrice(new BigDecimal("1200000"))
-                        .childPrice(new BigDecimal("850000"))
-                        .infantPrice(BigDecimal.ZERO)
+                        .prices(pCruisePrices)
                         .childPolicyNote("Trẻ em 1m–1m29: 850.000đ")
                         .infantPolicyNote("Dưới 1m: Miễn phí")
                         .highlights("- Du thuyền ngắm hoàng hôn\n- Tiệc cocktail & Buffet hải sản\n- Nhạc Acoustic live")
@@ -417,3 +404,4 @@ public class TourDataInitializer implements CommandLineRunner {
         log.info("Finished seeding tour packages!");
     }
 }
+

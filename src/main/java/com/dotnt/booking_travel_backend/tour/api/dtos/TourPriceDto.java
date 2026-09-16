@@ -1,5 +1,6 @@
 package com.dotnt.booking_travel_backend.tour.api.dtos;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import java.math.BigDecimal;
 
@@ -12,5 +13,12 @@ public class TourPriceDto {
     private Long vehicleCategoryId;
     private String currency;
     private BigDecimal amount;
-    private boolean active;
+
+    @Builder.Default
+    private Boolean active = true;
+
+    @JsonIgnore
+    public boolean isActive() {
+        return active == null || active;
+    }
 }

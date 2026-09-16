@@ -22,16 +22,12 @@ public class TourCategory extends MasterEntity {
     @Column(name = "code", unique = true, nullable = false, length = 50)
     private String code;
 
-    @Column(name = "icon", length = 50)
+    @Column(name = "icon", columnDefinition = "TEXT")
     private String icon;
 
     @Column(name = "sort_order")
     @Builder.Default
     private Integer sortOrder = 0;
-
-    @Column(name = "active", nullable = false)
-    @Builder.Default
-    private boolean active = true;
 
     @Column(name = "title")
     private String title;

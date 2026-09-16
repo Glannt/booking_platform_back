@@ -15,8 +15,8 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true, exclude = {"tour", "translations"})
-@ToString(exclude = {"tour", "translations"})
+@EqualsAndHashCode(callSuper = true, exclude = {"tour", "translations", "prices"})
+@ToString(exclude = {"tour", "translations", "prices"})
 @Builder
 public class TourPackage extends MasterEntity {
 
@@ -27,21 +27,15 @@ public class TourPackage extends MasterEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "pricing_type", nullable = false, length = 50)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+        name = "tour_package_price_list_per_person",
+        joinColumns = @JoinColumn(name = "tour_package_id"),
+        inverseJoinColumns = @JoinColumn(name = "price_per_person_id")
+    )
+    @BatchSize(size = 50)
     @Builder.Default
-    private String pricingType = "PER_PERSON";
-
-    @Column(name = "adult_price", precision = 15, scale = 2)
-    @Builder.Default
-    private BigDecimal adultPrice = BigDecimal.ZERO;
-
-    @Column(name = "child_price", precision = 15, scale = 2)
-    @Builder.Default
-    private BigDecimal childPrice = BigDecimal.ZERO;
-
-    @Column(name = "infant_price", precision = 15, scale = 2)
-    @Builder.Default
-    private BigDecimal infantPrice = BigDecimal.ZERO;
+    private List<PriceListPerPerson> prices = new ArrayList<>();
 
     @Column(name = "child_policy_note")
     @Builder.Default
@@ -50,10 +44,6 @@ public class TourPackage extends MasterEntity {
     @Column(name = "infant_policy_note")
     @Builder.Default
     private String infantPolicyNote = "Trẻ em dưới 1m: Miễn phí";
-
-    @Column(name = "fixed_price", precision = 15, scale = 2)
-    @Builder.Default
-    private BigDecimal fixedPrice = BigDecimal.ZERO;
 
     @Column(name = "is_contact_only")
     @Builder.Default

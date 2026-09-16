@@ -2,6 +2,7 @@ package com.dotnt.booking_travel_backend.tour;
 
 import com.dotnt.booking_travel_backend.tour.internal.entity.Tour;
 import com.dotnt.booking_travel_backend.tour.internal.entity.TourBookingDetail;
+import com.dotnt.booking_travel_backend.tour.internal.entity.PriceListPerPerson;
 import com.dotnt.booking_travel_backend.tour.internal.entity.TourPackage;
 import com.dotnt.booking_travel_backend.tour.internal.repository.TourBookingDetailRepository;
 import com.dotnt.booking_travel_backend.tour.internal.repository.TourPackageRepository;
@@ -62,10 +63,11 @@ public class TourPackageAndPricingTest {
         sharedCanoPackage = TourPackage.builder()
                 .tour(tour)
                 .name("Cano ghép – Tiêu chuẩn")
-                .pricingType("PER_PERSON")
-                .adultPrice(new BigDecimal("650000"))
-                .childPrice(new BigDecimal("450000"))
-                .infantPrice(BigDecimal.ZERO)
+                .prices(List.of(
+                        PriceListPerPerson.builder().passengerType("ADULT").pricePerPerson(new BigDecimal("650000")).build(),
+                        PriceListPerPerson.builder().passengerType("CHILD").pricePerPerson(new BigDecimal("450000")).build(),
+                        PriceListPerPerson.builder().passengerType("INFANT").pricePerPerson(BigDecimal.ZERO).build()
+                ))
                 .childPolicyNote("Trẻ em 1m–1m29: 450.000đ")
                 .infantPolicyNote("Dưới 1m: Miễn phí")
                 .highlights("- Cano ghép\n- Ăn trưa\n- Vé tham quan\n- Trẻ em 1m–1m29: 450.000đ")
@@ -77,10 +79,11 @@ public class TourPackageAndPricingTest {
         mudBathPackage = TourPackage.builder()
                 .tour(tour)
                 .name("Hòn Tằm – Tắm Bùn")
-                .pricingType("PER_PERSON")
-                .adultPrice(new BigDecimal("950000"))
-                .childPrice(new BigDecimal("700000"))
-                .infantPrice(BigDecimal.ZERO)
+                .prices(List.of(
+                        PriceListPerPerson.builder().passengerType("ADULT").pricePerPerson(new BigDecimal("950000")).build(),
+                        PriceListPerPerson.builder().passengerType("CHILD").pricePerPerson(new BigDecimal("700000")).build(),
+                        PriceListPerPerson.builder().passengerType("INFANT").pricePerPerson(BigDecimal.ZERO).build()
+                ))
                 .childPolicyNote("Trẻ em 1m–1m29: 700.000đ")
                 .infantPolicyNote("Dưới 1m: Miễn phí")
                 .active(true)
@@ -91,11 +94,8 @@ public class TourPackageAndPricingTest {
         privateCanoPackage = TourPackage.builder()
                 .tour(tour)
                 .name("Cano riêng – Linh hoạt")
-                .pricingType("CONTACT")
                 .isContactOnly(true)
-                .adultPrice(BigDecimal.ZERO)
-                .childPrice(BigDecimal.ZERO)
-                .infantPrice(BigDecimal.ZERO)
+                .prices(List.of())
                 .active(true)
                 .build();
         privateCanoPackage.setId(30L);
@@ -108,9 +108,13 @@ public class TourPackageAndPricingTest {
         int childCount = 1;
         int infantCount = 1;
 
-        BigDecimal total = sharedCanoPackage.getAdultPrice().multiply(BigDecimal.valueOf(adultCount))
-                .add(sharedCanoPackage.getChildPrice().multiply(BigDecimal.valueOf(childCount)))
-                .add(sharedCanoPackage.getInfantPrice().multiply(BigDecimal.valueOf(infantCount)));
+        BigDecimal adultPrice = sharedCanoPackage.getPrices().stream().filter(p -> "ADULT".equals(p.getPassengerType())).findFirst().get().getPricePerPerson();
+        BigDecimal childPrice = sharedCanoPackage.getPrices().stream().filter(p -> "CHILD".equals(p.getPassengerType())).findFirst().get().getPricePerPerson();
+        BigDecimal infantPrice = sharedCanoPackage.getPrices().stream().filter(p -> "INFANT".equals(p.getPassengerType())).findFirst().get().getPricePerPerson();
+
+        BigDecimal total = adultPrice.multiply(BigDecimal.valueOf(adultCount))
+                .add(childPrice.multiply(BigDecimal.valueOf(childCount)))
+                .add(infantPrice.multiply(BigDecimal.valueOf(infantCount)));
 
         // 2 * 650.000 + 1 * 450.000 + 0 = 1.750.000 VND
         assertEquals(new BigDecimal("1750000"), total);
@@ -122,19 +126,21 @@ public class TourPackageAndPricingTest {
         int adultCount = 3;
         int childCount = 2;
 
-        BigDecimal total = mudBathPackage.getAdultPrice().multiply(BigDecimal.valueOf(adultCount))
-                .add(mudBathPackage.getChildPrice().multiply(BigDecimal.valueOf(childCount)));
+        BigDecimal adultPrice = mudBathPackage.getPrices().stream().filter(p -> "ADULT".equals(p.getPassengerType())).findFirst().get().getPricePerPerson();
+        BigDecimal childPrice = mudBathPackage.getPrices().stream().filter(p -> "CHILD".equals(p.getPassengerType())).findFirst().get().getPricePerPerson();
+
+        BigDecimal total = adultPrice.multiply(BigDecimal.valueOf(adultCount))
+                .add(childPrice.multiply(BigDecimal.valueOf(childCount)));
 
         // 3 * 950.000 + 2 * 700.000 = 2.850.000 + 1.400.000 = 4.250.000 VND
         assertEquals(new BigDecimal("4250000"), total);
     }
 
     @Test
-    @DisplayName("Private Canoe is Contact Only and does not charge per guest count")
+    @DisplayName("Private Canoe is Contact Only and has empty prices")
     void testPrivateCanoeContactOnly() {
         assertTrue(privateCanoPackage.isContactOnly());
-        assertEquals("CONTACT", privateCanoPackage.getPricingType());
-        assertEquals(BigDecimal.ZERO, privateCanoPackage.getAdultPrice());
+        assertTrue(privateCanoPackage.getPrices().isEmpty());
     }
 
     @Test
@@ -157,7 +163,7 @@ public class TourPackageAndPricingTest {
                 null,
                 sharedCanoPackage.getId(),
                 sharedCanoPackage.getName(),
-                sharedCanoPackage.getPricingType(),
+                "PER_PERSON",
                 2,
                 1,
                 0
@@ -190,5 +196,45 @@ public class TourPackageAndPricingTest {
         assertEquals("Cano ghép theo hành trình.", items.get(0));
         assertEquals("Bữa trưa theo thực đơn tour.", items.get(1));
         assertEquals("Vé tham quan theo chương trình.", items.get(2));
+    }
+
+    @Test
+    @DisplayName("Verify PriceListPerPerson age and height condition flags and ranges")
+    void testPriceListPerPersonAgeAndHeightConditions() {
+        PriceListPerPerson adultPrice = PriceListPerPerson.builder()
+                .passengerType("ADULT")
+                .pricePerPerson(new BigDecimal("650000"))
+                .applyAgeCondition(true)
+                .minAge(12)
+                .maxAge(null)
+                .applyHeightCondition(true)
+                .minHeight(130)
+                .maxHeight(null)
+                .build();
+
+        assertTrue(adultPrice.isApplyAgeCondition());
+        assertEquals(12, adultPrice.getMinAge());
+        assertNull(adultPrice.getMaxAge());
+        assertTrue(adultPrice.isApplyHeightCondition());
+        assertEquals(130, adultPrice.getMinHeight());
+        assertNull(adultPrice.getMaxHeight());
+
+        PriceListPerPerson childPrice = PriceListPerPerson.builder()
+                .passengerType("CHILD")
+                .pricePerPerson(new BigDecimal("450000"))
+                .applyAgeCondition(true)
+                .minAge(5)
+                .maxAge(11)
+                .applyHeightCondition(true)
+                .minHeight(100)
+                .maxHeight(129)
+                .build();
+
+        assertTrue(childPrice.isApplyAgeCondition());
+        assertEquals(5, childPrice.getMinAge());
+        assertEquals(11, childPrice.getMaxAge());
+        assertTrue(childPrice.isApplyHeightCondition());
+        assertEquals(100, childPrice.getMinHeight());
+        assertEquals(129, childPrice.getMaxHeight());
     }
 }

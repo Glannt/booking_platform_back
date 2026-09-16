@@ -12,7 +12,6 @@ public class CreateTourCategoryRequest {
     private String code;
     private String icon;
     private Integer sortOrder;
-    private Boolean active;
     private Boolean isActive;
     private String title;
     private String description;

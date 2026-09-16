@@ -36,8 +36,6 @@ public class TourDataInitializerTest {
     @Mock
     private TourTranslationRepository tourTranslationRepository;
     @Mock
-    private TourPriceRepository tourPriceRepository;
-    @Mock
     private TourDayRepository tourDayRepository;
     @Mock
     private TourDayTranslationRepository tourDayTranslationRepository;

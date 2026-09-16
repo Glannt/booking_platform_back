@@ -20,6 +20,11 @@ public class TourDay extends MasterEntity {
     @Column(name = "day_number", nullable = false)
     private int dayNumber;
 
+    @OneToMany(mappedBy = "tourDay", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<TourDayTranslation> translations = new java.util.ArrayList<>();
 
-
+    @OneToMany(mappedBy = "tourDay", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<TourDayActivity> activities = new java.util.ArrayList<>();
 }

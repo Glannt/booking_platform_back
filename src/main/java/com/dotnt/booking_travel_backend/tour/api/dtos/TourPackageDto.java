@@ -1,5 +1,8 @@
 package com.dotnt.booking_travel_backend.tour.api.dtos;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -14,22 +17,49 @@ public class TourPackageDto {
     private Long id;
     private Long tourId;
     private String name;
-    private String pricingType; // PER_PERSON, PRIVATE_CHARTER, CONTACT
+    private String childPolicyNote;
+    private String infantPolicyNote;
+    private String pricingType;
     private BigDecimal adultPrice;
     private BigDecimal childPrice;
     private BigDecimal infantPrice;
-    private String childPolicyNote;
-    private String infantPolicyNote;
-    private BigDecimal fixedPrice;
-    private boolean isContactOnly;
-    private int minGuests;
-    private int maxGuests;
+
+    @Builder.Default
+    private List<PriceListPerPersonDto> prices = new ArrayList<>();
+
+    @JsonProperty("isContactOnly")
+    @JsonAlias({"contactOnly", "isContactOnly"})
+    @Builder.Default
+    private Boolean isContactOnly = false;
+
+    @Builder.Default
+    private Integer minGuests = 1;
+
+    @Builder.Default
+    private Integer maxGuests = 30;
+
     private String highlights;
     private String inclusions;
     private String exclusions;
-    private boolean active;
-    private int sortOrder;
+
+    @JsonProperty("active")
+    @JsonAlias({"isActive", "active"})
+    @Builder.Default
+    private Boolean active = true;
+
+    @Builder.Default
+    private Integer sortOrder = 0;
 
     @Builder.Default
     private List<TourPackageTranslationDto> translations = new ArrayList<>();
+
+    @JsonIgnore
+    public boolean isContactOnly() {
+        return Boolean.TRUE.equals(this.isContactOnly);
+    }
+
+    @JsonIgnore
+    public boolean isActive() {
+        return active == null || active;
+    }
 }

@@ -22,7 +22,7 @@ public class TourOption extends MasterEntity {
     @JoinColumn(name = "tour_id", nullable = false)
     private Tour tour;
 
-    @Column(name = "icon_url", length = 500)
+    @Column(name = "icon_url", columnDefinition = "TEXT")
     private String iconUrl;
 
     @Column(name = "color_text", length = 100)

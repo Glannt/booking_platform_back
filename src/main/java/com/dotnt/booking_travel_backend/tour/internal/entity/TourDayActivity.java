@@ -28,4 +28,7 @@ public class TourDayActivity extends MasterEntity {
     @Column(name = "location", nullable = false, length = 255)
     private String location;
 
+    @OneToMany(mappedBy = "tourDayActivity", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<TourDayActivityTranslation> translations = new java.util.ArrayList<>();
 }
