@@ -29,10 +29,13 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 seedHomepageHeroBanner();
                 seedHomepageFeatures();
                 seedToursHeroBanner();
+                seedToursFaq();
                 seedSelfDriveHeroBanner();
                 seedAirportTransferHeroBanner();
                 seedIntercityHeroBanner();
                 seedSlideCard();
+                seedHomepageCompanyLocation();
+                seedHomepagePartnerCooperation();
                 seedSlideReview();
                 seedInspiration();
                 seedBookingProcess();
@@ -846,5 +849,172 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
 
         sectionRepository.save(section);
         log.info("Seeded FEATURES for /intercity.");
+    }
+
+    @Transactional
+    public void seedToursFaq() {
+        if (sectionRepository.existsByPagePathAndSectionType("/tours", "FAQ")) {
+            log.info("FAQ for /tours already exists, skipping.");
+            return;
+        }
+
+        String faqData = "{\"categories\":["
+                + "{\"title\":{\"vi\":\"Tour & Dịch vụ\",\"en\":\"Tours & Services\",\"ko\":\"투어 및 서비스\",\"ru\":\"Туры и услуги\"},"
+                + "\"items\":["
+                + "{\"title\":{\"vi\":\"Minh Khoa Travel có bao nhiêu tour ngắm cảnh & du thuyền?\",\"en\":\"How many scenic cruises & tours are available?\",\"ko\":\"나트랑 크루즈 및 투어 상품은 몇 개가 있나요?\",\"ru\":\"Сколько круизов и туров доступно в Нячанге?\"},"
+                + "\"content\":{\"vi\":\"Chúng tôi cung cấp hơn 20 tour du lịch biển đảo, du thuyền hoàng hôn vịnh Nha Trang và các chuyến tham quan trọn gói với lịch trình đa dạng, xuất phát hàng ngày.\",\"en\":\"We currently offer over 20 island tours, scenic sunset cruises, and sightseeing packages departing daily in Nha Trang.\",\"ko\":\"현재 20개 이상의 나트랑 섬 투어, 일몰 크루즈 및 일일 관광 패키지를 매일 운영하고 있습니다.\",\"ru\":\"В настоящее время мы предлагаем более 20 туров по островам, закатных круизов и экскурсий с ежедневным отправлением.\"}},"
+                + "{\"title\":{\"vi\":\"Những tour du lịch nào phổ biến nhất?\",\"en\":\"What are the most popular cruises and tours?\",\"ko\":\"가장 인기 있는 크루즈 및 투어는 무엇인가요?\",\"ru\":\"Какие туры и круизы самые популярные?\"},"
+                + "\"content\":{\"vi\":\"Các tour được yêu thích nhất gồm có Tour 3 đảo Cano cao tốc (Hòn Mun - Hòn Tằm - Bãi Tranh), Du thuyền hoàng hôn vịnh Nha Trang với tiệc BBQ, và Tour lặn biển ngắm san hô.\",\"en\":\"Top choices include the 3-Island Speedboat Tour (Hon Mun, Hon Tam), the Nha Trang Sunset Dinner Cruise with live music, and the Diep Son sandbar tour.\",\"ko\":\"스피드보트 3개 섬 호핑 투어(혼문, 혼탐), 나트랑 만 일몰 디너 크루즈, 디엡손 섬 투어가 가장 인기가 많습니다.\",\"ru\":\"Самые популярные: тур на скоростном катере по 3 островам (Хон Мун, Хон Там), круиз на закате с ужином и тур на остров Диеп Шон.\"}}"
+                + "]},"
+                + "{\"title\":{\"vi\":\"Giá vé & Bao gồm\",\"en\":\"Pricing & Inclusions\",\"ko\":\"가격 및 포함사항\",\"ru\":\"Цены и включенные услуги\"},"
+                + "\"items\":["
+                + "{\"title\":{\"vi\":\"Giá tour đã bao gồm những gì?\",\"en\":\"What is included in the tour price?\",\"ko\":\"투어 가격에는 무엇이 포함되어 있나요?\",\"ru\":\"Что включено в стоимость тура?\"},"
+                + "\"content\":{\"vi\":\"Giá tour trọn gói đã bao gồm xe đưa đón tại khách sạn trung tâm, cano cao tốc/tàu du lịch, bữa trưa hải sản, vé vào cổng các điểm tham quan, áo phao, kính lặn và bảo hiểm du lịch.\",\"en\":\"All-inclusive tour prices include hotel pickup in city center, speedboat/cruise transfer, seafood lunch, entrance tickets, life jackets, snorkeling gear, and travel insurance.\",\"ko\":\"투어 요금에는 시내 호텔 픽업/샌딩, 스피드보트/크루즈 이동, 해산물 점심 식사, 입장료, 구명조끼 및 스노클링 장비, 여행자 보험이 모두 포함되어 있습니다.\",\"ru\":\"В стоимость 'все включено' входит трансфер от/до отеля в центре, катер/круиз, обед с морепродуктами, входные билеты, спасательные жилеты, снаряжение для сноркелинга и страховка.\"}},"
+                + "{\"title\":{\"vi\":\"Những tour nào có mức giá hợp lý và tiết kiệm nhất?\",\"en\":\"Which tours offer the best value for money?\",\"ko\":\"가장 가성비 좋은 투어 상품은 무엇인가요?\",\"ru\":\"Какие туры наиболее доступны по цене?\"},"
+                + "\"content\":{\"vi\":\"Các tour cano khám phá đảo khởi hành hàng ngày có mức giá trọn gói chỉ từ 450.000đ/người đã bao gồm cano cao tốc, bữa trưa hải sản, vé vào cổng các khu du lịch và bảo hiểm.\",\"en\":\"Our daily island speedboat tours start from only 450,000 VND per person, fully including boat transport, seafood lunch, entrance tickets, and insurance.\",\"ko\":\"스피드보트 1일 섬 투어는 보트 이동, 점심 식사, 입장료가 모두 포함되어 1인당 450,000동부터 이용 가능합니다.\",\"ru\":\"Однодневные островные туры на катере доступны от 450 000 VND с включенным обедом, трансфером и страховкой.\"}}"
+                + "]},"
+                + "{\"title\":{\"vi\":\"Đặt tour & Hủy vé\",\"en\":\"Booking & Cancellation\",\"ko\":\"예약 및 취소\",\"ru\":\"Бронирование и отмена\"},"
+                + "\"items\":["
+                + "{\"title\":{\"vi\":\"Chính sách hủy tour như thế nào?\",\"en\":\"What is the tour cancellation policy?\",\"ko\":\"투어 취소 규정은 어떻게 되나요?\",\"ru\":\"Каковы правила отмены тура?\"},"
+                + "\"content\":{\"vi\":\"Hủy miễn phí trước 24 giờ so với giờ khởi hành. Nếu hủy trong vòng 24 giờ hoặc vắng mặt vào ngày đi, phí phạt có thể áp dụng tùy theo quy định của ban quản lý cảng và tàu thuyền.\",\"en\":\"Free cancellation up to 24 hours prior to departure. Cancellations within 24 hours or no-shows may incur fees depending on port and vessel regulations.\",\"ko\":\"출발 24시간 전까지는 무료 취소가 가능합니다. 24시간 이내 취소 또는 당일 불참의 경우 항만 및 선박 규정에 따라 수수료가 발생할 수 있습니다.\",\"ru\":\"Бесплатная отмена возможна за 24 часа до отправления. При отмене менее чем за 24 часа или неявке может взиматься штраф.\"}},"
+                + "{\"title\":{\"vi\":\"Tôi có thể đặt tour cho ngày mai không?\",\"en\":\"Can I book a tour for tomorrow?\",\"ko\":\"내일 출발하는 투어도 예약할 수 있나요?\",\"ru\":\"Могу ли я забронировать тур на завтра?\"},"
+                + "\"content\":{\"vi\":\"Có, bạn có thể đặt trực tuyến trước 21:00 hôm nay để khởi hành vào sáng mai. Đội ngũ nhân viên sẽ liên hệ xác nhận giờ đón cụ thể qua Zalo/WhatsApp/Điện thoại.\",\"en\":\"Yes, you can book online before 21:00 today for departure tomorrow morning. Our team will contact you via WhatsApp/phone to confirm the exact pickup time.\",\"ko\":\"네, 오늘 21:00 전까지 온라인으로 예약하시면 내일 아침 출발이 가능합니다. 픽업 시간은 카카오톡/전화로 안내해 드립니다.\",\"ru\":\"Да, вы можете забронировать онлайн до 21:00 сегодня с отправлением завтра утром. Наша команда свяжется с вами для подтверждения времени трансфера.\"}}"
+                + "]}"
+                + "]}";
+
+        Section section = Section.builder()
+                .sectionName("FAQ - Tours Listing")
+                .sectionType("FAQ")
+                .pagePath("/tours")
+                .orderIndex(10)
+                .active(true)
+                .contentData(faqData)
+                .translations(new ArrayList<>())
+                .build();
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("vi")
+                .title("Câu hỏi thường gặp")
+                .subtitle("Mọi điều bạn cần biết về các tour du lịch và du thuyền tại Nha Trang.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("en")
+                .title("Frequently Asked Questions")
+                .subtitle("Everything you need to know about island tours and cruises in Nha Trang.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ko")
+                .title("자주 묻는 질문")
+                .subtitle("나트랑 투어 및 크루즈 상품에 대해 자주 묻는 질문입니다.")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ru")
+                .title("Часто задаваемые вопросы")
+                .subtitle("Все, что вам нужно знать о морских экскурсиях и круизах в Нячанге.")
+                .build());
+
+        sectionRepository.save(section);
+        log.info("Seeded FAQ for /tours.");
+    }
+
+    @Transactional
+    public void seedHomepageCompanyLocation() {
+        if (sectionRepository.existsByPagePathAndSectionType("/", "COMPANY_LOCATION")) {
+            log.info("COMPANY_LOCATION section for / already exists, skipping.");
+            return;
+        }
+
+        Section section = Section.builder()
+                .sectionName("Vị trí công ty & Văn phòng đón tiếp - Homepage")
+                .sectionType("COMPANY_LOCATION")
+                .pagePath("/")
+                .orderIndex(6)
+                .active(true)
+                .contentData("{\"address\":{\"vi\":\"Số 18 Thủy Xưởng, Phương Sơn, TP. Nha Trang, Khánh Hòa\",\"en\":\"18 Thuy Xuong, Phuong Son, Nha Trang, Khanh Hoa\",\"ko\":\"18 Thuy Xuong, Phuong Son, Nha Trang, Khanh Hoa\",\"ru\":\"18 Thuy Xuong, Phuong Son, Nha Trang, Khanh Hoa\"},\"workingHours\":{\"vi\":\"06:00 - 22:00 (Thứ 2 - Chủ Nhật, hỗ trợ khẩn cấp 24/7)\",\"en\":\"06:00 - 22:00 (Daily, 24/7 emergency support)\",\"ko\":\"06:00 - 22:00 (연중무휴, 24시간 긴급 지원)\",\"ru\":\"06:00 - 22:00 (Ежедневно, экстренная поддержка 24/7)\"},\"hotline\":\"0764971971\",\"hub\":{\"vi\":\"Sảnh đến Sân bay Cam Ranh, Ga Nha Trang & các bến xe trung tâm\",\"en\":\"Cam Ranh Airport Arrival Hall, Nha Trang Station & bus terminals\",\"ko\":\"깜라인 공항 도착 로비, 나트랑 기차역 및 주요 터미널\",\"ru\":\"Зал прилета аэропорта Камрань, вокзал Нячанга и автостанции\"},\"mapQuery\":\"18 Thủy Xưởng, Phương Sơn, Nha Trang, Khánh Hòa\",\"directionsUrl\":\"https://www.google.com/maps/search/?api=1&query=18+Th%E1%BB%A7y+X%C6%B0%E1%BB%9Fng%2C+Ph%C6%B0%C6%A1ng+S%C6%A1n%2C+Nha+Trang%2C+Kh%C3%A1nh+H%C3%B2a\"}")
+                .translations(new ArrayList<>())
+                .build();
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("vi")
+                .title("Vị trí công ty & Văn phòng đón tiếp")
+                .subtitle("Văn phòng trung tâm Nha Trang và mạng lưới xe sẵn sàng phục vụ 24/7.")
+                .btnText("Xem chỉ đường trên Google Maps")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("en")
+                .title("Company Office & Location")
+                .subtitle("Convenient central office in Nha Trang and vehicle fleets ready 24/7.")
+                .btnText("View on Google Maps")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ko")
+                .title("회사 위치 및 고객 안내소")
+                .subtitle("나트랑 시내 중심 사무실과 24시간 대기 차량 네트워크.")
+                .btnText("구글 지도에서 길찾기")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ru")
+                .title("Офис и расположение компании")
+                .subtitle("Удобный офис в центре Нячанга и автопарк, доступный 24/7.")
+                .btnText("Посмотреть на картах Google")
+                .build());
+
+        sectionRepository.save(section);
+        log.info("Seeded COMPANY_LOCATION section for /.");
+    }
+
+    @Transactional
+    public void seedHomepagePartnerCooperation() {
+        if (sectionRepository.existsByPagePathAndSectionType("/", "PARTNER_COOPERATION")) {
+            log.info("PARTNER_COOPERATION section for / already exists, skipping.");
+            return;
+        }
+
+        Section section = Section.builder()
+                .sectionName("Nhận hợp tác với các đối tác - Homepage")
+                .sectionType("PARTNER_COOPERATION")
+                .pagePath("/")
+                .orderIndex(7)
+                .active(true)
+                .contentData("{\"badge\":{\"vi\":\"B2B Partnership\",\"en\":\"B2B Partnership\",\"ko\":\"B2B 제휴\",\"ru\":\"B2B Партнерство\"},\"partners\":[{\"id\":\"drivers\",\"icon\":\"CarFront\",\"title\":{\"vi\":\"Chủ xe & Tài xế\",\"en\":\"Vehicle Owners & Drivers\",\"ko\":\"차량 소유주 및 운전기사\",\"ru\":\"Автовладельцы и водители\"},\"desc\":{\"vi\":\"Gia nhập đội xe đưa đón sân bay & liên tỉnh, tối ưu lịch trình 2 chiều và nguồn khách dồi dào.\",\"en\":\"Join our airport and intercity fleet, optimize 2-way routes and receive consistent passenger bookings.\",\"ko\":\"공항 및 시외 운행 네트워크에 참여하여 왕복 운행을 최적화하고 안정적인 수입을 확보하세요.\",\"ru\":\"Присоединяйтесь к нашей команде трансферов, оптимизируйте обратные рейсы и получайте стабильный поток клиентов.\"}},{\"id\":\"hotels\",\"icon\":\"Building2\",\"title\":{\"vi\":\"Khách sạn & Resort\",\"en\":\"Hotels & Resorts\",\"ko\":\"호텔 & 리조트\",\"ru\":\"Отели и курорты\"},\"desc\":{\"vi\":\"Liên kết đưa đón khách lưu trú chu đáo, xe đời mới sang trọng, hoa hồng minh bạch hàng tháng.\",\"en\":\"Provide premium transfer service for your guests, modern vehicles, transparent monthly commission.\",\"ko\":\"투숙객을 위한 프리미엄 픽업 서비스 연결 및 투명한 수수료 정산.\",\"ru\":\"Предоставляйте гостям комфортный трансфер на новых автомобилях с прозрачной комиссией.\"}},{\"id\":\"agencies\",\"icon\":\"Briefcase\",\"title\":{\"vi\":\"Đại lý & Hướng dẫn viên\",\"en\":\"Travel Agencies & Guides\",\"ko\":\"여행사 & 가이드\",\"ru\":\"Турагентства и гиды\"},\"desc\":{\"vi\":\"Chính sách giá tour và thuê xe chiết khấu cao, giữ chỗ nhanh chóng qua hệ thống quản lý hiện đại.\",\"en\":\"Wholesale tour & rental pricing, fast instant booking via our smart management system.\",\"ko\":\"투어 및 차량 대여 특별 할인가 제공 및 스마트 관리 시스템을 통한 빠른 예약.\",\"ru\":\"Специальные оптовые тарифы на туры и авто, быстрое бронирование через современную систему.\"}}],\"benefits\":[{\"vi\":\"Chiết khấu & hoa hồng hấp dẫn\",\"en\":\"Attractive & transparent commission\",\"ko\":\"매력적이고 투명한 수수료\",\"ru\":\"Выгодные и прозрачные комиссии\"},{\"vi\":\"Hệ thống điều phối xe thông minh 24/7\",\"en\":\"24/7 intelligent vehicle dispatch\",\"ko\":\"24시간 스마트 차량 배차 시스템\",\"ru\":\"Умная диспетчерская система 24/7\"},{\"vi\":\"Đối soát minh bạch, thanh toán đúng hẹn\",\"en\":\"Clear statements & punctual payouts\",\"ko\":\"투명한 정산 및 신속한 지급\",\"ru\":\"Своевременные и точные выплаты\"}],\"contactLink\":\"\"}")
+                .translations(new ArrayList<>())
+                .build();
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("vi")
+                .title("Nhận hợp tác với các đối tác")
+                .subtitle("Minh Khoa Travel chào đón nhà xe, đối tác khách sạn và đại lý du lịch cùng phát triển mạng lưới vận tải chất lượng cao.")
+                .btnText("Liên hệ hợp tác ngay")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("en")
+                .title("Partnership & Cooperation")
+                .subtitle("Minh Khoa Travel welcomes car owners, hotels, and travel agencies to build high-quality tourism and transportation services.")
+                .btnText("Contact for Partnership")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ko")
+                .title("파트너십 및 제휴 안내")
+                .subtitle("Minh Khoa Travel과 함께 고품질 관광 및 운송 네트워크를 구축할 파트너사를 모십니다.")
+                .btnText("제휴 문의하기")
+                .build());
+
+        section.getTranslations().add(SectionTranslation.builder()
+                .section(section).locale("ru")
+                .title("Партнерство и сотрудничество")
+                .subtitle("Minh Khoa Travel приглашает автовладельцев, отели и туристические агентства к сотрудничеству.")
+                .btnText("Связаться для партнерства")
+                .build());
+
+        sectionRepository.save(section);
+        log.info("Seeded PARTNER_COOPERATION section for /.");
     }
 }
