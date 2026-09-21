@@ -36,6 +36,7 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
                 seedSlideCard();
                 seedHomepageCompanyLocation();
                 seedHomepagePartnerCooperation();
+                seedHomepageSystemCatalog();
                 seedSlideReview();
                 seedInspiration();
                 seedBookingProcess();
@@ -1016,5 +1017,91 @@ public class SectionDataInitializer implements ApplicationListener<ApplicationRe
 
         sectionRepository.save(section);
         log.info("Seeded PARTNER_COOPERATION section for /.");
+    }
+
+    /**
+     * Seeds the homepage system-catalog sections (destinations, tours, self-drive,
+     * intercity, airport-transfer). These were previously created manually via the
+     * "Khởi tạo Sections mẫu" button in the admin portal; now they are created once
+     * on first run. Guarded by section name because all share SYSTEM_CATALOG type.
+     */
+    @Transactional
+    public void seedHomepageSystemCatalog() {
+        String destinationsData = """
+                {"systemSource":"destinations","itemLimit":6,"viewAllLink":"/tours","destinations":[{"id":"nha-trang","name":"Nha Trang","activityCountText":"35 tour & xe dịch vụ","imageUrl":"https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=600&q=80","href":"/tours","active":true},{"id":"da-lat","name":"Đà Lạt","activityCountText":"18 tuyến xe & tour","imageUrl":"https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=600&q=80","href":"/intercity?route=nha-trang-da-lat","active":true},{"id":"cam-ranh","name":"Cam Ranh","activityCountText":"Đưa đón sân bay 24/7","imageUrl":"https://images.unsplash.com/photo-1512100356356-de1b84283e18?auto=format&fit=crop&w=600&q=80","href":"/airport-transfer","active":true},{"id":"phan-thiet","name":"Phan Thiết - Mũi Né","activityCountText":"14 tour & tuyến xe","imageUrl":"https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80","href":"/intercity?route=nha-trang-phan-thiet","active":true},{"id":"quy-nhon","name":"Quy Nhơn","activityCountText":"12 chuyến xe & tour","imageUrl":"https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80","href":"/intercity?route=nha-trang-quy-nhon","active":true},{"id":"dak-lak","name":"Đắk Lắk - Buôn Ma Thuột","activityCountText":"8 tour sinh thái","imageUrl":"https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=600&q=80","href":"/intercity?route=nha-trang-buon-ma-thuot","active":true}]}
+                """;
+
+        seedSystemCatalog("Điểm Đến Nổi Bật", 2, destinationsData,
+                "Bạn muốn đi đâu chơi?", "Khám phá các điểm đến du lịch tuyệt vời gần Nha Trang và Nam Trung Bộ",
+                "Where do you want to go?", "Explore top exciting travel destinations around Nha Trang",
+                "어디로 여행을 떠나시겠습니까?", "나트랑 주변의 멋진 여행 목적지를 탐험해 보세요",
+                "Куда вы хотите поехать?", "Исследуйте лучшие направления вокруг Нячанга");
+
+        seedSystemCatalog("Tour Du Lịch Nổi Bật", 3,
+                "{\"systemSource\":\"tours\",\"itemLimit\":8,\"viewAllLink\":\"/tours\"}",
+                "Các hoạt động nổi bật", "Trải nghiệm tour du lịch và hoạt động giải trí không thể bỏ lỡ tại Nha Trang",
+                "Featured Activities", "Must-try guided sightseeing tours and island experiences in Nha Trang",
+                "주목할 만한 액티비티", "나트랑에서 놓칠 수 없는 최고의 관광 투어 및 해양 액티비티",
+                "Популярные экскурсии", "Незабываемые туры и развлечения в Нячанге");
+
+        seedSystemCatalog("Thuê Xe Tự Lái Nha Trang", 4,
+                "{\"systemSource\":\"self-drive\",\"itemLimit\":4,\"viewAllLink\":\"/self-drive\"}",
+                "Thuê xe tự lái Nha Trang", "Đa dạng dòng xe 4-7 chỗ đời mới, bảo hiểm toàn diện, giao xe tận nơi",
+                "Self-Drive Car Rental Nha Trang", "Modern 4-7 seater fleet, comprehensive insurance, doorstep delivery",
+                "나트랑 자차 렌터카", "최신 4~7인승 차량, 종합 보험 포함, 원하는 위치 무료 배차",
+                "Аренда авто без водителя в Нячанге", "Современный автопарк 4-7 мест, страховка, доставка к отелю");
+
+        seedSystemCatalog("Tuyến Xe Liên Tỉnh & Xe Ghép", 5,
+                "{\"systemSource\":\"intercity\",\"itemLimit\":4,\"viewAllLink\":\"/intercity\"}",
+                "Tuyến xe liên tỉnh & Xe ghép", "Di chuyển êm ái, đón tận nơi giữa Nha Trang và các tỉnh thành (Đà Lạt, Cam Ranh, Phan Thiết...)",
+                "Intercity Private & Shared Transfers", "Door-to-door comfort between Nha Trang and other cities (Da Lat, Cam Ranh, Mui Ne...)",
+                "도시 간 프라이빗 및 셔틀 차량", "나트랑과 주요 도시(달랏, 깜란, 무이네) 간 편리한 도어투도어 이동",
+                "Междугородние трансферы и шаттлы", "Комфортные поездки от двери до двери между Нячангом и другими городами");
+
+        seedSystemCatalog("Đưa Đón Sân Bay Cam Ranh ⇌ Nha Trang", 6,
+                "{\"systemSource\":\"airport-transfer\",\"itemLimit\":4,\"viewAllLink\":\"/airport-transfer\"}",
+                "Đưa đón sân bay Cam Ranh ⇌ Nha Trang", "Giá trọn gói cố định, miễn phí chờ chuyến bay delay, đón sảnh đúng giờ 24/7",
+                "Cam Ranh Airport Transfers ⇌ Nha Trang", "Fixed all-inclusive rates, free waiting for flight delays, 24/7 terminal pickup",
+                "깜란 공항 픽업 및 샌딩 ⇌ 나트랑", "정찰제 올인클루시브 요금, 항공편 지연 무료 대기, 24/7 정시 픽업",
+                "Трансфер из аэропорта Камрань ⇌ Нячанг", "Фиксированные цены, бесплатное ожидание рейса, круглосуточная встреча");
+    }
+
+    private void seedSystemCatalog(String sectionName, int orderIndex, String contentData,
+                                   String viTitle, String viSubtitle,
+                                   String enTitle, String enSubtitle,
+                                   String koTitle, String koSubtitle,
+                                   String ruTitle, String ruSubtitle) {
+        if (sectionRepository.existsByPagePathAndSectionName("/", sectionName)) {
+            log.info("SYSTEM_CATALOG '{}' for / already exists, skipping.", sectionName);
+            return;
+        }
+
+        Section section = Section.builder()
+                .sectionName(sectionName)
+                .sectionType("SYSTEM_CATALOG")
+                .pagePath("/")
+                .orderIndex(orderIndex)
+                .active(true)
+                .images(null)
+                .contentData(contentData)
+                .translations(new ArrayList<>())
+                .build();
+
+        section.getTranslations().add(buildSectionTranslation(section, "vi", viTitle, viSubtitle));
+        section.getTranslations().add(buildSectionTranslation(section, "en", enTitle, enSubtitle));
+        section.getTranslations().add(buildSectionTranslation(section, "ko", koTitle, koSubtitle));
+        section.getTranslations().add(buildSectionTranslation(section, "ru", ruTitle, ruSubtitle));
+
+        sectionRepository.save(section);
+        log.info("Seeded SYSTEM_CATALOG '{}' for /.", sectionName);
+    }
+
+    private SectionTranslation buildSectionTranslation(Section section, String locale, String title, String subtitle) {
+        return SectionTranslation.builder()
+                .section(section)
+                .locale(locale)
+                .title(title)
+                .subtitle(subtitle)
+                .build();
     }
 }

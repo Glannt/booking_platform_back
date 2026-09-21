@@ -22,4 +22,6 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
     boolean existsBySectionType(String sectionType);
 
     boolean existsByPagePathAndSectionType(String pagePath, String sectionType);
+
+    boolean existsByPagePathAndSectionName(String pagePath, String sectionName);
 }
