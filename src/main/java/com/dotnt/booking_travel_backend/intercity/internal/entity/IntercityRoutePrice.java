@@ -1,5 +1,6 @@
 package com.dotnt.booking_travel_backend.intercity.internal.entity;
 
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import com.dotnt.booking_travel_backend.shared.entity.MasterEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -45,16 +46,8 @@ public class IntercityRoutePrice extends MasterEntity {
     @Column(name = "currency", length = 10, nullable = false)
     private String currency;
 
-    @Column(name = "deposit_type", length = 20)
-    @Builder.Default
-    private String depositType = "PERCENT"; // PERCENT, FIXED
-
-    @Column(name = "deposit_rate", precision = 5, scale = 2)
-    @Builder.Default
-    private BigDecimal depositRate = new BigDecimal("20.00");
-
-    @Column(name = "deposit_amount", precision = 15, scale = 2)
-    private BigDecimal depositAmount;
+    @Embedded
+    private DepositPolicy depositPolicy;
 
     @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active;

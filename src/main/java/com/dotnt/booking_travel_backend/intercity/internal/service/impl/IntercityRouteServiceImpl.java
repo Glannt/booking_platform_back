@@ -15,6 +15,7 @@ import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityR
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityRouteTranslationRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.service.IIntercityRouteService;
 import com.dotnt.booking_travel_backend.shared.component.ComponentListConverter;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicies;
 import com.dotnt.booking_travel_backend.shared.utils.EntityMergeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -115,9 +116,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                         .roundTripPrice(pr.getRoundTripPrice())
                         .roundTripPerKmAmount(pr.getRoundTripPerKmAmount())
                         .currency(pr.getCurrency() != null ? pr.getCurrency() : "VND")
-                        .depositType(pr.getDepositType() != null ? pr.getDepositType() : "PERCENT")
-                        .depositRate(pr.getDepositRate() != null ? pr.getDepositRate() : new java.math.BigDecimal("20.00"))
-                        .depositAmount(pr.getDepositAmount())
+                        .depositPolicy(DepositPolicies.from(pr.getDepositType(), pr.getDepositRate(), pr.getDepositAmount()))
                         .active(pr.isActive())
                         .build());
             }
@@ -237,9 +236,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                             existing.setRoundTripPrice(prDto.getRoundTripPrice());
                             existing.setRoundTripPerKmAmount(prDto.getRoundTripPerKmAmount());
                             existing.setCurrency(prDto.getCurrency() != null ? prDto.getCurrency() : "VND");
-                            existing.setDepositType(prDto.getDepositType() != null ? prDto.getDepositType() : "PERCENT");
-                            existing.setDepositRate(prDto.getDepositRate() != null ? prDto.getDepositRate() : new java.math.BigDecimal("20.00"));
-                            existing.setDepositAmount(prDto.getDepositAmount());
+                            existing.setDepositPolicy(DepositPolicies.from(prDto.getDepositType(), prDto.getDepositRate(), prDto.getDepositAmount()));
                             existing.setActive(prDto.isActive());
                         },
                         prDto -> IntercityRoutePrice.builder()
@@ -253,9 +250,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                                 .roundTripPrice(prDto.getRoundTripPrice())
                                 .roundTripPerKmAmount(prDto.getRoundTripPerKmAmount())
                                 .currency(prDto.getCurrency() != null ? prDto.getCurrency() : "VND")
-                                .depositType(prDto.getDepositType() != null ? prDto.getDepositType() : "PERCENT")
-                                .depositRate(prDto.getDepositRate() != null ? prDto.getDepositRate() : new java.math.BigDecimal("20.00"))
-                                .depositAmount(prDto.getDepositAmount())
+                                .depositPolicy(DepositPolicies.from(prDto.getDepositType(), prDto.getDepositRate(), prDto.getDepositAmount()))
                                 .active(prDto.isActive())
                                 .build()
                 );
@@ -324,9 +319,9 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                         .fixedPriceRoundTrip(pr.getFixedPriceRoundTrip())
                         .roundTripPrice(pr.getRoundTripPrice())
                         .roundTripPerKmAmount(pr.getRoundTripPerKmAmount())
-                        .depositType(pr.getDepositType())
-                        .depositRate(pr.getDepositRate())
-                        .depositAmount(pr.getDepositAmount())
+                        .depositType(DepositPolicies.type(pr.getDepositPolicy()))
+                        .depositRate(DepositPolicies.rate(pr.getDepositPolicy()))
+                        .depositAmount(DepositPolicies.amount(pr.getDepositPolicy()))
                         .currency(pr.getCurrency()).active(pr.isActive()).build())
                 .collect(Collectors.toList());
 
