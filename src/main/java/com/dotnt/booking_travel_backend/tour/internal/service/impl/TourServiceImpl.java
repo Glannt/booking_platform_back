@@ -5,6 +5,7 @@ import com.dotnt.booking_travel_backend.tour.internal.entity.*;
 import com.dotnt.booking_travel_backend.tour.internal.repository.*;
 import com.dotnt.booking_travel_backend.tour.internal.mapper.TourMapper;
 import com.dotnt.booking_travel_backend.media.api.MediaDto;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicies;
 import org.springframework.context.ApplicationEventPublisher;
 import com.dotnt.booking_travel_backend.shared.module.ModuleEventPublisher;
 import com.dotnt.booking_travel_backend.shared.module.ModuleRequestEvent;
@@ -109,6 +110,8 @@ public class TourServiceImpl implements ITourService {
             t.setImageIds(new ArrayList<>(request.getImageIds()));
         }
 
+        t.setDepositPolicies(DepositPolicies.from(request.getDepositType(), request.getDepositRate(), request.getDepositAmount()));
+
         Tour saved = tourRepository.save(t);
 
         // Save options
@@ -118,7 +121,6 @@ public class TourServiceImpl implements ITourService {
                         .tour(saved)
                         .iconUrl(optDto.getIconUrl())
                         .colorText(optDto.getColorText())
-                        .colorIcon(optDto.getColorIcon())
                         .build();
                 TourOption savedOpt = tourOptionRepository.save(opt);
                 if (optDto.getTranslations() != null) {
@@ -370,7 +372,6 @@ public class TourServiceImpl implements ITourService {
                     .id(o.getId())
                     .iconUrl(o.getIconUrl())
                     .colorText(o.getColorText())
-                    .colorIcon(o.getColorIcon())
                     .translations(o.getTranslations().stream().map(tr -> TourOptionTranslationDto.builder()
                             .id(tr.getId())
                             .locale(tr.getLocale())
@@ -544,6 +545,9 @@ public class TourServiceImpl implements ITourService {
                 t.setImageIds(new ArrayList<>(tourDto.getImageIds()));
             }
 
+            t.setDepositPolicies(DepositPolicies.merge(t.getDepositPolicies(),
+                    tourDto.getDepositType(), tourDto.getDepositRate(), tourDto.getDepositAmount()));
+
             // 1. Merge translations (key = locale)
             mergeCollection(
                     t.getTranslations(),
@@ -575,7 +579,6 @@ public class TourServiceImpl implements ITourService {
                     (opt, optDto) -> {
                         opt.setIconUrl(optDto.getIconUrl());
                         opt.setColorText(optDto.getColorText());
-                        opt.setColorIcon(optDto.getColorIcon());
 
                         mergeCollection(
                                 opt.getTranslations(),
@@ -595,7 +598,6 @@ public class TourServiceImpl implements ITourService {
                                 .tour(t)
                                 .iconUrl(optDto.getIconUrl())
                                 .colorText(optDto.getColorText())
-                                .colorIcon(optDto.getColorIcon())
                                 .build();
                         if (optDto.getTranslations() != null) {
                             for (TourOptionTranslationDto trDto : optDto.getTranslations()) {
@@ -989,6 +991,9 @@ public class TourServiceImpl implements ITourService {
                 .inclusions(t.getInclusions())
                 .exclusions(t.getExclusions())
                 .components(t.getComponents())
+                .depositType(DepositPolicies.type(t.getDepositPolicies()))
+                .depositRate(DepositPolicies.rate(t.getDepositPolicies()))
+                .depositAmount(DepositPolicies.amount(t.getDepositPolicies()))
                 .build();
     }
 }

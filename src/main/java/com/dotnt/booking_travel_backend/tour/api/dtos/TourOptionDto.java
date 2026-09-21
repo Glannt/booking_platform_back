@@ -11,6 +11,5 @@ public class TourOptionDto {
     private Long id;
     private String iconUrl;
     private String colorText;
-    private String colorIcon;
     private List<TourOptionTranslationDto> translations;
 }

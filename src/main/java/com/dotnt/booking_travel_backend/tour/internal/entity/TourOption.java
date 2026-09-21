@@ -28,9 +28,6 @@ public class TourOption extends MasterEntity {
     @Column(name = "color_text", length = 100)
     private String colorText;
 
-    @Column(name = "color_icon", length = 100)
-    private String colorIcon;
-
     @OneToMany(mappedBy = "tourOption", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 50)
     @Builder.Default

@@ -117,17 +117,17 @@ public class TourDataInitializer implements CommandLineRunner {
                 .build();
         tourTranslationRepository.saveAll(Arrays.asList(t1Vi, t1En));
 
-        TourOption t1Opt1 = TourOption.builder().tour(tour1).iconUrl("ship").colorText("#0ea5e9").colorIcon("#0ea5e9").build();
+        TourOption t1Opt1 = TourOption.builder().tour(tour1).iconUrl("ship").colorText("#0ea5e9").build();
         tourOptionRepository.save(t1Opt1);
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t1Opt1).locale("vi").content("Cano cao tốc đời mới").build());
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t1Opt1).locale("en").content("Modern Speedboat").build());
 
-        TourOption t1Opt2 = TourOption.builder().tour(tour1).iconUrl("utensils").colorText("#f97316").colorIcon("#f97316").build();
+        TourOption t1Opt2 = TourOption.builder().tour(tour1).iconUrl("utensils").colorText("#f97316").build();
         tourOptionRepository.save(t1Opt2);
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t1Opt2).locale("vi").content("Ăn trưa hải sản").build());
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t1Opt2).locale("en").content("Seafood Lunch").build());
 
-        TourOption t1Opt3 = TourOption.builder().tour(tour1).iconUrl("shield").colorText("#22c55e").colorIcon("#22c55e").build();
+        TourOption t1Opt3 = TourOption.builder().tour(tour1).iconUrl("shield").colorText("#22c55e").build();
         tourOptionRepository.save(t1Opt3);
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t1Opt3).locale("vi").content("Bảo hiểm du lịch").build());
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t1Opt3).locale("en").content("Travel Insurance").build());
@@ -176,17 +176,17 @@ public class TourDataInitializer implements CommandLineRunner {
                 .build();
         tourTranslationRepository.saveAll(Arrays.asList(t2Vi, t2En));
 
-        TourOption t2Opt1 = TourOption.builder().tour(tour2).iconUrl("crown").colorText("#eab308").colorIcon("#eab308").build();
+        TourOption t2Opt1 = TourOption.builder().tour(tour2).iconUrl("crown").colorText("#eab308").build();
         tourOptionRepository.save(t2Opt1);
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t2Opt1).locale("vi").content("Du thuyền 5 sao sang trọng").build());
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t2Opt1).locale("en").content("Luxury 5-Star Cruise").build());
 
-        TourOption t2Opt2 = TourOption.builder().tour(tour2).iconUrl("music").colorText("#ec4899").colorIcon("#ec4899").build();
+        TourOption t2Opt2 = TourOption.builder().tour(tour2).iconUrl("music").colorText("#ec4899").build();
         tourOptionRepository.save(t2Opt2);
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t2Opt2).locale("vi").content("Tiệc cocktail & Nhạc live").build());
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t2Opt2).locale("en").content("Sunset Cocktail & Live Music").build());
 
-        TourOption t2Opt3 = TourOption.builder().tour(tour2).iconUrl("wine").colorText("#a855f7").colorIcon("#a855f7").build();
+        TourOption t2Opt3 = TourOption.builder().tour(tour2).iconUrl("wine").colorText("#a855f7").build();
         tourOptionRepository.save(t2Opt3);
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t2Opt3).locale("vi").content("Ăn tối buffet chuẩn VIP").build());
         tourOptionTranslationRepository.save(TourOptionTranslation.builder().tourOption(t2Opt3).locale("en").content("VIP Buffet Dinner").build());
