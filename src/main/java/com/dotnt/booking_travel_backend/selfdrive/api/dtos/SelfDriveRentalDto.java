@@ -25,6 +25,9 @@ public class SelfDriveRentalDto {
     @Builder.Default
     private Boolean isContactOnly = false;
 
+    @Builder.Default
+    private Integer sortOrder = 0;
+
     public boolean isContactOnly() {
         return Boolean.TRUE.equals(this.isContactOnly);
     }

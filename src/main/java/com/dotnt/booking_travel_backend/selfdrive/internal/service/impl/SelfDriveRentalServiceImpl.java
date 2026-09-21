@@ -41,11 +41,13 @@ public class SelfDriveRentalServiceImpl implements ISelfDriveRentalService {
                 Object ev = ctor.newInstance(this, "fleet.vehicleCategory.exists", dto.getVehicleCategoryId(), future);
                 applicationEventPublisher.publishEvent(ev);
                 Boolean exists = future.get(5, java.util.concurrent.TimeUnit.SECONDS);
-                if (exists == null || !exists) throw new IllegalArgumentException("Vehicle category not found");
+                if (exists == null || !exists) throw new IllegalArgumentException("Vehicle category not found for id: " + dto.getVehicleCategoryId());
+            } catch (IllegalArgumentException ex) {
+                throw ex;
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException("ModuleRequestEvent class not found", e);
             } catch (Exception ex) {
-                throw new IllegalArgumentException("Vehicle category validation failed", ex);
+                throw new IllegalArgumentException("Vehicle category validation failed: " + ex.getMessage(), ex);
             }
         }
         if (dto.isActive() && dto.getVehicleCategoryId() != null) {
@@ -65,6 +67,7 @@ public class SelfDriveRentalServiceImpl implements ISelfDriveRentalService {
                 .minimumDays(dto.getMinimumDays())
                 .active(dto.isActive())
                 .isContactOnly(dto.isContactOnly())
+                .sortOrder(dto.getSortOrder() != null ? dto.getSortOrder() : 0)
                 .vehicleCategoryId(dto.getVehicleCategoryId())
                 .build();
         SelfDriveRental saved = rentalRepository.save(r);
@@ -72,9 +75,17 @@ public class SelfDriveRentalServiceImpl implements ISelfDriveRentalService {
     }
 
     @Override
-    @Cacheable(value = "rentals", key = "#pageable.pageNumber + '_' + #pageable.pageSize")
+    @Cacheable(value = "rentals", key = "#pageable.pageNumber + '_' + #pageable.pageSize + '_' + #pageable.sort")
     public Page<SelfDriveRentalDto> list(Pageable pageable) {
-        Page<SelfDriveRental> page = rentalRepository.findAll(pageable);
+        Pageable effectivePageable = pageable;
+        if (pageable.getSort().isUnsorted()) {
+            effectivePageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("sortOrder").ascending().and(org.springframework.data.domain.Sort.by("id").ascending())
+            );
+        }
+        Page<SelfDriveRental> page = rentalRepository.findAll(effectivePageable);
         return page.map(this::toDto);
     }
 
@@ -97,11 +108,13 @@ public class SelfDriveRentalServiceImpl implements ISelfDriveRentalService {
                     Object ev = ctor.newInstance(this, "fleet.vehicleCategory.exists", dto.getVehicleCategoryId(), future);
                     applicationEventPublisher.publishEvent(ev);
                     Boolean exists = future.get(5, java.util.concurrent.TimeUnit.SECONDS);
-                    if (exists == null || !exists) throw new IllegalArgumentException("Vehicle category not found");
+                    if (exists == null || !exists) throw new IllegalArgumentException("Vehicle category not found for id: " + dto.getVehicleCategoryId());
+                } catch (IllegalArgumentException ex) {
+                    throw ex;
                 } catch (ClassNotFoundException e) {
                     throw new IllegalStateException("ModuleRequestEvent class not found", e);
                 } catch (Exception ex) {
-                    throw new IllegalArgumentException("Vehicle category validation failed", ex);
+                    throw new IllegalArgumentException("Vehicle category validation failed: " + ex.getMessage(), ex);
                 }
             }
 
@@ -125,6 +138,9 @@ public class SelfDriveRentalServiceImpl implements ISelfDriveRentalService {
             if (dto.getIsContactOnly() != null) {
                 r.setContactOnly(dto.isContactOnly());
             }
+            if (dto.getSortOrder() != null) {
+                r.setSortOrder(dto.getSortOrder());
+            }
             r.setVehicleCategoryId(dto.getVehicleCategoryId());
             return toDto(rentalRepository.save(r));
         }).orElse(null);
@@ -147,7 +163,9 @@ public class SelfDriveRentalServiceImpl implements ISelfDriveRentalService {
                 .depositType(r.getDepositType())
                 .depositRate(r.getDepositRate())
                 .minimumDays(r.getMinimumDays())
-                .active(r.isActive());
+                .active(r.isActive())
+                .isContactOnly(r.isContactOnly())
+                .sortOrder(r.getSortOrder() != null ? r.getSortOrder() : 0);
         if (r.getRentalTypeId() != null) {
             rentalTypeRepository.findById(r.getRentalTypeId()).ifPresent(rt -> {
                 var translations = rentalTypeTranslationRepository.findByRentalTypeId(rt.getId()).stream().map(selfDriveMapper::toDto).map(t -> (SelfDriveTypeTranslationDto) t).collect(Collectors.toList());

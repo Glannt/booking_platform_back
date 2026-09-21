@@ -42,4 +42,9 @@ public class SelfDriveRental extends MasterEntity {
     @Column(name = "is_contact_only", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     @Builder.Default
     private boolean isContactOnly = false;
+
+    @Column(name = "sort_order")
+    @Builder.Default
+    private Integer sortOrder = 0;
 }
+
