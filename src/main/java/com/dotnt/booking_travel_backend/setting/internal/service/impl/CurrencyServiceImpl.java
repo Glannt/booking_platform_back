@@ -132,7 +132,7 @@ public class CurrencyServiceImpl implements ICurrencyService {
             String url = apiBaseUrl + "/" + apiKey + "/rates";
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
-                    .header("Accept", "application/json")
+                    .header("Content-Type", "application/json")
                     .GET()
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -142,13 +142,14 @@ public class CurrencyServiceImpl implements ICurrencyService {
 
                 if (json != null && json.containsKey("rates")) {
                     @SuppressWarnings("unchecked")
-                    Map<String, Double> rates = (Map<String, Double>) json.get("rates");
+                    Map<String, Number> rates = (Map<String, Number>) json.get("rates");
 
-                    Double vndRate = rates.get("VND");
-                    if (vndRate == null || vndRate <= 0) {
+                    Number vndNum = rates.get("VND");
+                    if (vndNum == null || vndNum.doubleValue() <= 0) {
                         log.warn("VND rate not found in API response");
                         return currencyRepository.findAll().stream().map(this::toDto).collect(Collectors.toList());
                     }
+                    double vndRate = vndNum.doubleValue();
 
                     List<Currency> currencies = currencyRepository.findAll();
                     for (Currency currency : currencies) {
@@ -156,9 +157,10 @@ public class CurrencyServiceImpl implements ICurrencyService {
                         if ("VND".equals(code)) {
                             currency.setRateToVnd(BigDecimal.ONE);
                         } else {
-                            Double rate = rates.get(code);
-                            if (rate != null && rate > 0) {
+                            Number rateNum = rates.get(code);
+                            if (rateNum != null && rateNum.doubleValue() > 0) {
                                 // API returns rates relative to USD; compute 1 foreign = ? VND
+                                double rate = rateNum.doubleValue();
                                 double rateToVnd = vndRate / rate;
                                 currency.setRateToVnd(BigDecimal.valueOf(rateToVnd));
                             }

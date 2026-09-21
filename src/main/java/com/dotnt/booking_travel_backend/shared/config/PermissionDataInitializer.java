@@ -90,7 +90,11 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
 
             // Role
             Map.entry("ROLE_VIEW", "View roles and permissions"),
-            Map.entry("ROLE_UPDATE", "Update role permissions")
+            Map.entry("ROLE_UPDATE", "Update role permissions"),
+
+            // Setting
+            Map.entry("SETTING_UPDATE", "Update settings"),
+            Map.entry("SETTING_DELETE", "Delete settings")
     );
 
     private static final List<String> ADMIN_PERMISSIONS = ALL_PERMISSIONS.keySet().stream().toList();
@@ -113,7 +117,9 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
             "SECTION_CREATE", "SECTION_UPDATE", "SECTION_DELETE",
             // Language & Users
             "LANGUAGE_CREATE", "LANGUAGE_UPDATE",
-            "USER_VIEW", "USER_UPDATE"
+            "USER_VIEW", "USER_UPDATE",
+            // Setting
+            "SETTING_UPDATE"
     );
 
     private static final List<String> STAFF_PERMISSIONS = List.of(
@@ -126,7 +132,8 @@ public class PermissionDataInitializer implements ApplicationListener<Applicatio
             "MEDIA_CREATE",
             "FEEDBACK_UPDATE",
             "SECTION_CREATE", "SECTION_UPDATE",
-            "USER_VIEW"
+            "USER_VIEW",
+            "SETTING_UPDATE"
     );
 
     @Override
