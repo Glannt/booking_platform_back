@@ -73,18 +73,24 @@ public class AirportDataInitializer implements CommandLineRunner {
         AirportRoute route1 = airportRouteRepository.save(AirportRoute.builder()
                 .code("CXR-NT-CENTER")
                 .airport(cxr)
+                .name("Sân bay Cam Ranh ⇌ Nha Trang (Trung tâm)")
+                .distanceKm(new BigDecimal("35.0"))
                 .active(true)
                 .build());
 
         AirportRoute route2 = airportRouteRepository.save(AirportRoute.builder()
                 .code("CXR-NT-DUONG")
                 .airport(cxr)
+                .name("Sân bay Cam Ranh ⇌ Đường Đệ / Vĩnh Hòa")
+                .distanceKm(new BigDecimal("42.0"))
                 .active(true)
                 .build());
 
         AirportRoute route3 = airportRouteRepository.save(AirportRoute.builder()
                 .code("CXR-NT-SOUTH")
                 .airport(cxr)
+                .name("Sân bay Cam Ranh ⇌ Bãi Dài / Nam Cam Ranh")
+                .distanceKm(new BigDecimal("15.0"))
                 .active(true)
                 .build());
 

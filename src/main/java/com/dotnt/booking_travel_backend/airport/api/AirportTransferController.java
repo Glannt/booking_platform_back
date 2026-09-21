@@ -1,7 +1,7 @@
 package com.dotnt.booking_travel_backend.airport.api;
 
-import com.dotnt.booking_travel_backend.airport.internal.entity.AirportTransferPrice;
-import com.dotnt.booking_travel_backend.airport.internal.repository.AirportTransferPriceRepository;
+import com.dotnt.booking_travel_backend.airport.api.dtos.AirportTransferPriceDto;
+import com.dotnt.booking_travel_backend.airport.internal.service.IAirportTransferPriceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,42 +15,39 @@ import java.util.List;
 @RequestMapping("/api/v1/airport-transfers")
 @RequiredArgsConstructor
 public class AirportTransferController {
-    private final AirportTransferPriceRepository repository;
+    private final IAirportTransferPriceService service;
 
     @PostMapping
     @PreAuthorize("hasAuthority('AIRPORT_CREATE')")
-    public ResponseEntity<AirportTransferPrice> create(@RequestBody AirportTransferPrice dto) {
-        dto.setId(null);
-        return ResponseEntity.ok(repository.save(dto));
+    public ResponseEntity<AirportTransferPriceDto> create(@RequestBody AirportTransferPriceDto dto) {
+        return ResponseEntity.ok(service.create(dto));
     }
 
     @GetMapping
-    public ResponseEntity<Page<AirportTransferPrice>> list(Pageable pageable) {
-        return ResponseEntity.ok(repository.findAll(pageable));
+    public ResponseEntity<Page<AirportTransferPriceDto>> list(Pageable pageable) {
+        return ResponseEntity.ok(service.list(pageable));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AirportTransferPrice> get(@PathVariable Long id) {
-        return repository.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<AirportTransferPriceDto> get(@PathVariable Long id) {
+        return ResponseEntity.ofNullable(service.get(id));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('AIRPORT_UPDATE')")
-    public ResponseEntity<AirportTransferPrice> update(@PathVariable Long id, @RequestBody AirportTransferPrice dto) {
-        if (!repository.existsById(id)) return ResponseEntity.notFound().build();
-        dto.setId(id);
-        return ResponseEntity.ok(repository.save(dto));
+    public ResponseEntity<AirportTransferPriceDto> update(@PathVariable Long id, @RequestBody AirportTransferPriceDto dto) {
+        return ResponseEntity.ofNullable(service.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('AIRPORT_DELETE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        repository.deleteById(id);
+        service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/by-route/{routeId}")
-    public ResponseEntity<List<AirportTransferPrice>> getByRoute(@PathVariable Long routeId) {
-        return ResponseEntity.ok(repository.findByAirportRouteId(routeId));
+    public ResponseEntity<List<AirportTransferPriceDto>> getByRoute(@PathVariable Long routeId) {
+        return ResponseEntity.ok(service.listByRoute(routeId));
     }
 }

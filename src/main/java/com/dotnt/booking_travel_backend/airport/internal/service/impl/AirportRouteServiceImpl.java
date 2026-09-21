@@ -5,22 +5,26 @@ import com.dotnt.booking_travel_backend.airport.internal.entity.AirportRoute;
 import com.dotnt.booking_travel_backend.airport.internal.repository.AirportRouteRepository;
 import com.dotnt.booking_travel_backend.airport.internal.repository.AirportRepository;
 import com.dotnt.booking_travel_backend.airport.internal.service.IAirportRouteService;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicies;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AirportRouteServiceImpl implements IAirportRouteService {
     private final AirportRouteRepository repository;
     private final AirportRepository airportRepository;
 
     @Override
+    @Transactional
     public AirportRouteDto create(AirportRouteDto dto) {
         AirportRoute r = AirportRoute.builder()
                 .code(dto.getCode())
@@ -33,6 +37,7 @@ public class AirportRouteServiceImpl implements IAirportRouteService {
                 .destinationLat(dto.getDestinationLat())
                 .destinationLng(dto.getDestinationLng())
                 .active(dto.isActive())
+                .depositPolicy(DepositPolicies.from(dto.getDepositType(), dto.getDepositRate(), dto.getDepositAmount()))
                 .build();
         if (dto.getAirportId() != null) {
             r.setAirport(airportRepository.findById(dto.getAirportId()).orElse(null));
@@ -60,6 +65,7 @@ public class AirportRouteServiceImpl implements IAirportRouteService {
     }
 
     @Override
+    @Transactional
     public AirportRouteDto update(Long id, AirportRouteDto dto) {
         return repository.findById(id).map(r -> {
             r.setCode(dto.getCode());
@@ -75,20 +81,30 @@ public class AirportRouteServiceImpl implements IAirportRouteService {
                 r.setAirport(airportRepository.findById(dto.getAirportId()).orElse(null));
             }
             r.setActive(dto.isActive());
+            r.setDepositPolicy(DepositPolicies.merge(r.getDepositPolicy(), dto.getDepositType(), dto.getDepositRate(), dto.getDepositAmount()));
             return toDto(repository.save(r));
         }).orElse(null);
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
         repository.deleteById(id);
     }
 
     private AirportRouteDto toDto(AirportRoute r) {
+        String airportName = null;
+        String airportCode = null;
+        if (r.getAirport() != null) {
+            airportName = r.getAirport().getName();
+            airportCode = r.getAirport().getCode();
+        }
         return AirportRouteDto.builder()
                 .id(r.getId())
                 .code(r.getCode())
                 .airportId(r.getAirport() != null ? r.getAirport().getId() : null)
+                .airportName(airportName)
+                .airportCode(airportCode)
                 .name(r.getName())
                 .distanceKm(r.getDistanceKm())
                 .originName(r.getOriginName())
@@ -98,6 +114,9 @@ public class AirportRouteServiceImpl implements IAirportRouteService {
                 .destinationLat(r.getDestinationLat())
                 .destinationLng(r.getDestinationLng())
                 .active(r.isActive())
+                .depositType(DepositPolicies.type(r.getDepositPolicy()))
+                .depositRate(DepositPolicies.rate(r.getDepositPolicy()))
+                .depositAmount(DepositPolicies.amount(r.getDepositPolicy()))
                 .build();
     }
 }

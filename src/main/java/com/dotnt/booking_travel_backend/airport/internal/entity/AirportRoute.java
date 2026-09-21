@@ -1,5 +1,6 @@
 package com.dotnt.booking_travel_backend.airport.internal.entity;
 
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import com.dotnt.booking_travel_backend.shared.entity.MasterEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -47,5 +48,7 @@ public class AirportRoute extends MasterEntity {
 
     @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean active;
-}
 
+    @Embedded
+    private DepositPolicy depositPolicy;
+}

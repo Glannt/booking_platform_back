@@ -12,6 +12,8 @@ public class AirportRouteDto {
     private Long id;
     private String code;
     private Long airportId;
+    private String airportName;
+    private String airportCode;
     private String name;
     private BigDecimal distanceKm;
     private String originName;
@@ -21,5 +23,10 @@ public class AirportRouteDto {
     private BigDecimal destinationLat;
     private BigDecimal destinationLng;
     private boolean active;
+    @Builder.Default
+    private String depositType = "PERCENT";
+    @Builder.Default
+    private BigDecimal depositRate = new BigDecimal("20.00");
+    private BigDecimal depositAmount;
 }
 
