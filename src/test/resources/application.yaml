@@ -20,6 +20,8 @@ spring:
   sql:
     init:
       mode: never
+  flyway:
+    enabled: false
 
   mail:
     default-encoding: UTF-8
