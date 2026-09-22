@@ -30,7 +30,7 @@ spring:
         order_inserts: true
         order_updates: true
   flyway:
-    enabled: ${FLYWAY_ENABLED:true}
+    enabled: ${FLYWAY_ENABLED:false}
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: 1
