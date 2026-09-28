@@ -16,6 +16,10 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     Page<Vehicle> findByBrandContainingIgnoreCaseOrModelContainingIgnoreCase(String brand, String model, Pageable pageable);
     List<Vehicle> findByCategoryIdAndCanRentTrueAndActiveTrue(Long categoryId);
 
+    // Catalog delete support: vehicles currently using an Add-on / Amenity (detach before delete)
+    List<Vehicle> findAllByAddOns_Id(Long addOnId);
+    List<Vehicle> findAllByAmenities_Id(Long amenityId);
+
     // Dedicated strategy method 1: Category only
     @Query("SELECT v FROM Vehicle v WHERE v.category.id = :categoryId AND v.canRent = true AND v.active = true")
     List<Vehicle> findAvailableByCategoryId(@Param("categoryId") Long categoryId);

@@ -21,6 +21,7 @@ public class AddOnServiceImpl implements IAddOnService {
 
     private final AddOnCategoryRepository categoryRepository;
     private final AddOnRepository addOnRepository;
+    private final VehicleRepository vehicleRepository;
 
     @Override
     @Transactional
@@ -88,7 +89,15 @@ public class AddOnServiceImpl implements IAddOnService {
     @Override
     @Transactional
     public void deleteCategory(Long id) {
-        categoryRepository.deleteById(id);
+        AddOnCategory category = categoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("AddOnCategory not found with id: " + id));
+        // Detach every item from vehicles first (vehicle_addons join table), then cascade-delete the category
+        for (AddOn addOn : new ArrayList<>(category.getAddOns())) {
+            for (Vehicle vehicle : vehicleRepository.findAllByAddOns_Id(addOn.getId())) {
+                vehicle.removeAddOn(addOn);
+            }
+        }
+        categoryRepository.delete(category);
     }
 
     @Override
@@ -198,7 +207,13 @@ public class AddOnServiceImpl implements IAddOnService {
     @Override
     @Transactional
     public void deleteAddOn(Long id) {
-        addOnRepository.deleteById(id);
+        AddOn addOn = addOnRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("AddOn not found with id: " + id));
+        // Detach from all vehicles first (vehicle_addons join table), then delete the item
+        for (Vehicle vehicle : vehicleRepository.findAllByAddOns_Id(id)) {
+            vehicle.removeAddOn(addOn);
+        }
+        addOnRepository.delete(addOn);
     }
 
     @Override

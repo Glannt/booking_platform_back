@@ -21,6 +21,7 @@ public class AmenityServiceImpl implements IAmenityService {
 
     private final AmenityCategoryRepository categoryRepository;
     private final AmenityRepository amenityRepository;
+    private final VehicleRepository vehicleRepository;
 
     @Override
     @Transactional
@@ -86,7 +87,15 @@ public class AmenityServiceImpl implements IAmenityService {
     @Override
     @Transactional
     public void deleteCategory(Long id) {
-        categoryRepository.deleteById(id);
+        AmenityCategory category = categoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("AmenityCategory not found with id: " + id));
+        // Detach every item from vehicles first (vehicle_amenities join table), then cascade-delete the category
+        for (Amenity amenity : new ArrayList<>(category.getAmenities())) {
+            for (Vehicle vehicle : vehicleRepository.findAllByAmenities_Id(amenity.getId())) {
+                vehicle.removeAmenity(amenity);
+            }
+        }
+        categoryRepository.delete(category);
     }
 
     @Override
@@ -194,7 +203,13 @@ public class AmenityServiceImpl implements IAmenityService {
     @Override
     @Transactional
     public void deleteAmenity(Long id) {
-        amenityRepository.deleteById(id);
+        Amenity amenity = amenityRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Amenity not found with id: " + id));
+        // Detach from all vehicles first (vehicle_amenities join table), then delete the item
+        for (Vehicle vehicle : vehicleRepository.findAllByAmenities_Id(id)) {
+            vehicle.removeAmenity(amenity);
+        }
+        amenityRepository.delete(amenity);
     }
 
     @Override
