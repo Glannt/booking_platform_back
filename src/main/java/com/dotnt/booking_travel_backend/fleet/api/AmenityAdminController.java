@@ -19,19 +19,19 @@ public class AmenityAdminController {
     private final IAmenityService amenityService;
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MODERATOR')")
+    @PreAuthorize("hasAuthority('AMENITY_CREATE')")
     public ResponseEntity<AmenityDTO> create(@RequestBody CreateAmenityRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(amenityService.createAmenity(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MODERATOR')")
+    @PreAuthorize("hasAuthority('AMENITY_UPDATE')")
     public ResponseEntity<AmenityDTO> update(@PathVariable Long id, @RequestBody CreateAmenityRequest request) {
         return ResponseEntity.ok(amenityService.updateAmenity(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('AMENITY_DELETE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         amenityService.deleteAmenity(id);
         return ResponseEntity.noContent().build();

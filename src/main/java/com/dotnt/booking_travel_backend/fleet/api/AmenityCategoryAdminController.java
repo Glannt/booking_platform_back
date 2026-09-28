@@ -21,19 +21,19 @@ public class AmenityCategoryAdminController {
     private final IAmenityService amenityService;
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MODERATOR')")
+    @PreAuthorize("hasAuthority('AMENITY_CATEGORY_CREATE')")
     public ResponseEntity<AmenityCategoryDTO> create(@RequestBody CreateAmenityCategoryRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(amenityService.createCategory(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MODERATOR')")
+    @PreAuthorize("hasAuthority('AMENITY_CATEGORY_UPDATE')")
     public ResponseEntity<AmenityCategoryDTO> update(@PathVariable Long id, @RequestBody CreateAmenityCategoryRequest request) {
         return ResponseEntity.ok(amenityService.updateCategory(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('AMENITY_CATEGORY_DELETE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         amenityService.deleteCategory(id);
         return ResponseEntity.noContent().build();

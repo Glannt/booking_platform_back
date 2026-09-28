@@ -21,19 +21,19 @@ public class AddOnCategoryAdminController {
     private final IAddOnService addOnService;
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MODERATOR')")
+    @PreAuthorize("hasAuthority('ADDON_CATEGORY_CREATE')")
     public ResponseEntity<AddOnCategoryDTO> create(@RequestBody CreateAddOnCategoryRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(addOnService.createCategory(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MODERATOR')")
+    @PreAuthorize("hasAuthority('ADDON_CATEGORY_UPDATE')")
     public ResponseEntity<AddOnCategoryDTO> update(@PathVariable Long id, @RequestBody CreateAddOnCategoryRequest request) {
         return ResponseEntity.ok(addOnService.updateCategory(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADDON_CATEGORY_DELETE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         addOnService.deleteCategory(id);
         return ResponseEntity.noContent().build();

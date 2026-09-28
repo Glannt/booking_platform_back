@@ -19,19 +19,19 @@ public class AddOnAdminController {
     private final IAddOnService addOnService;
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MODERATOR')")
+    @PreAuthorize("hasAuthority('ADDON_CREATE')")
     public ResponseEntity<AddOnDTO> create(@RequestBody CreateAddOnRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(addOnService.createAddOn(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'MODERATOR')")
+    @PreAuthorize("hasAuthority('ADDON_UPDATE')")
     public ResponseEntity<AddOnDTO> update(@PathVariable Long id, @RequestBody CreateAddOnRequest request) {
         return ResponseEntity.ok(addOnService.updateAddOn(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('ADDON_DELETE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         addOnService.deleteAddOn(id);
         return ResponseEntity.noContent().build();
