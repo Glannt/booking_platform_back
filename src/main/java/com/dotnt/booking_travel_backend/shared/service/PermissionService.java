@@ -49,6 +49,40 @@ public class PermissionService {
         return permissionRepository.findAll();
     }
 
+    @Transactional
+    public Permission createPermission(String code, String name, String description) {
+        String normalizedCode = (code == null ? "" : code.trim().toUpperCase());
+        if (normalizedCode.isBlank()) {
+            throw new IllegalArgumentException("Permission code must not be blank");
+        }
+        String normalizedName = (name == null ? "" : name.trim());
+        if (normalizedName.isBlank()) {
+            throw new IllegalArgumentException("Permission name must not be blank");
+        }
+        if (permissionRepository.existsByCode(normalizedCode)) {
+            throw new IllegalArgumentException("Permission code already exists: " + normalizedCode);
+        }
+        Permission permission = Permission.builder()
+                .code(normalizedCode)
+                .name(normalizedName)
+                .description(description == null ? null : description.trim())
+                .build();
+        return permissionRepository.save(permission);
+    }
+
+    @Transactional
+    public Permission updatePermission(String code, String name, String description) {
+        String normalizedName = (name == null ? "" : name.trim());
+        if (normalizedName.isBlank()) {
+            throw new IllegalArgumentException("Permission name must not be blank");
+        }
+        Permission permission = permissionRepository.findByCode(code.trim().toUpperCase())
+                .orElseThrow(() -> new IllegalArgumentException("Permission not found: " + code));
+        permission.setName(normalizedName);
+        permission.setDescription(description == null ? null : description.trim());
+        return permissionRepository.save(permission);
+    }
+
     @Transactional(readOnly = true)
     public Map<String, List<String>> getAllRolePermissions() {
         Map<String, List<String>> result = new LinkedHashMap<>();

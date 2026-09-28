@@ -1,6 +1,8 @@
 package com.dotnt.booking_travel_backend.user.internal.controller;
 
+import com.dotnt.booking_travel_backend.shared.entity.Permission;
 import com.dotnt.booking_travel_backend.shared.service.PermissionService;
+import com.dotnt.booking_travel_backend.user.internal.dto.CreatePermissionRequest;
 import com.dotnt.booking_travel_backend.user.internal.dto.PermissionDto;
 import com.dotnt.booking_travel_backend.user.internal.dto.RoleDto;
 import com.dotnt.booking_travel_backend.user.internal.dto.UpdateRolePermissionsRequest;
@@ -9,6 +11,7 @@ import com.dotnt.booking_travel_backend.user.internal.repository.RoleRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -70,5 +73,32 @@ public class RoleController {
                 .name(targetRole.getCode())
                 .permissions(permissionService.getPermissionsForRole(targetRole.getCode()))
                 .build());
+    }
+
+    @PostMapping("/permissions")
+    @Operation(summary = "Create a new permission")
+    @PreAuthorize("hasAuthority('ROLE_UPDATE')")
+    public ResponseEntity<PermissionDto> createPermission(@RequestBody CreatePermissionRequest request) {
+        Permission permission = permissionService.createPermission(
+                request.getCode(), request.getName(), request.getDescription());
+        return ResponseEntity.status(HttpStatus.CREATED).body(toPermissionDto(permission));
+    }
+
+    @PutMapping("/permissions/{code}")
+    @Operation(summary = "Update name/description of an existing permission")
+    @PreAuthorize("hasAuthority('ROLE_UPDATE')")
+    public ResponseEntity<PermissionDto> updatePermission(
+            @PathVariable String code,
+            @RequestBody CreatePermissionRequest request) {
+        Permission permission = permissionService.updatePermission(code, request.getName(), request.getDescription());
+        return ResponseEntity.ok(toPermissionDto(permission));
+    }
+
+    private PermissionDto toPermissionDto(Permission permission) {
+        return PermissionDto.builder()
+                .code(permission.getCode())
+                .name(permission.getName())
+                .description(permission.getDescription())
+                .build();
     }
 }
