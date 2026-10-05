@@ -5,10 +5,14 @@ import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityBooki
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityDepartureTime;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityRoute;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityRoutePrice;
+import com.dotnt.booking_travel_backend.intercity.internal.entity.PriceList;
+import com.dotnt.booking_travel_backend.intercity.internal.entity.PriceType;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityBookingDetailRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityDepartureTimeRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityRoutePriceRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityRouteRepository;
+import com.dotnt.booking_travel_backend.intercity.internal.repository.PriceListRepository;
+import com.dotnt.booking_travel_backend.intercity.internal.repository.PriceTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +38,12 @@ class IntercityServiceTypeAndScheduleTest {
 
     @Autowired
     private IntercityRoutePriceRepository routePriceRepository;
+
+    @Autowired
+    private PriceListRepository priceListRepository;
+
+    @Autowired
+    private PriceTypeRepository priceTypeRepository;
 
     @Autowired
     private IntercityDepartureTimeRepository departureTimeRepository;
@@ -143,10 +153,14 @@ class IntercityServiceTypeAndScheduleTest {
     }
 
     @Test
-    void testPrivateBookingWithRoundTripOverride() {
-        // 1 private vehicle, round trip with override: 2,500,000 instead of 2 * 1,350,000 = 2,700,000
-        BigDecimal expectedOneWay = new BigDecimal("1350000.00");
-        BigDecimal expectedTotal = new BigDecimal("2500000.00");
+    void testPrivateBookingUsesConfiguredRoundTripPrice() {
+        // The price_list rows are the only price source. A same-day round trip must bill the
+        // configured ROUND_TRIP_SAME_DAY row (2,500,000) — never 2 x ONE_WAY (2,700,000) — and
+        // never the number the browser sent.
+        BigDecimal configuredOneWay = new BigDecimal("1688000.00");
+        BigDecimal configuredRoundTrip = new BigDecimal("2500000.00");
+        savePrice(testRoute.getId(), "ONE_WAY", "IN_DAY", "Một chiều", configuredOneWay);
+        savePrice(testRoute.getId(), "ROUND_TRIP_SAME_DAY", "IN_DAY", "Khứ hồi trong ngày", configuredRoundTrip);
 
         Long detailId = intercityFacade.createIntercityBookingDetail(
                 "PRIVATE",
@@ -157,9 +171,10 @@ class IntercityServiceTypeAndScheduleTest {
                 LocalDateTime.of(2026, 9, 15, 9, 30),
                 LocalDate.of(2026, 9, 17),
                 LocalTime.of(14, 0),
-                expectedOneWay,
-                expectedOneWay,
-                expectedTotal,
+                // client values are deliberately wrong; the database value must win
+                new BigDecimal("9999999.00"),
+                new BigDecimal("9999999.00"),
+                new BigDecimal("9999999.00"),
                 "45 Le Thanh Ton, Nha Trang",
                 "Dalat Palace",
                 "Private booking custom time"
@@ -170,7 +185,52 @@ class IntercityServiceTypeAndScheduleTest {
         assertNotNull(detail);
         assertEquals("PRIVATE", detail.getServiceType());
         assertEquals(1L, detail.getVehicleCategoryId());
-        assertEquals(0, expectedTotal.compareTo(detail.getTotalPrice()));
+        assertEquals(0, configuredRoundTrip.compareTo(detail.getTotalPrice()));
+        assertEquals(0, configuredRoundTrip.compareTo(detail.getBasePrice()));
+        assertNotEquals(0, configuredOneWay.multiply(new BigDecimal("2")).compareTo(detail.getTotalPrice()),
+                "round trip must not be billed as 2x the one-way price");
         assertEquals(LocalTime.of(9, 30), detail.getDepartureTime());
+    }
+
+    @Test
+    void testPrivateBookingRejectsTripTypeWithoutConfiguredPrice() {
+        // Only a daily rate exists: an in-day round trip has no price and must not be invented.
+        savePrice(testRoute.getId(), "DAILY_RATE", "DAILY_RATE", "Giá theo ngày", new BigDecimal("1500000.00"));
+
+        assertThrows(IllegalArgumentException.class, () -> intercityFacade.createIntercityBookingDetail(
+                "PRIVATE",
+                1,
+                1L,
+                testRoute.getId(),
+                "ROUND_TRIP",
+                LocalDateTime.of(2026, 9, 15, 9, 30),
+                LocalDate.of(2026, 9, 17),
+                LocalTime.of(14, 0),
+                new BigDecimal("9999999.00"),
+                new BigDecimal("9999999.00"),
+                new BigDecimal("9999999.00"),
+                "45 Le Thanh Ton, Nha Trang",
+                "Dalat Palace",
+                "should be rejected"
+        ));
+    }
+
+    private void savePrice(Long routeId, String code, String category, String name, BigDecimal basePrice) {
+        PriceType priceType = priceTypeRepository.findByCode(code)
+                .orElseGet(() -> priceTypeRepository.save(PriceType.builder()
+                        .code(code)
+                        .category(category)
+                        .defaultName(name)
+                        .active(true)
+                        .build()));
+        priceListRepository.save(PriceList.builder()
+                .priceType(priceType)
+                .scopeType("INTERCITY_ROUTE")
+                .scopeRefId(String.valueOf(routeId))
+                .vehicleCategoryId(1L)
+                .basePrice(basePrice)
+                .effectiveFrom(LocalDate.now())
+                .status("ACTIVE")
+                .build());
     }
 }

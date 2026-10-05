@@ -1,8 +1,10 @@
 package com.dotnt.booking_travel_backend.intercity.api;
 
+import com.dotnt.booking_travel_backend.intercity.api.dtos.IntercityPriceCalculateRequest;
+import com.dotnt.booking_travel_backend.intercity.api.dtos.IntercityPriceCalculateResponse;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.*;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.*;
-import com.dotnt.booking_travel_backend.intercity.internal.service.IntercityPriceCalculator;
+import com.dotnt.booking_travel_backend.intercity.internal.service.IIntercityPriceService;
 import com.dotnt.booking_travel_backend.surcharge.api.PricingContext;
 import com.dotnt.booking_travel_backend.surcharge.api.SurchargeResult;
 import com.dotnt.booking_travel_backend.surcharge.api.SurchargeService;
@@ -25,8 +27,8 @@ import java.util.Map;
 public class IntercityFacade {
 
     private final SurchargeService surchargeService;
+    private final IIntercityPriceService intercityPriceService;
     private final IntercityRouteRepository intercityRouteRepository;
-    private final IntercityRoutePriceRepository intercityRoutePriceRepository;
     private final IntercityBookingDetailRepository intercityBookingDetailRepository;
 
     public Long createIntercityBookingDetail(
@@ -80,61 +82,62 @@ public class IntercityFacade {
         BigDecimal totalPrice = clientTotalPrice;
         String resolvedServiceType = (serviceType != null && !serviceType.isBlank()) ? serviceType.toUpperCase() : "PRIVATE";
         int resolvedPax = (passengerCount != null && passengerCount > 0) ? passengerCount : 1;
-        boolean roundTrip = "ROUND_TRIP".equalsIgnoreCase(tripType) || "round-trip".equalsIgnoreCase(tripType);
 
         if ("SHARED".equalsIgnoreCase(resolvedServiceType)) {
             if (clientBasePrice != null) basePrice = clientBasePrice;
             if (clientTotalPrice != null) totalPrice = clientTotalPrice;
         } else {
-            // PRIVATE
+            // PRIVATE — the price_list row for the selected trip type is the only price.
+            // The client number is never stored: it was computed browser-side and a same-day
+            // round trip used to be billed as 2x the one-way fare whenever the dedicated
+            // ROUND_TRIP_SAME_DAY row was ignored.
             if (routeId != null && serviceOptionId != null) {
-                IntercityRoute intercityRoute = intercityRouteRepository.findById(routeId).orElse(null);
-                IntercityRoutePrice routePrice = intercityRoutePriceRepository
-                        .findByRouteIdAndVehicleCategoryId(routeId, serviceOptionId)
-                        .orElse(null);
-
-                if (intercityRoute == null || routePrice == null) {
-                    log.warn("No intercity price for route {} category {}; trusting client price", routeId, serviceOptionId);
-                } else {
-                    BigDecimal serverOneWay = IntercityPriceCalculator.pricePrivate(
-                            intercityRoute.getDistanceKm(),
-                            routePrice.getPricingType(),
-                            routePrice.getPerKmAmount(),
-                            routePrice.getFixedPriceOneWay(),
-                            routePrice.getFixedPriceRoundTrip(),
-                            routePrice.getRoundTripPrice(),
-                            routePrice.getRoundTripPerKmAmount(),
-                            false
-                    );
-                    BigDecimal serverTotal = IntercityPriceCalculator.pricePrivate(
-                            intercityRoute.getDistanceKm(),
-                            routePrice.getPricingType(),
-                            routePrice.getPerKmAmount(),
-                            routePrice.getFixedPriceOneWay(),
-                            routePrice.getFixedPriceRoundTrip(),
-                            routePrice.getRoundTripPrice(),
-                            routePrice.getRoundTripPerKmAmount(),
-                            roundTrip
-                    );
-
-                    if (departureDateTime != null) {
-                        PricingContext pricingContext = PricingContext.builder()
-                                .basePrice(serverTotal)
-                                .serviceTime(departureDateTime)
+                IntercityPriceCalculateResponse quote = intercityPriceService.calculatePrice(
+                        IntercityPriceCalculateRequest.builder()
                                 .routeId(routeId)
                                 .vehicleCategoryId(serviceOptionId)
-                                .tripType(tripType)
-                                .build();
-                        SurchargeResult surchargeResult = surchargeService.calculate("INTERCITY", pricingContext);
-                        if (surchargeResult != null && surchargeResult.getTotalSurcharge() != null) {
-                            serverTotal = serverTotal.add(surchargeResult.getTotalSurcharge());
-                        }
-                    }
+                                .priceTypeCode(tripType)
+                                .departureDate(departureDateTime != null ? departureDateTime.toLocalDate() : null)
+                                .returnDate(returnDate)
+                                .build());
 
-                    validateServerPrice("intercity", serverOneWay, serverTotal, clientUnitPrice, clientBasePrice, clientTotalPrice);
-                    basePrice = serverOneWay;
-                    totalPrice = serverTotal;
+                String priceTypeCode = quote != null ? quote.getPriceTypeCode() : null;
+                boolean configured = priceTypeCode != null && intercityPriceService.listByRoute(routeId).stream()
+                        .anyMatch(pl -> priceTypeCode.equals(pl.getPriceTypeCode())
+                                && serviceOptionId.equals(pl.getVehicleCategoryId())
+                                && !Boolean.FALSE.equals(pl.getActive())
+                                && !"INACTIVE".equalsIgnoreCase(pl.getStatus())
+                                && pl.getBasePrice() != null
+                                && pl.getBasePrice().signum() > 0);
+
+                if (!configured) {
+                    throw new IllegalArgumentException("No " + priceTypeCode + " price configured for route "
+                            + routeId + " vehicle category " + serviceOptionId);
                 }
+
+                BigDecimal serverBase = quote.getTotalPrice();
+                BigDecimal serverTotal = serverBase;
+
+                if (departureDateTime != null) {
+                    PricingContext pricingContext = PricingContext.builder()
+                            .basePrice(serverTotal)
+                            .serviceTime(departureDateTime)
+                            .routeId(routeId)
+                            .vehicleCategoryId(serviceOptionId)
+                            .tripType(tripType)
+                            .build();
+                    SurchargeResult surchargeResult = surchargeService.calculate("INTERCITY", pricingContext);
+                    if (surchargeResult != null && surchargeResult.getTotalSurcharge() != null) {
+                        serverTotal = serverTotal.add(surchargeResult.getTotalSurcharge());
+                    }
+                }
+
+                if (!matchesPrice(serverTotal, clientTotalPrice)) {
+                    log.warn("Client total {} differs from price_list {} for route {} category {}; stored the price_list value",
+                            clientTotalPrice, serverTotal, routeId, serviceOptionId);
+                }
+                basePrice = serverBase;
+                totalPrice = serverTotal;
             }
         }
 
@@ -218,29 +221,9 @@ public class IntercityFacade {
         return variables;
     }
 
-    private void validateServerPrice(String label, BigDecimal serverOneWay, BigDecimal serverTotal,
-                                     BigDecimal clientUnitPrice, BigDecimal clientBasePrice, BigDecimal clientTotal) {
-        checkPrice(label, "base price", serverOneWay, clientBasePrice);
-        checkPrice(label, "total price", serverTotal, clientTotal);
-        if (clientUnitPrice != null && clientUnitPrice.signum() > 0) {
-            if (!matchesPrice(serverOneWay, clientUnitPrice) && !matchesPrice(serverTotal, clientUnitPrice)) {
-                log.debug("Unit price {} differs from serverOneWay {} and serverTotal {}", clientUnitPrice, serverOneWay, serverTotal);
-            }
-        }
-    }
-
     private boolean matchesPrice(BigDecimal server, BigDecimal client) {
         if (server == null || client == null || client.signum() == 0) return true;
         BigDecimal tolerance = BigDecimal.valueOf(5000).add(server.abs().multiply(new BigDecimal("0.01")));
         return client.subtract(server).abs().compareTo(tolerance) <= 0;
-    }
-
-    private void checkPrice(String label, String field, BigDecimal server, BigDecimal client) {
-        if (server == null || client == null || client.signum() == 0) return;
-        BigDecimal tolerance = BigDecimal.valueOf(5000).add(server.abs().multiply(new BigDecimal("0.01")));
-        if (client.subtract(server).abs().compareTo(tolerance) > 0) {
-            throw new IllegalArgumentException(
-                    "Price mismatch for " + label + " (" + field + "): client " + client + " vs server " + server);
-        }
     }
 }
