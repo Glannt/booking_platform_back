@@ -80,9 +80,8 @@ public class IntercityRoute extends MasterEntity {
     @Builder.Default
     private List<IntercityRouteTranslation> translations = new ArrayList<>();
 
-    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<IntercityRoutePrice> prices = new ArrayList<>();
+    // ponytail: the intercity_route_prices table is left in place on purpose — dropping it
+    // needs a migration and a data-export check. Nothing reads or writes it any more.
 
     @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

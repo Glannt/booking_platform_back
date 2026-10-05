@@ -4,13 +4,13 @@ import com.dotnt.booking_travel_backend.intercity.api.IntercityFacade;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityBookingDetail;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityDepartureTime;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityRoute;
-import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityRoutePrice;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.PriceList;
+import com.dotnt.booking_travel_backend.intercity.internal.entity.PriceListDailyRate;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.PriceType;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityBookingDetailRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityDepartureTimeRepository;
-import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityRoutePriceRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityRouteRepository;
+import com.dotnt.booking_travel_backend.intercity.internal.repository.PriceListDailyRateRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.PriceListRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.PriceTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,13 +37,13 @@ class IntercityServiceTypeAndScheduleTest {
     private IntercityRouteRepository routeRepository;
 
     @Autowired
-    private IntercityRoutePriceRepository routePriceRepository;
-
-    @Autowired
     private PriceListRepository priceListRepository;
 
     @Autowired
     private PriceTypeRepository priceTypeRepository;
+
+    @Autowired
+    private PriceListDailyRateRepository priceListDailyRateRepository;
 
     @Autowired
     private IntercityDepartureTimeRepository departureTimeRepository;
@@ -65,17 +65,6 @@ class IntercityServiceTypeAndScheduleTest {
                 .estimatedHours(new BigDecimal("3.5"))
                 .active(true)
                 .slug("test-route-schedule-" + System.nanoTime())
-                .build());
-
-        // Private car price: 10k/km
-        routePriceRepository.save(IntercityRoutePrice.builder()
-                .route(testRoute)
-                .vehicleCategoryId(1L)
-                .pricingType("PER_KM")
-                .perKmAmount(new BigDecimal("10000.00"))
-                .roundTripPrice(new BigDecimal("2500000.00")) // Override from 2.7m to 2.5m
-                .currency("VND")
-                .active(true)
                 .build());
 
         // Outbound departure times: 08:00, 11:00, 13:00, 17:00
@@ -215,6 +204,35 @@ class IntercityServiceTypeAndScheduleTest {
         ));
     }
 
+    @Test
+    void testDailyRateBookingHonoursMinimumDays() {
+        // minDays is what the quote page promises ("tối thiểu 3 ngày"), so the backend must
+        // bill 3 days even when the customer asked for 1.
+        saveDailyRate(testRoute.getId(), new BigDecimal("1200000.00"), 3);
+
+        Long detailId = intercityFacade.createIntercityBookingDetail(
+                "PRIVATE",
+                1,
+                1L,
+                testRoute.getId(),
+                "DAILY_RATE",
+                LocalDateTime.of(2026, 9, 15, 9, 30),
+                LocalDate.of(2026, 9, 16), // 1 day requested
+                LocalTime.of(14, 0),
+                new BigDecimal("1200000.00"),
+                new BigDecimal("1200000.00"),
+                new BigDecimal("1200000.00"),
+                "45 Le Thanh Ton, Nha Trang",
+                "Dalat Palace",
+                "should be billed at the 3-day minimum"
+        );
+
+        IntercityBookingDetail detail = bookingDetailRepository.findById(detailId).orElse(null);
+        assertNotNull(detail);
+        assertEquals(0, new BigDecimal("3600000.00").compareTo(detail.getTotalPrice()),
+                "1 requested day must be billed as the 3-day minimum");
+    }
+
     private void savePrice(Long routeId, String code, String category, String name, BigDecimal basePrice) {
         PriceType priceType = priceTypeRepository.findByCode(code)
                 .orElseGet(() -> priceTypeRepository.save(PriceType.builder()
@@ -231,6 +249,17 @@ class IntercityServiceTypeAndScheduleTest {
                 .basePrice(basePrice)
                 .effectiveFrom(LocalDate.now())
                 .status("ACTIVE")
+                .build());
+    }
+
+    private void saveDailyRate(Long routeId, BigDecimal basePrice, int minDays) {
+        savePrice(routeId, "DAILY_RATE", "DAILY_RATE", "Giá theo ngày", basePrice);
+        PriceList daily = priceListRepository
+                .findByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCode("INTERCITY_ROUTE", String.valueOf(routeId), 1L, "DAILY_RATE")
+                .orElseThrow();
+        priceListDailyRateRepository.save(PriceListDailyRate.builder()
+                .priceList(daily)
+                .minDays(minDays)
                 .build());
     }
 }

@@ -3,19 +3,15 @@ package com.dotnt.booking_travel_backend.intercity.internal.service.impl;
 import com.dotnt.booking_travel_backend.shared.module.ModuleEventPublisher;
 import com.dotnt.booking_travel_backend.intercity.api.dtos.IntercityDepartureTimeDto;
 import com.dotnt.booking_travel_backend.intercity.api.dtos.IntercityRouteDto;
-import com.dotnt.booking_travel_backend.intercity.api.dtos.IntercityRoutePriceDto;
 import com.dotnt.booking_travel_backend.intercity.api.dtos.IntercityRouteTranslationDto;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityDepartureTime;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityRoute;
-import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityRoutePrice;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityRouteTranslation;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityDepartureTimeRepository;
-import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityRoutePriceRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityRouteRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityRouteTranslationRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.service.IIntercityRouteService;
 import com.dotnt.booking_travel_backend.shared.component.ComponentListConverter;
-import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicies;
 import com.dotnt.booking_travel_backend.shared.utils.EntityMergeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -37,7 +33,6 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
 
     private final IntercityRouteRepository routeRepository;
     private final IntercityRouteTranslationRepository translationRepository;
-    private final IntercityRoutePriceRepository priceRepository;
     private final IntercityDepartureTimeRepository departureTimeRepository;
     private final ModuleEventPublisher moduleEventPublisher;
 
@@ -104,23 +99,8 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                     .build());
         }
 
-        if (dto.getPrices() != null) {
-            for (var pr : dto.getPrices()) {
-                priceRepository.save(IntercityRoutePrice.builder()
-                        .route(route)
-                        .vehicleCategoryId(pr.getVehicleCategoryId())
-                        .perKmAmount(pr.getPerKmAmount())
-                        .pricingType(pr.getPricingType() != null && !pr.getPricingType().isBlank() ? pr.getPricingType().toUpperCase() : "PER_KM")
-                        .fixedPriceOneWay(pr.getFixedPriceOneWay())
-                        .fixedPriceRoundTrip(pr.getFixedPriceRoundTrip())
-                        .roundTripPrice(pr.getRoundTripPrice())
-                        .roundTripPerKmAmount(pr.getRoundTripPerKmAmount())
-                        .currency(pr.getCurrency() != null ? pr.getCurrency() : "VND")
-                        .depositPolicy(DepositPolicies.from(pr.getDepositType(), pr.getDepositRate(), pr.getDepositAmount()))
-                        .active(pr.isActive())
-                        .build());
-            }
-        }
+        // Prices live in price_lists and are managed by IIntercityPriceService — a route
+        // create no longer carries a per-km/fixed price block.
 
         if (dto.getDepartureTimes() != null) {
             for (var dt : dto.getDepartureTimes()) {
@@ -219,42 +199,7 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                 );
             }
 
-            // 2. Merge prices (key = vehicleCategoryId or id)
-            if (dto.getPrices() != null) {
-                EntityMergeUtils.mergeCollection(
-                        route.getPrices(),
-                        dto.getPrices(),
-                        pr -> pr.getId() != null ? pr.getId() : pr.getVehicleCategoryId(),
-                        prDto -> prDto.getId() != null ? prDto.getId() : prDto.getVehicleCategoryId(),
-                        (existing, prDto) -> {
-                            existing.setVehicleCategoryId(prDto.getVehicleCategoryId());
-                            existing.setPerKmAmount(prDto.getPerKmAmount());
-                            existing.setPricingType(prDto.getPricingType() != null && !prDto.getPricingType().isBlank()
-                                    ? prDto.getPricingType().toUpperCase() : "PER_KM");
-                            existing.setFixedPriceOneWay(prDto.getFixedPriceOneWay());
-                            existing.setFixedPriceRoundTrip(prDto.getFixedPriceRoundTrip());
-                            existing.setRoundTripPrice(prDto.getRoundTripPrice());
-                            existing.setRoundTripPerKmAmount(prDto.getRoundTripPerKmAmount());
-                            existing.setCurrency(prDto.getCurrency() != null ? prDto.getCurrency() : "VND");
-                            existing.setDepositPolicy(DepositPolicies.from(prDto.getDepositType(), prDto.getDepositRate(), prDto.getDepositAmount()));
-                            existing.setActive(prDto.isActive());
-                        },
-                        prDto -> IntercityRoutePrice.builder()
-                                .route(finalRoute)
-                                .vehicleCategoryId(prDto.getVehicleCategoryId())
-                                .perKmAmount(prDto.getPerKmAmount())
-                                .pricingType(prDto.getPricingType() != null && !prDto.getPricingType().isBlank()
-                                        ? prDto.getPricingType().toUpperCase() : "PER_KM")
-                                .fixedPriceOneWay(prDto.getFixedPriceOneWay())
-                                .fixedPriceRoundTrip(prDto.getFixedPriceRoundTrip())
-                                .roundTripPrice(prDto.getRoundTripPrice())
-                                .roundTripPerKmAmount(prDto.getRoundTripPerKmAmount())
-                                .currency(prDto.getCurrency() != null ? prDto.getCurrency() : "VND")
-                                .depositPolicy(DepositPolicies.from(prDto.getDepositType(), prDto.getDepositRate(), prDto.getDepositAmount()))
-                                .active(prDto.isActive())
-                                .build()
-                );
-            }
+            // 2. Prices are not merged here — see create()
 
             route = routeRepository.save(route);
             return get(route.getId());
@@ -265,7 +210,6 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
     @Transactional
     @CacheEvict(value = "intercityRoutes", allEntries = true)
     public void delete(Long id) {
-        priceRepository.findByRouteId(id).forEach(priceRepository::delete);
         translationRepository.findByRouteId(id).forEach(translationRepository::delete);
         routeRepository.deleteById(id);
     }
@@ -310,21 +254,6 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                         .name(tr.getName()).slug(tr.getSlug()).description(tr.getDescription()).build())
                 .collect(Collectors.toList());
 
-        var prices = priceRepository.findByRouteId(route.getId()).stream()
-                .map(pr -> IntercityRoutePriceDto.builder()
-                        .id(pr.getId()).routeId(route.getId()).vehicleCategoryId(pr.getVehicleCategoryId())
-                        .perKmAmount(pr.getPerKmAmount())
-                        .pricingType(pr.getPricingType())
-                        .fixedPriceOneWay(pr.getFixedPriceOneWay())
-                        .fixedPriceRoundTrip(pr.getFixedPriceRoundTrip())
-                        .roundTripPrice(pr.getRoundTripPrice())
-                        .roundTripPerKmAmount(pr.getRoundTripPerKmAmount())
-                        .depositType(DepositPolicies.type(pr.getDepositPolicy()))
-                        .depositRate(DepositPolicies.rate(pr.getDepositPolicy()))
-                        .depositAmount(DepositPolicies.amount(pr.getDepositPolicy()))
-                        .currency(pr.getCurrency()).active(pr.isActive()).build())
-                .collect(Collectors.toList());
-
         var departureTimes = departureTimeRepository.findByRouteIdOrderByOrderIndexAsc(route.getId()).stream()
                 .map(dt -> IntercityDepartureTimeDto.builder()
                         .id(dt.getId()).routeId(route.getId()).departureTime(dt.getDepartureTime())
@@ -361,7 +290,6 @@ public class IntercityRouteServiceImpl implements IIntercityRouteService {
                 .thumbnailUrl(resolveThumbnailUrl(route.getThumbnailId()))
                 .imageIds(imageIds)
                 .translations(translations)
-                .prices(prices)
                 .departureTimes(departureTimes)
                 .linkedSharedRouteId(linkedSharedRouteId)
                 .hasSharedRoute(hasSharedRoute)

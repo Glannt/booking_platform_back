@@ -2,9 +2,7 @@ package com.dotnt.booking_travel_backend.intercity.internal.listener;
 
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityBookingDetail;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityRoute;
-import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityRoutePrice;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityBookingDetailRepository;
-import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityRoutePriceRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityRouteRepository;
 import com.dotnt.booking_travel_backend.shared.module.ModuleRequestEvent;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +18,6 @@ public class IntercityModuleListener {
 
     private final IntercityBookingDetailRepository intercityRepo;
     private final IntercityRouteRepository intercityRouteRepo;
-    private final IntercityRoutePriceRepository intercityPriceRepo;
 
     @EventListener
     public void handleModuleRequest(ApplicationEvent event) {
@@ -40,13 +37,6 @@ public class IntercityModuleListener {
             case "intercity.intercityRoute.findById", "rental.intercityRoute.findById" -> {
                 Long id = toLong(ev.getPayload());
                 IntercityRoute result = id != null ? intercityRouteRepo.findById(id).orElse(null) : null;
-                ev.getFuture().complete(result);
-            }
-            case "intercity.intercityRoutePrice.findByRouteAndCategory", "rental.intercityRoutePrice.findByRouteAndCategory" -> {
-                Object[] ids = (Object[]) ev.getPayload();
-                IntercityRoutePrice result = ids != null && ids.length >= 2 && toLong(ids[0]) != null && toLong(ids[1]) != null
-                        ? intercityPriceRepo.findByRouteIdAndVehicleCategoryId(toLong(ids[0]), toLong(ids[1])).orElse(null)
-                        : null;
                 ev.getFuture().complete(result);
             }
             case "intercity.intercityRoute.findOriginDestById" -> {

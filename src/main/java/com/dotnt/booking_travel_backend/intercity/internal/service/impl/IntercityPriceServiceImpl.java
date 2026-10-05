@@ -30,7 +30,6 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
     private final PriceListRouteRepository priceListRouteRepository;
     private final PriceListDailyRateRepository priceListDailyRateRepository;
     private final IntercityRouteRepository routeRepository;
-    private final IntercityRoutePriceRepository oldPriceRepository;
 
     private static final String SCOPE_INTERCITY = "INTERCITY_ROUTE";
 
@@ -310,25 +309,35 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
         String code = normalizeCode(req.getPriceTypeCode());
 
         if ("DAILY_RATE".equalsIgnoreCase(code)) {
-            long days = 1;
-            if (req.getDepartureDate() != null && req.getReturnDate() != null) {
-                days = ChronoUnit.DAYS.between(req.getDepartureDate(), req.getReturnDate());
-                if (days <= 0) days = 1;
-            }
-
             Optional<PriceList> plOpt = priceListRepository
                     .findFirstByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCodeAndStatus(SCOPE_INTERCITY, routeRefId, catId, "DAILY_RATE", "ACTIVE")
                     .or(() -> priceListRepository.findByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCode(SCOPE_INTERCITY, routeRefId, catId, "DAILY_RATE"));
 
-            BigDecimal base = plOpt.map(PriceList::getBasePrice).orElse(BigDecimal.valueOf(1500000));
-            BigDecimal total = base.multiply(BigDecimal.valueOf(days));
+            PriceList daily = plOpt.filter(p -> p.getBasePrice() != null && p.getBasePrice().signum() > 0)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "No DAILY_RATE price configured for route " + routeRefId + " vehicle category " + catId));
+
+            // minDays is a floor the customer is also told about, so it must apply here too —
+            // otherwise the backend bills fewer days than the quote page showed.
+            int minDays = priceListDailyRateRepository.findByPriceListId(daily.getId())
+                    .map(PriceListDailyRate::getMinDays)
+                    .filter(v -> v != null && v > 0)
+                    .orElse(1);
+
+            long days = minDays;
+            if (req.getDepartureDate() != null && req.getReturnDate() != null) {
+                long requested = ChronoUnit.DAYS.between(req.getDepartureDate(), req.getReturnDate());
+                if (requested > 0) days = Math.max(requested, minDays);
+            }
+
+            BigDecimal total = daily.getBasePrice().multiply(BigDecimal.valueOf(days));
 
             return IntercityPriceCalculateResponse.builder()
                     .routeId(req.getRouteId())
                     .vehicleCategoryId(catId)
                     .priceTypeCode("DAILY_RATE")
-                    .priceTypeName(resolveName(plOpt.orElse(null), req.getLocale(), "Giá theo ngày"))
-                    .basePrice(base)
+                    .priceTypeName(resolveName(daily, req.getLocale(), "Giá theo ngày"))
+                    .basePrice(daily.getBasePrice())
                     .days((int) days)
                     .totalPrice(PriceMath.roundToThousand(total))
                     .currency("VND")
@@ -341,37 +350,22 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
                     .findFirstByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCodeAndStatus(SCOPE_INTERCITY, routeRefId, catId, "ROUND_TRIP_SAME_DAY", "ACTIVE")
                     .or(() -> priceListRepository.findByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCode(SCOPE_INTERCITY, routeRefId, catId, "ROUND_TRIP_SAME_DAY"));
 
-            if (rtOpt.isPresent() && rtOpt.get().getBasePrice() != null && rtOpt.get().getBasePrice().compareTo(BigDecimal.ZERO) > 0) {
-                return IntercityPriceCalculateResponse.builder()
-                        .routeId(req.getRouteId())
-                        .vehicleCategoryId(catId)
-                        .priceTypeCode("ROUND_TRIP_SAME_DAY")
-                        .priceTypeName(resolveName(rtOpt.get(), req.getLocale(), "Khứ hồi trong ngày"))
-                        .basePrice(rtOpt.get().getBasePrice())
-                        .days(1)
-                        .totalPrice(PriceMath.roundToThousand(rtOpt.get().getBasePrice()))
-                        .currency("VND")
-                        .fallbackRoundTrip(false)
-                        .build();
-            }
-
-            // Fallback: 2x ONE_WAY
-            Optional<PriceList> owOpt = priceListRepository
-                    .findFirstByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCodeAndStatus(SCOPE_INTERCITY, routeRefId, catId, "ONE_WAY", "ACTIVE")
-                    .or(() -> priceListRepository.findByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCode(SCOPE_INTERCITY, routeRefId, catId, "ONE_WAY"));
-            BigDecimal oneWayBase = owOpt.map(PriceList::getBasePrice).orElse(BigDecimal.valueOf(1000000));
-            BigDecimal rtTotal = oneWayBase.multiply(BigDecimal.valueOf(2));
+            // No 2x-one-way fallback: a round trip costs whatever ROUND_TRIP_SAME_DAY says.
+            // Doubling silently overcharged every same-day return trip (~11% on seeded data).
+            PriceList roundTrip = rtOpt.filter(p -> p.getBasePrice() != null && p.getBasePrice().signum() > 0)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "No ROUND_TRIP_SAME_DAY price configured for route " + routeRefId + " vehicle category " + catId));
 
             return IntercityPriceCalculateResponse.builder()
                     .routeId(req.getRouteId())
                     .vehicleCategoryId(catId)
                     .priceTypeCode("ROUND_TRIP_SAME_DAY")
-                    .priceTypeName(resolveName(owOpt.orElse(null), req.getLocale(), "Khứ hồi (2x một chiều)"))
-                    .basePrice(oneWayBase)
+                    .priceTypeName(resolveName(roundTrip, req.getLocale(), "Khứ hồi trong ngày"))
+                    .basePrice(roundTrip.getBasePrice())
                     .days(1)
-                    .totalPrice(PriceMath.roundToThousand(rtTotal))
+                    .totalPrice(PriceMath.roundToThousand(roundTrip.getBasePrice()))
                     .currency("VND")
-                    .fallbackRoundTrip(true)
+                    .fallbackRoundTrip(false)
                     .build();
         }
 
@@ -379,16 +373,19 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
         Optional<PriceList> owOpt = priceListRepository
                 .findFirstByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCodeAndStatus(SCOPE_INTERCITY, routeRefId, catId, "ONE_WAY", "ACTIVE")
                 .or(() -> priceListRepository.findByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCode(SCOPE_INTERCITY, routeRefId, catId, "ONE_WAY"));
-        BigDecimal oneWayBase = owOpt.map(PriceList::getBasePrice).orElse(BigDecimal.valueOf(1000000));
+
+        PriceList oneWay = owOpt.filter(p -> p.getBasePrice() != null && p.getBasePrice().signum() > 0)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No ONE_WAY price configured for route " + routeRefId + " vehicle category " + catId));
 
         return IntercityPriceCalculateResponse.builder()
                 .routeId(req.getRouteId())
                 .vehicleCategoryId(catId)
                 .priceTypeCode("ONE_WAY")
-                .priceTypeName(resolveName(owOpt.orElse(null), req.getLocale(), "Một chiều"))
-                .basePrice(oneWayBase)
+                .priceTypeName(resolveName(oneWay, req.getLocale(), "Một chiều"))
+                .basePrice(oneWay.getBasePrice())
                 .days(1)
-                .totalPrice(PriceMath.roundToThousand(oneWayBase))
+                .totalPrice(PriceMath.roundToThousand(oneWay.getBasePrice()))
                 .currency("VND")
                 .fallbackRoundTrip(false)
                 .build();
@@ -399,14 +396,6 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
     public void initDefaultPrices() {
         log.info("Initializing standard default prices for all intercity routes...");
         ensurePriceTypes();
-
-        // Clean up old incorrect price tables
-        try {
-            oldPriceRepository.deleteAll();
-            log.info("Cleared old data from intercity_route_prices.");
-        } catch (Exception e) {
-            log.warn("Could not delete from intercity_route_prices: {}", e.getMessage());
-        }
 
         priceListRepository.deleteByScopeTypeAndScopeRefId(SCOPE_INTERCITY, "%"); // clear all
         priceListRepository.findAll().stream()

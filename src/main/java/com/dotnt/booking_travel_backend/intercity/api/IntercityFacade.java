@@ -101,20 +101,8 @@ public class IntercityFacade {
                                 .returnDate(returnDate)
                                 .build());
 
-                String priceTypeCode = quote != null ? quote.getPriceTypeCode() : null;
-                boolean configured = priceTypeCode != null && intercityPriceService.listByRoute(routeId).stream()
-                        .anyMatch(pl -> priceTypeCode.equals(pl.getPriceTypeCode())
-                                && serviceOptionId.equals(pl.getVehicleCategoryId())
-                                && !Boolean.FALSE.equals(pl.getActive())
-                                && !"INACTIVE".equalsIgnoreCase(pl.getStatus())
-                                && pl.getBasePrice() != null
-                                && pl.getBasePrice().signum() > 0);
-
-                if (!configured) {
-                    throw new IllegalArgumentException("No " + priceTypeCode + " price configured for route "
-                            + routeId + " vehicle category " + serviceOptionId);
-                }
-
+                // calculatePrice already throws when the requested trip type has no configured row,
+                // so there is no stand-in price left to fall back on here.
                 BigDecimal serverBase = quote.getTotalPrice();
                 BigDecimal serverTotal = serverBase;
 

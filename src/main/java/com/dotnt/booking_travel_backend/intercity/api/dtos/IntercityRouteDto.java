@@ -28,7 +28,7 @@ public class IntercityRouteDto {
     private String thumbnailUrl;
     private List<Long> imageIds;
     private List<IntercityRouteTranslationDto> translations;
-    private List<IntercityRoutePriceDto> prices;
+    /** No prices here: they live in price_lists, fetched from /intercity-route-prices. */
     private List<IntercityDepartureTimeDto> departureTimes;
     private Long linkedSharedRouteId;
     private Boolean hasSharedRoute;
