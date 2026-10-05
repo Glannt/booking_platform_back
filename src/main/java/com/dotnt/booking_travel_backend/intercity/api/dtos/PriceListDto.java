@@ -22,6 +22,13 @@ public class PriceListDto {
     private String scopeMeta;
     private String currency;
     private BigDecimal basePrice;
+    /**
+     * Deposit for this price row. All three are null when the row has no deposit configured —
+     * callers must treat that as "no deposit" and hide the UI, not substitute a default rate.
+     */
+    private String depositType; // PERCENT, FIXED, PER_PERSON
+    private BigDecimal depositRate;
+    private BigDecimal depositAmount;
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;
     private String status; // ACTIVE, INACTIVE

@@ -7,6 +7,8 @@ import com.dotnt.booking_travel_backend.intercity.api.dtos.PriceListTranslationD
 import com.dotnt.booking_travel_backend.intercity.internal.entity.*;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.*;
 import com.dotnt.booking_travel_backend.intercity.internal.service.IIntercityPriceService;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicies;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import com.dotnt.booking_travel_backend.shared.utils.PriceMath;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -116,6 +118,7 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
             targetList.setBasePrice(price);
             targetList.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : "VND");
             targetList.setStatus(statusCode);
+            targetList.setDepositPolicy(toDepositPolicy(dto));
             targetList = priceListRepository.save(targetList);
 
             if ("DAILY_RATE".equals(code)) {
@@ -172,6 +175,7 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
             oneWayList.setBasePrice(oneWay);
             oneWayList.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : "VND");
             oneWayList.setStatus(statusCode);
+            oneWayList.setDepositPolicy(toDepositPolicy(dto));
             oneWayList = priceListRepository.save(oneWayList);
             saveDefaultTranslations(oneWayList, "ONE_WAY", dto.getTranslations());
 
@@ -202,6 +206,7 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
             roundTripList.setBasePrice(roundTrip);
             roundTripList.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : "VND");
             roundTripList.setStatus(statusCode);
+            roundTripList.setDepositPolicy(toDepositPolicy(dto));
             roundTripList = priceListRepository.save(roundTripList);
             saveDefaultTranslations(roundTripList, "ROUND_TRIP_SAME_DAY", null);
 
@@ -229,6 +234,7 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
             dailyList.setBasePrice(dailyRate);
             dailyList.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : "VND");
             dailyList.setStatus(statusCode);
+            dailyList.setDepositPolicy(toDepositPolicy(dto));
             dailyList = priceListRepository.save(dailyList);
 
             int minDays = dto.getMinDays() != null && dto.getMinDays() > 0 ? dto.getMinDays() : 1;
@@ -621,6 +627,19 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
         return "ONE_WAY";
     }
 
+    /**
+     * Deposit on a price row is opt-in: all three fields blank means "no deposit", and the policy
+     * stays null. DepositPolicies.from() would write DEFAULT_RATE (20%) into the columns instead,
+     * which is the write-time default that made route-level deposits unreachable elsewhere.
+     */
+    private DepositPolicy toDepositPolicy(PriceListDto dto) {
+        boolean noType = dto.getDepositType() == null || dto.getDepositType().isBlank();
+        if (noType && dto.getDepositRate() == null && dto.getDepositAmount() == null) {
+            return null;
+        }
+        return DepositPolicies.from(dto.getDepositType(), dto.getDepositRate(), dto.getDepositAmount());
+    }
+
     private PriceListDto toDto(PriceList pl) {
         if (pl == null) return null;
         Long routeId = null;
@@ -640,6 +659,7 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
 
         var routeDetails = priceListRouteRepository.findByPriceListId(pl.getId()).orElse(null);
         var dailyDetails = priceListDailyRateRepository.findByPriceListId(pl.getId()).orElse(null);
+        var deposit = pl.getDepositPolicy();
 
         String typeCode = pl.getPriceType() != null ? pl.getPriceType().getCode() : "ONE_WAY";
         String category = pl.getPriceType() != null ? pl.getPriceType().getCategory() : "IN_DAY";
@@ -660,6 +680,9 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
                 .scopeMeta(pl.getScopeMeta())
                 .currency(pl.getCurrency())
                 .basePrice(pl.getBasePrice())
+                .depositType(deposit != null ? deposit.getType() : null)
+                .depositRate(deposit != null ? deposit.getRate() : null)
+                .depositAmount(deposit != null ? deposit.getAmount() : null)
                 .effectiveFrom(pl.getEffectiveFrom())
                 .effectiveTo(pl.getEffectiveTo())
                 .status(pl.getStatus())

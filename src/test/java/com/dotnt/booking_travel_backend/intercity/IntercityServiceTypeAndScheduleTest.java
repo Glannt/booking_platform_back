@@ -1,6 +1,7 @@
 package com.dotnt.booking_travel_backend.intercity;
 
 import com.dotnt.booking_travel_backend.intercity.api.IntercityFacade;
+import com.dotnt.booking_travel_backend.intercity.api.dtos.PriceListDto;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityBookingDetail;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityDepartureTime;
 import com.dotnt.booking_travel_backend.intercity.internal.entity.IntercityRoute;
@@ -13,6 +14,7 @@ import com.dotnt.booking_travel_backend.intercity.internal.repository.IntercityR
 import com.dotnt.booking_travel_backend.intercity.internal.repository.PriceListDailyRateRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.PriceListRepository;
 import com.dotnt.booking_travel_backend.intercity.internal.repository.PriceTypeRepository;
+import com.dotnt.booking_travel_backend.intercity.internal.service.IIntercityPriceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +55,9 @@ class IntercityServiceTypeAndScheduleTest {
 
     @Autowired
     private IntercityFacade intercityFacade;
+
+    @Autowired
+    private IIntercityPriceService intercityPriceService;
 
     private IntercityRoute testRoute;
 
@@ -231,6 +236,75 @@ class IntercityServiceTypeAndScheduleTest {
         assertNotNull(detail);
         assertEquals(0, new BigDecimal("3600000.00").compareTo(detail.getTotalPrice()),
                 "1 requested day must be billed as the 3-day minimum");
+    }
+
+    @Test
+    void testUnconfiguredDepositStaysNullInsteadOfDefaultingToTwentyPercent() {
+        intercityPriceService.savePrice(priceDto("ONE_WAY", new BigDecimal("1350000.00")).build());
+
+        PriceListDto saved = findOneWayPrice();
+
+        assertNull(saved.getDepositType(),
+                "a price row with no deposit configured must report null, not the 20% default");
+        assertNull(saved.getDepositRate());
+        assertNull(saved.getDepositAmount());
+    }
+
+    @Test
+    void testDepositIsStoredPerPriceType() {
+        intercityPriceService.savePrice(priceDto("ONE_WAY", new BigDecimal("1350000.00"))
+                .depositType("PERCENT").depositRate(new BigDecimal("30.00")).build());
+        intercityPriceService.savePrice(priceDto("ROUND_TRIP_SAME_DAY", new BigDecimal("2430000.00"))
+                .depositType("FIXED").depositAmount(new BigDecimal("500000.00")).build());
+        intercityPriceService.savePrice(priceDto("DAILY_RATE", new BigDecimal("1200000.00"))
+                .minDays(2).build());
+
+        PriceListDto oneWay = findOneWayPrice();
+        assertEquals("PERCENT", oneWay.getDepositType());
+        assertEquals(0, new BigDecimal("30.00").compareTo(oneWay.getDepositRate()));
+
+        PriceListDto roundTrip = findPrice("ROUND_TRIP_SAME_DAY");
+        assertEquals("FIXED", roundTrip.getDepositType());
+        assertEquals(0, new BigDecimal("500000.00").compareTo(roundTrip.getDepositAmount()));
+
+        // DAILY_RATE was saved with no deposit fields at all.
+        PriceListDto dailyRate = findPrice("DAILY_RATE");
+        assertNull(dailyRate.getDepositType(), "each price type carries its own deposit");
+        assertNull(dailyRate.getDepositRate());
+    }
+
+    @Test
+    void testClearingDepositFieldsRemovesTheDeposit() {
+        intercityPriceService.savePrice(priceDto("ONE_WAY", new BigDecimal("1350000.00"))
+                .depositType("PERCENT").depositRate(new BigDecimal("30.00")).build());
+        assertEquals("PERCENT", findOneWayPrice().getDepositType());
+
+        intercityPriceService.savePrice(priceDto("ONE_WAY", new BigDecimal("1350000.00")).build());
+
+        assertNull(findOneWayPrice().getDepositType(),
+                "blanking every deposit field must clear the deposit, not keep the old one");
+    }
+
+    private PriceListDto.PriceListDtoBuilder priceDto(String priceTypeCode, BigDecimal basePrice) {
+        return PriceListDto.builder()
+                .routeId(testRoute.getId())
+                .scopeRefId(String.valueOf(testRoute.getId()))
+                .vehicleCategoryId(1L)
+                .priceTypeCode(priceTypeCode)
+                .basePrice(basePrice)
+                .currency("VND")
+                .active(true);
+    }
+
+    private PriceListDto findOneWayPrice() {
+        return findPrice("ONE_WAY");
+    }
+
+    private PriceListDto findPrice(String priceTypeCode) {
+        return intercityPriceService.listByRoute(testRoute.getId()).stream()
+                .filter(p -> priceTypeCode.equals(p.getPriceTypeCode()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no " + priceTypeCode + " price on the route"));
     }
 
     private void savePrice(Long routeId, String code, String category, String name, BigDecimal basePrice) {

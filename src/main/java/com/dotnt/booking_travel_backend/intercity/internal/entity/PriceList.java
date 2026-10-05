@@ -1,5 +1,6 @@
 package com.dotnt.booking_travel_backend.intercity.internal.entity;
 
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import com.dotnt.booking_travel_backend.shared.entity.MasterEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -52,6 +53,14 @@ public class PriceList extends MasterEntity {
     @Column(name = "status", length = 20, nullable = false)
     @Builder.Default
     private String status = "ACTIVE";
+
+    /**
+     * Deposit is stored per price row, so ONE_WAY / ROUND_TRIP_SAME_DAY / DAILY_RATE each carry
+     * their own. Left null when unconfigured on purpose — never defaulted to 20% at write time,
+     * because that would make "never configured" indistinguishable from "explicitly 20%".
+     */
+    @Embedded
+    private DepositPolicy depositPolicy;
 
     @OneToMany(mappedBy = "priceList", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
