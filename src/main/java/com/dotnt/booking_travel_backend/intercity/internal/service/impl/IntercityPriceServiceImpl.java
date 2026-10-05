@@ -155,103 +155,37 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
         }
 
         if ("IN_DAY".equalsIgnoreCase(typeCategory)) {
-            // Handle ONE_WAY
-            BigDecimal oneWay = dto.getOneWayPrice() != null ? dto.getOneWayPrice() : dto.getBasePrice();
-            if (oneWay == null) oneWay = BigDecimal.ZERO;
+            // Legacy batch path: write only the price types the caller actually priced. Both old
+            // fallbacks here stored a figure nobody set — a missing round trip became
+            // `oneWay * 2`, and a missing price became 0, which is a bookable free trip. Absent
+            // input now means no row at all.
+            PriceList oneWaySaved = saveLegacyPriceRow(dto, "ONE_WAY", routeRefId, categoryId, statusCode,
+                    firstPositive(dto.getOneWayPrice(), dto.getBasePrice()));
+            PriceList roundTripSaved = saveLegacyPriceRow(dto, "ROUND_TRIP_SAME_DAY", routeRefId, categoryId, statusCode,
+                    firstPositive(dto.getRoundTripPrice()));
 
-            PriceType oneWayType = priceTypeRepository.findByCode("ONE_WAY")
-                    .orElseThrow(() -> new IllegalStateException("PriceType ONE_WAY not found"));
-
-            PriceList oneWayList = priceListRepository
-                    .findByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCode(SCOPE_INTERCITY, routeRefId, categoryId, "ONE_WAY")
-                    .orElse(PriceList.builder()
-                            .priceType(oneWayType)
-                            .scopeType(SCOPE_INTERCITY)
-                            .scopeRefId(routeRefId)
-                            .vehicleCategoryId(categoryId)
-                            .build());
-
-            oneWayList.setPriceType(oneWayType);
-            oneWayList.setBasePrice(oneWay);
-            oneWayList.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : "VND");
-            oneWayList.setStatus(statusCode);
-            oneWayList.setDepositPolicy(toDepositPolicy(dto));
-            oneWayList = priceListRepository.save(oneWayList);
-            saveDefaultTranslations(oneWayList, "ONE_WAY", dto.getTranslations());
-
-            if ("ACTIVE".equalsIgnoreCase(statusCode)) {
-                deactivateConflictingActivePrices(oneWayList);
+            if (oneWaySaved == null && roundTripSaved == null) {
+                throw new IllegalArgumentException(
+                        "Giá bắt buộc: cần oneWayPrice, roundTripPrice hoặc basePrice");
             }
-            savedResult = oneWayList;
-
-            // Handle ROUND_TRIP_SAME_DAY
-            BigDecimal roundTrip = dto.getRoundTripPrice();
-            if (roundTrip == null || roundTrip.compareTo(BigDecimal.ZERO) <= 0) {
-                roundTrip = oneWay.multiply(BigDecimal.valueOf(2));
-            }
-
-            PriceType roundTripType = priceTypeRepository.findByCode("ROUND_TRIP_SAME_DAY")
-                    .orElseThrow(() -> new IllegalStateException("PriceType ROUND_TRIP_SAME_DAY not found"));
-
-            PriceList roundTripList = priceListRepository
-                    .findByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCode(SCOPE_INTERCITY, routeRefId, categoryId, "ROUND_TRIP_SAME_DAY")
-                    .orElse(PriceList.builder()
-                            .priceType(roundTripType)
-                            .scopeType(SCOPE_INTERCITY)
-                            .scopeRefId(routeRefId)
-                            .vehicleCategoryId(categoryId)
-                            .build());
-
-            roundTripList.setPriceType(roundTripType);
-            roundTripList.setBasePrice(roundTrip);
-            roundTripList.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : "VND");
-            roundTripList.setStatus(statusCode);
-            roundTripList.setDepositPolicy(toDepositPolicy(dto));
-            roundTripList = priceListRepository.save(roundTripList);
-            saveDefaultTranslations(roundTripList, "ROUND_TRIP_SAME_DAY", null);
-
-            if ("ACTIVE".equalsIgnoreCase(statusCode)) {
-                deactivateConflictingActivePrices(roundTripList);
-            }
+            savedResult = oneWaySaved != null ? oneWaySaved : roundTripSaved;
         } else {
-            // Handle DAILY_RATE
-            BigDecimal dailyRate = dto.getDailyRatePrice() != null ? dto.getDailyRatePrice() : dto.getBasePrice();
-            if (dailyRate == null) dailyRate = BigDecimal.ZERO;
-
-            PriceType dailyType = priceTypeRepository.findByCode("DAILY_RATE")
-                    .orElseThrow(() -> new IllegalStateException("PriceType DAILY_RATE not found"));
-
-            PriceList dailyList = priceListRepository
-                    .findByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCode(SCOPE_INTERCITY, routeRefId, categoryId, "DAILY_RATE")
-                    .orElse(PriceList.builder()
-                            .priceType(dailyType)
-                            .scopeType(SCOPE_INTERCITY)
-                            .scopeRefId(routeRefId)
-                            .vehicleCategoryId(categoryId)
-                            .build());
-
-            dailyList.setPriceType(dailyType);
-            dailyList.setBasePrice(dailyRate);
-            dailyList.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : "VND");
-            dailyList.setStatus(statusCode);
-            dailyList.setDepositPolicy(toDepositPolicy(dto));
-            dailyList = priceListRepository.save(dailyList);
+            PriceList dailySaved = saveLegacyPriceRow(dto, "DAILY_RATE", routeRefId, categoryId, statusCode,
+                    firstPositive(dto.getDailyRatePrice(), dto.getBasePrice()));
+            if (dailySaved == null) {
+                throw new IllegalArgumentException("Giá bắt buộc: cần dailyRatePrice hoặc basePrice");
+            }
 
             int minDays = dto.getMinDays() != null && dto.getMinDays() > 0 ? dto.getMinDays() : 1;
-            PriceListDailyRate dr = priceListDailyRateRepository.findByPriceListId(dailyList.getId())
-                    .orElse(PriceListDailyRate.builder().priceList(dailyList).build());
+            PriceListDailyRate dr = priceListDailyRateRepository.findByPriceListId(dailySaved.getId())
+                    .orElse(PriceListDailyRate.builder().priceList(dailySaved).build());
             dr.setMinDays(minDays);
             dr.setMaxDays(dto.getMaxDays());
             dr.setKmIncludedPerDay(dto.getKmIncludedPerDay());
             dr.setOveragePricePerKm(dto.getOveragePricePerKm());
             priceListDailyRateRepository.save(dr);
 
-            saveDefaultTranslations(dailyList, "DAILY_RATE", dto.getTranslations());
-
-            if ("ACTIVE".equalsIgnoreCase(statusCode)) {
-                deactivateConflictingActivePrices(dailyList);
-            }
-            savedResult = dailyList;
+            savedResult = dailySaved;
         }
 
         return toDto(savedResult);
@@ -619,7 +553,49 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
                 .orElse(pl.getPriceType() != null ? pl.getPriceType().getDefaultName() : defaultName);
     }
 
-    private String normalizeCode(String code) {
+    /**
+ * Legacy batch-path row writer. Returns null when no usable price was supplied, which is the
+ * honest answer: the caller simply did not price that type, so there is nothing to store.
+ */
+private PriceList saveLegacyPriceRow(PriceListDto dto, String priceTypeCode, String routeRefId,
+        Long categoryId, String statusCode, BigDecimal basePrice) {
+    if (basePrice == null) return null;
+
+    PriceType type = priceTypeRepository.findByCode(priceTypeCode)
+            .orElseThrow(() -> new IllegalStateException("PriceType " + priceTypeCode + " not found"));
+
+    PriceList list = priceListRepository
+            .findByScopeTypeAndScopeRefIdAndVehicleCategoryIdAndPriceTypeCode(SCOPE_INTERCITY, routeRefId, categoryId, priceTypeCode)
+            .orElseGet(() -> PriceList.builder()
+                    .priceType(type)
+                    .scopeType(SCOPE_INTERCITY)
+                    .scopeRefId(routeRefId)
+                    .vehicleCategoryId(categoryId)
+                    .build());
+
+    list.setPriceType(type);
+    list.setBasePrice(basePrice);
+    list.setCurrency(dto.getCurrency() != null ? dto.getCurrency() : "VND");
+    list.setStatus(statusCode);
+    list.setDepositPolicy(toDepositPolicy(dto));
+    list = priceListRepository.save(list);
+    saveDefaultTranslations(list, priceTypeCode, dto.getTranslations());
+
+    if ("ACTIVE".equalsIgnoreCase(statusCode)) {
+        deactivateConflictingActivePrices(list);
+    }
+    return list;
+}
+
+/** First candidate that is a real price. Null, zero and negative all count as "not supplied". */
+private BigDecimal firstPositive(BigDecimal... candidates) {
+    for (BigDecimal c : candidates) {
+        if (c != null && c.compareTo(BigDecimal.ZERO) > 0) return c;
+    }
+    return null;
+}
+
+private String normalizeCode(String code) {
         if (code == null) return "ONE_WAY";
         String upper = code.toUpperCase();
         if (upper.contains("MULTI") || upper.contains("DAILY")) return "DAILY_RATE";

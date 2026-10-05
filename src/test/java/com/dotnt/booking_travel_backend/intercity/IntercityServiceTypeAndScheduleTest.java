@@ -285,6 +285,92 @@ class IntercityServiceTypeAndScheduleTest {
                 "blanking every deposit field must clear the deposit, not keep the old one");
     }
 
+    @Test
+    void testLegacyBatchDoesNotInventARoundTripPriceFromTheOneWayPrice() {
+        // The old code stored `oneWay * 2` as the round trip whenever the request omitted it, so
+        // a customer booking a round trip paid a number no admin ever entered.
+        intercityPriceService.savePrice(legacyDto()
+                .priceTypeCategory("IN_DAY")
+                .oneWayPrice(new BigDecimal("1350000.00"))
+                .build());
+
+        assertEquals(0, new BigDecimal("1350000.00").compareTo(findPrice("ONE_WAY").getBasePrice()));
+        assertNull(findOptionalPrice("ROUND_TRIP_SAME_DAY"),
+                "an unpriced round trip must not be stored, doubled or otherwise");
+    }
+
+    @Test
+    void testLegacyBatchSavesOnlyTheRoundTripRowWhenThatIsAllThatWasPriced() {
+        intercityPriceService.savePrice(legacyDto()
+                .priceTypeCategory("IN_DAY")
+                .roundTripPrice(new BigDecimal("2430000.00"))
+                .build());
+
+        PriceListDto roundTrip = findPrice("ROUND_TRIP_SAME_DAY");
+        assertEquals(0, new BigDecimal("2430000.00").compareTo(roundTrip.getBasePrice()));
+        assertNull(findOptionalPrice("ONE_WAY"), "no one-way price was supplied, so no one-way row");
+    }
+
+    @Test
+    void testLegacyBatchWithNoPriceAtAllIsRejected() {
+        // Previously this fell through to `?? BigDecimal.ZERO` and stored a bookable 0đ trip.
+        assertThrows(IllegalArgumentException.class, () -> intercityPriceService.savePrice(
+                legacyDto().priceTypeCategory("IN_DAY").build()));
+
+        assertNull(findOptionalPrice("ONE_WAY"));
+        assertNull(findOptionalPrice("ROUND_TRIP_SAME_DAY"));
+    }
+
+    @Test
+    void testLegacyBatchRejectsADailyRateRowWithNoPrice() {
+        assertThrows(IllegalArgumentException.class, () -> intercityPriceService.savePrice(
+                legacyDto().priceTypeCategory("DAILY_RATE").build()));
+
+        assertNull(findOptionalPrice("DAILY_RATE"), "a daily rate with no price must not be stored");
+    }
+
+    @Test
+    void testLegacyBatchTreatsAnExplicitZeroPriceAsNoPrice() {
+        // A 0 here used to be stored verbatim, which is a free bookable trip. The check has to be
+        // on the value, not on the field being present.
+        assertThrows(IllegalArgumentException.class, () -> intercityPriceService.savePrice(
+                legacyDto().priceTypeCategory("IN_DAY").oneWayPrice(BigDecimal.ZERO).build()));
+        assertThrows(IllegalArgumentException.class, () -> intercityPriceService.savePrice(
+                legacyDto().priceTypeCategory("IN_DAY").basePrice(new BigDecimal("-1")).build()));
+
+        assertNull(findOptionalPrice("ONE_WAY"), "0 and negative are not prices");
+    }
+
+    @Test
+    void testLegacyBatchKeepsAPricedRowWhenAnotherTypeIsExplicitlyZero() {
+        // A zero on the unpriced type must not poison the priced one.
+        intercityPriceService.savePrice(legacyDto()
+                .priceTypeCategory("IN_DAY")
+                .oneWayPrice(new BigDecimal("1350000.00"))
+                .roundTripPrice(BigDecimal.ZERO)
+                .build());
+
+        assertEquals(0, new BigDecimal("1350000.00").compareTo(findPrice("ONE_WAY").getBasePrice()));
+        assertNull(findOptionalPrice("ROUND_TRIP_SAME_DAY"));
+    }
+
+    /** No priceTypeCode, which is what routes a request down the legacy batch path. */
+    private PriceListDto.PriceListDtoBuilder legacyDto() {
+        return PriceListDto.builder()
+                .routeId(testRoute.getId())
+                .scopeRefId(String.valueOf(testRoute.getId()))
+                .vehicleCategoryId(1L)
+                .currency("VND")
+                .active(true);
+    }
+
+    private PriceListDto findOptionalPrice(String priceTypeCode) {
+        return intercityPriceService.listByRoute(testRoute.getId()).stream()
+                .filter(p -> priceTypeCode.equals(p.getPriceTypeCode()))
+                .findFirst()
+                .orElse(null);
+    }
+
     private PriceListDto.PriceListDtoBuilder priceDto(String priceTypeCode, BigDecimal basePrice) {
         return PriceListDto.builder()
                 .routeId(testRoute.getId())
