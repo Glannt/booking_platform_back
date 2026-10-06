@@ -34,7 +34,5 @@ public class CreateRentCarBookingRequest {
     private String dropoffAddress;
     @DecimalMin("0.0") private BigDecimal basePrice;
     @NotNull @DecimalMin("0.0") private BigDecimal totalPrice;
-    private String depositType;
-    private BigDecimal depositRate;
-    private BigDecimal depositAmount;
+    // No depositType/depositRate/depositAmount: the deposit comes from the stored policy.
 }

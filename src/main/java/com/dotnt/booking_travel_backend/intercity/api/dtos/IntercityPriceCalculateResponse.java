@@ -18,4 +18,12 @@ public class IntercityPriceCalculateResponse {
     private BigDecimal totalPrice;
     private String currency;
     private boolean fallbackRoundTrip;
+    /**
+     * The deposit of the same price row that produced {@link #totalPrice} — one row, one source.
+     * Null means that row never had one, which the caller must be able to tell from a configured
+     * rate, so nothing here is ever substituted with a default.
+     */
+    private String depositType;
+    private BigDecimal depositRate;
+    private BigDecimal depositAmount;
 }

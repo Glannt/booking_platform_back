@@ -29,10 +29,8 @@ public class CreateBookingRequest {
     @NotNull(message = "Total amount is required")
     @DecimalMin(value = "0.0", message = "Total amount must be non-negative")
     private BigDecimal totalAmount;
-
-    private String depositType; // "FIXED" | "RATE"
-    private BigDecimal depositRate;
-    private BigDecimal depositAmount;
+    // No depositType/depositRate/depositAmount here: the deposit comes from the rows the booking
+    // was priced from (see BookingServiceImpl.createBooking), so there is nothing for a request to say.
     private String discountCode;
 
     @Size(max = 500, message = "Notes must not exceed 500 characters")

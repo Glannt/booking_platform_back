@@ -50,6 +50,18 @@ public final class DepositPolicies {
         return policy != null ? policy.getAmount() : null;
     }
 
+    /**
+     * The policy exactly as stored, or {@code null} when the row never had one. This is the
+     * inverse of {@link #type}/{@link #rate} above: those substitute a default so that no call
+     * site can accidentally read null, which is precisely what makes an unconfigured row
+     * indistinguishable from a chosen one. The booking flow needs to tell them apart, because
+     * "never configured" is the one case in which the module default rate is allowed to apply.
+     */
+    public static DepositPolicy configured(DepositPolicy policy) {
+        if (policy == null || policy.getType() == null) return null;
+        return policy;
+    }
+
     private static String normalizeType(String type) {
         if (type == null || type.isBlank()) return DepositPolicy.DEFAULT_TYPE;
         String t = type.trim().toUpperCase();

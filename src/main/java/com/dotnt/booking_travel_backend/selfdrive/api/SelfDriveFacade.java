@@ -8,6 +8,8 @@ import com.dotnt.booking_travel_backend.selfdrive.internal.repository.SelfDriveB
 import com.dotnt.booking_travel_backend.selfdrive.internal.repository.SelfDriveRentalPriceRepository;
 import com.dotnt.booking_travel_backend.selfdrive.internal.repository.SelfDriveRentalRepository;
 import com.dotnt.booking_travel_backend.selfdrive.internal.service.SelfDriveAvailabilityService;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicies;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -92,11 +94,7 @@ public class SelfDriveFacade {
             return null;
         }
 
-        // ponytail: rentals are 1:1 with a vehicle category today, so lowest id wins if that ever
-        // stops holding — a wrong pick shows up as a logged delta, not as a silent wrong price.
-        SelfDriveRental rental = rentalRepository.findByVehicleCategoryIdAndActiveTrue(vehicleCategoryId).stream()
-                .min(java.util.Comparator.comparing(SelfDriveRental::getId))
-                .orElse(null);
+        SelfDriveRental rental = pickRental(vehicleCategoryId);
         if (rental == null) {
             log.warn("No active self-drive rental for vehicle category {}; cannot price this line", vehicleCategoryId);
             return null;
@@ -117,6 +115,35 @@ public class SelfDriveFacade {
         int minimumDays = rental.getMinimumDays() != null ? Math.max(1, rental.getMinimumDays()) : 1;
         int billedDays = Math.max(minimumDays, chargedDays(startDate, endDate));
         return price.getAmount().multiply(BigDecimal.valueOf(billedDays));
+    }
+
+    /**
+     * The deposit rule the rental for this vehicle category is configured with — read from the
+     * same rental the price is read from, so a line can never be priced off one row and carry a
+     * deposit off another.
+     *
+     * @return the stored policy, or {@code null} when no active rental exists or none is configured
+     */
+    public DepositPolicy resolveDepositPolicy(Long vehicleCategoryId) {
+        SelfDriveRental rental = pickRental(vehicleCategoryId);
+        if (rental == null) return null;
+        return DepositPolicies.configured(DepositPolicy.builder()
+                .type(rental.getDepositType())
+                .rate(rental.getDepositRate())
+                .amount(rental.getDeposit())
+                .build());
+    }
+
+    /**
+     * ponytail: rentals are 1:1 with a vehicle category today, so lowest id wins if that ever
+     * stops holding — a wrong pick shows up as a logged delta, not as a silent wrong price. One
+     * place, because the price quote and the deposit resolve both need exactly this pick.
+     */
+    private SelfDriveRental pickRental(Long vehicleCategoryId) {
+        if (vehicleCategoryId == null) return null;
+        return rentalRepository.findByVehicleCategoryIdAndActiveTrue(vehicleCategoryId).stream()
+                .min(java.util.Comparator.comparing(SelfDriveRental::getId))
+                .orElse(null);
     }
 
     /** Same day count the confirm page bills for: exclusive of the end date, never below 1. */

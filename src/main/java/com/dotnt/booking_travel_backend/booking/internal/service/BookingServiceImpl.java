@@ -7,6 +7,7 @@ import com.dotnt.booking_travel_backend.booking.internal.mapper.BookingMapper;
 import com.dotnt.booking_travel_backend.booking.internal.repository.BookingItemRepository;
 import com.dotnt.booking_travel_backend.booking.internal.repository.BookingRepository;
 import com.dotnt.booking_travel_backend.tour.api.TourBookingService;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositEngine;
 import com.dotnt.booking_travel_backend.shared.mailer.MailService;
 import com.dotnt.booking_travel_backend.shared.mailer.MailerProperties;
 import com.dotnt.booking_travel_backend.shared.module.ModuleEventPublisher;
@@ -128,6 +129,11 @@ public class BookingServiceImpl implements BookingService {
 
         BigDecimal calculatedTotal = BigDecimal.ZERO;
         String dominantServiceType = null;
+        // The deposit this booking will be charged, resolved from the same rows the price was
+        // resolved from further down. Deliberately not request.getDepositType/Rate/Amount: a
+        // deposit the browser picks is a deposit the browser can set to 1đ. First line that
+        // carries a policy wins, which for a one-line booking is the line itself.
+        com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy storedDeposit = null;
         if (request.getItems() != null) {
             for (var itemReq : request.getItems()) {
                 int quantity = itemReq.getQuantity() != null ? itemReq.getQuantity() : 1;
@@ -237,6 +243,7 @@ public class BookingServiceImpl implements BookingService {
                             childCount,
                             infantCount);
                     serverPrice = tourBookingService.quoteTourPackage(tourPackageId, adultCount, childCount, infantCount);
+                    if (storedDeposit == null) storedDeposit = tourBookingService.resolveDepositPolicy(itemReq.getServiceId());
                 } else if (isAirport) {
                     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
                     java.util.Map<String, Object> ad = new java.util.HashMap<>();
@@ -341,6 +348,7 @@ public class BookingServiceImpl implements BookingService {
                             actualKm
                     );
                     serverPrice = airportFacade.quoteAirportTransfer(vehicleCategoryId, routeId, tripType, outboundPickupTime, actualKm);
+                    if (storedDeposit == null) storedDeposit = airportFacade.resolveDepositPolicy(routeId, vehicleCategoryId);
                 } else if (isIntercity) {
                     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
                     java.util.Map<String, Object> ad = new java.util.HashMap<>();
@@ -447,6 +455,12 @@ public class BookingServiceImpl implements BookingService {
                             dropoffAddress,
                             request.getCustomerNotes()
                     );
+                    // SHARED is operator-quoted, so no row priced this line and none has a deposit
+                    // to hand over either — the same split the price path makes inside the facade.
+                    if (storedDeposit == null && !"SHARED".equalsIgnoreCase(serviceType)) {
+                        storedDeposit = intercityFacade.resolveDepositPolicy(
+                                routeId, vehicleCategoryId, tripType, departureDateTime, returnDate);
+                    }
                 } else if (isSelfDrive) {
                     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
                     java.util.Map<String, Object> ad = new java.util.HashMap<>();
@@ -507,6 +521,7 @@ public class BookingServiceImpl implements BookingService {
                             dropoffLocation
                     );
                     serverPrice = selfDriveFacade.quoteSelfDriveRental(vehicleCategoryId, startDate, endDate);
+                    if (storedDeposit == null) storedDeposit = selfDriveFacade.resolveDepositPolicy(vehicleCategoryId);
                 }
 
                 // The figure the browser sent is a cross-check, not an instruction: when the
@@ -601,23 +616,32 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-        // Deposit calculation (calculated from total price after any discount)
-        String depType = request.getDepositType() != null && !request.getDepositType().isBlank()
-                ? request.getDepositType().toUpperCase()
-                : "PERCENT";
-        if ("RATE".equalsIgnoreCase(depType)) {
-            depType = "PERCENT";
-        }
+        // Deposit calculation (calculated from total price after any discount). The policy is the
+        // one stored on the rows this booking was priced from — request.getDepositType/Rate/Amount
+        // are not read at all, so the browser has no say in what the customer pays upfront. The
+        // module default is allowed only when nothing was ever configured, and INFO says so: a
+        // booking sitting at a default has to stay distinguishable from one at a chosen rate.
+        String policyType = storedDeposit != null ? storedDeposit.getType() : null;
+        BigDecimal policyRate = storedDeposit != null ? storedDeposit.getRate() : null;
+        BigDecimal policyAmount = storedDeposit != null ? storedDeposit.getAmount() : null;
 
-        BigDecimal depRate = request.getDepositRate() != null && request.getDepositRate().compareTo(BigDecimal.ZERO) > 0
-                ? request.getDepositRate()
-                : ("PERCENT".equalsIgnoreCase(depType) ? DepositPolicy.getDefaultRate(dominantServiceType) : null);
+        if (policyType == null
+                || ("PERCENT".equalsIgnoreCase(policyType) && (policyRate == null || policyRate.signum() <= 0))) {
+            BigDecimal defaultRate = DepositEngine.getDefaultRate(dominantServiceType);
+            log.info("No deposit configured for this {} booking (stored policy: {}); using the module default rate {}",
+                    dominantServiceType,
+                    storedDeposit == null ? "none" : storedDeposit.getType() + " without a rate",
+                    defaultRate);
+            policyType = "PERCENT";
+            policyRate = defaultRate;
+            policyAmount = null;
+        }
 
         var depResult = com.dotnt.booking_travel_backend.shared.deposit.DepositEngine.calculateDeposit(
                 com.dotnt.booking_travel_backend.shared.deposit.dto.DepositCalculationRequest.builder()
-                        .depositType(depType)
-                        .depositRate(depRate)
-                        .fixedDepositAmount(request.getDepositAmount())
+                        .depositType(policyType)
+                        .depositRate(policyRate)
+                        .fixedDepositAmount(policyAmount)
                         .totalAmount(calculatedTotal)
                         .serviceType(dominantServiceType)
                         .build()
@@ -625,7 +649,7 @@ public class BookingServiceImpl implements BookingService {
 
         BigDecimal depAmount = depResult.getDepositAmount();
         booking.setDepositType(depResult.getDepositType());
-        booking.setDepositRate(depResult.getDepositRate() != null ? depResult.getDepositRate() : depRate);
+        booking.setDepositRate(depResult.getDepositRate() != null ? depResult.getDepositRate() : policyRate);
         booking.setDepositAmount(depAmount);
         booking.setPaidAmount(BigDecimal.ZERO);
         booking.setReceivedAmount(BigDecimal.ZERO);

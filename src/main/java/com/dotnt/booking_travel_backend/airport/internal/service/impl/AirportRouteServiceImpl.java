@@ -114,9 +114,12 @@ public class AirportRouteServiceImpl implements IAirportRouteService {
                 .destinationLat(r.getDestinationLat())
                 .destinationLng(r.getDestinationLng())
                 .active(r.isActive())
-                .depositType(DepositPolicies.type(r.getDepositPolicy()))
-                .depositRate(DepositPolicies.rate(r.getDepositPolicy()))
-                .depositAmount(DepositPolicies.amount(r.getDepositPolicy()))
+                // Raw accessors, not DepositPolicies.*: a route with no deposit of its own has to be
+                // able to report null so the price row above it can take precedence (and so nothing
+                // below it invents a 20% nobody configured).
+                .depositType(r.getDepositPolicy() == null ? null : r.getDepositPolicy().getType())
+                .depositRate(r.getDepositPolicy() == null ? null : r.getDepositPolicy().getRate())
+                .depositAmount(r.getDepositPolicy() == null ? null : r.getDepositPolicy().getAmount())
                 .build();
     }
 }

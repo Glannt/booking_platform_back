@@ -6,6 +6,8 @@ import com.dotnt.booking_travel_backend.airport.internal.service.AirportTransfer
 import com.dotnt.booking_travel_backend.surcharge.api.PricingContext;
 import com.dotnt.booking_travel_backend.surcharge.api.SurchargeResult;
 import com.dotnt.booking_travel_backend.surcharge.api.SurchargeService;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicies;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -123,6 +125,33 @@ public class AirportFacade {
         log.warn("No server price for airport transfer, route {} category {} — the client figure is what gets kept",
                 routeId, vehicleCategoryId);
         return null;
+    }
+
+    /**
+     * The deposit rule behind this line: the transfer price row that priced it first, then the
+     * route it travels, then nothing at all. Same precedence the confirm page applies, and one
+     * row one source — the deposit is read from the row the price came from.
+     *
+     * <p>{@code null} when neither level has a policy. That is not "0%", it is "unconfigured",
+     * and it is the only state in which the module default rate is allowed to apply.
+     *
+     * @param routeId           the chosen route; without it there is nothing to look a policy up by
+     * @param vehicleCategoryId the chosen vehicle, whose row may carry a policy of its own
+     * @return the stored policy, or {@code null} if neither level has one
+     */
+    public DepositPolicy resolveDepositPolicy(Long routeId, Long vehicleCategoryId) {
+        if (routeId == null) return null;
+
+        if (vehicleCategoryId != null) {
+            DepositPolicy row = airportTransferPriceRepository
+                    .findByAirportRouteIdAndVehicleCategoryId(routeId, vehicleCategoryId)
+                    .map(AirportTransferPrice::getDepositPolicy)
+                    .orElse(null);
+            if (DepositPolicies.configured(row) != null) return row;
+        }
+
+        return DepositPolicies.configured(
+                airportRouteRepository.findById(routeId).map(AirportRoute::getDepositPolicy).orElse(null));
     }
 
     /**

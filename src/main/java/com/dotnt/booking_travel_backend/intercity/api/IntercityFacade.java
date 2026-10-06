@@ -8,6 +8,7 @@ import com.dotnt.booking_travel_backend.intercity.internal.service.IIntercityPri
 import com.dotnt.booking_travel_backend.surcharge.api.PricingContext;
 import com.dotnt.booking_travel_backend.surcharge.api.SurchargeResult;
 import com.dotnt.booking_travel_backend.surcharge.api.SurchargeService;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -158,6 +159,31 @@ public class IntercityFacade {
 
         detail = intercityBookingDetailRepository.save(detail);
         return detail.getId();
+    }
+
+    /**
+     * The deposit carried by whichever price row {@link #createIntercityBookingDetail} would price
+     * this trip with — the same row, same trip type, so a line is never priced off one row and
+     * carries a deposit off another.
+     *
+     * <p>{@code null} when no row matches or that row was never given a deposit. The caller must
+     * be able to see that difference: only a null may fall back to the module default rate.
+     *
+     * @param routeId           the intercity route
+     * @param vehicleCategoryId the vehicle category, which is half of the row's lookup key
+     * @param tripType          ONE_WAY / ROUND_TRIP_SAME_DAY / DAILY_RATE
+     * @return the stored policy, or {@code null} if the trip has no configured deposit
+     */
+    public DepositPolicy resolveDepositPolicy(Long routeId, Long vehicleCategoryId, String tripType,
+                                              LocalDateTime departureDateTime, LocalDate returnDate) {
+        if (routeId == null || vehicleCategoryId == null) return null;
+        return intercityPriceService.resolveDepositPolicy(IntercityPriceCalculateRequest.builder()
+                .routeId(routeId)
+                .vehicleCategoryId(vehicleCategoryId)
+                .priceTypeCode(tripType)
+                .departureDate(departureDateTime != null ? departureDateTime.toLocalDate() : null)
+                .returnDate(returnDate)
+                .build());
     }
 
     public void updateIntercityBookingItemId(Long detailId, Long bookingItemId) {

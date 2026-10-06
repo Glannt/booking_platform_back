@@ -46,8 +46,6 @@ public class CreateAirportTransferBookingRequest {
 
     private Integer passengerCount;
     private BigDecimal luggageWeight;
-
-    private String depositType;
-    private BigDecimal depositRate;
-    private BigDecimal depositAmount;
+    // No depositType/depositRate/depositAmount: the deposit is read from the transfer price row
+    // that priced this line, falling back to its route (see AirportFacade.resolveDepositPolicy).
 }

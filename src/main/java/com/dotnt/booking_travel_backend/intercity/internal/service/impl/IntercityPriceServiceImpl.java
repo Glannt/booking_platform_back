@@ -272,7 +272,7 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
 
             BigDecimal total = daily.getBasePrice().multiply(BigDecimal.valueOf(days));
 
-            return IntercityPriceCalculateResponse.builder()
+            return withDeposit(IntercityPriceCalculateResponse.builder()
                     .routeId(req.getRouteId())
                     .vehicleCategoryId(catId)
                     .priceTypeCode("DAILY_RATE")
@@ -282,7 +282,7 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
                     .totalPrice(PriceMath.roundToThousand(total))
                     .currency("VND")
                     .fallbackRoundTrip(false)
-                    .build();
+                    .build(), daily);
         }
 
         if ("ROUND_TRIP_SAME_DAY".equalsIgnoreCase(code)) {
@@ -296,7 +296,7 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
                     .orElseThrow(() -> new IllegalArgumentException(
                             "No ROUND_TRIP_SAME_DAY price configured for route " + routeRefId + " vehicle category " + catId));
 
-            return IntercityPriceCalculateResponse.builder()
+            return withDeposit(IntercityPriceCalculateResponse.builder()
                     .routeId(req.getRouteId())
                     .vehicleCategoryId(catId)
                     .priceTypeCode("ROUND_TRIP_SAME_DAY")
@@ -306,7 +306,7 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
                     .totalPrice(PriceMath.roundToThousand(roundTrip.getBasePrice()))
                     .currency("VND")
                     .fallbackRoundTrip(false)
-                    .build();
+                    .build(), roundTrip);
         }
 
         // Default: ONE_WAY
@@ -318,7 +318,7 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No ONE_WAY price configured for route " + routeRefId + " vehicle category " + catId));
 
-        return IntercityPriceCalculateResponse.builder()
+        return withDeposit(IntercityPriceCalculateResponse.builder()
                 .routeId(req.getRouteId())
                 .vehicleCategoryId(catId)
                 .priceTypeCode("ONE_WAY")
@@ -328,7 +328,40 @@ public class IntercityPriceServiceImpl implements IIntercityPriceService {
                 .totalPrice(PriceMath.roundToThousand(oneWay.getBasePrice()))
                 .currency("VND")
                 .fallbackRoundTrip(false)
-                .build();
+                .build(), oneWay);
+    }
+
+    @Override
+    public DepositPolicy resolveDepositPolicy(IntercityPriceCalculateRequest req) {
+        if (req == null || req.getRouteId() == null) return null;
+        try {
+            IntercityPriceCalculateResponse res = calculatePrice(req);
+            return DepositPolicies.configured(DepositPolicy.builder()
+                    .type(res.getDepositType())
+                    .rate(res.getDepositRate())
+                    .amount(res.getDepositAmount())
+                    .build());
+        } catch (RuntimeException e) {
+            // No matching row is not a policy, it is the absence of one. Returning null is what
+            // lets the booking flow fall back to the module default instead of a rate nothing
+            // ever chose, and calculatePrice has already logged why the row was not there.
+            log.debug("No intercity price row for route {} to read a deposit from: {}",
+                    req.getRouteId(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * The row that priced the trip also carries its deposit, so it is copied straight across.
+     * Deliberately not {@link DepositPolicies#type}/{@link DepositPolicies#rate}: those answer a
+     * default, and a default here would make "never configured" indistinguishable from "20%".
+     */
+    private IntercityPriceCalculateResponse withDeposit(IntercityPriceCalculateResponse res, PriceList row) {
+        DepositPolicy dp = row.getDepositPolicy();
+        res.setDepositType(dp != null ? dp.getType() : null);
+        res.setDepositRate(dp != null ? dp.getRate() : null);
+        res.setDepositAmount(dp != null ? dp.getAmount() : null);
+        return res;
     }
 
     @Override

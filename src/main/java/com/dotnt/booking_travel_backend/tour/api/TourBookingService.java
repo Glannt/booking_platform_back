@@ -66,5 +66,17 @@ public interface TourBookingService {
      */
     java.math.BigDecimal quoteTourPackage(Long tourPackageId, int adultCount, int childCount, int infantCount);
 
+    /**
+     * The deposit rule this tour is configured with — read from the tour itself, because the
+     * deposit is a property of the tour selling it, not of the package variant being priced.
+     *
+     * <p>{@code null} means "never configured", which is different from a policy that happens to
+     * be 0: only the null lets the booking flow fall back to the module default rate.
+     *
+     * @param tourId the tour being booked
+     * @return the stored policy, or {@code null} if the tour has none
+     */
+    com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy resolveDepositPolicy(Long tourId);
+
     java.util.Map<String, Object> getTourBookingEmailVariables(Long detailId);
 }

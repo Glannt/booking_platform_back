@@ -6,6 +6,8 @@ import com.dotnt.booking_travel_backend.tour.internal.entity.TourBookingDetail;
 import com.dotnt.booking_travel_backend.tour.internal.entity.TourPackage;
 import com.dotnt.booking_travel_backend.tour.internal.repository.TourBookingDetailRepository;
 import com.dotnt.booking_travel_backend.tour.internal.entity.TourTranslation;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicies;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -57,6 +59,15 @@ public class TourBookingServiceImpl implements TourBookingService {
         return passengerTotal(rows, pkg, "ADULT", adultCount)
                 .add(passengerTotal(rows, pkg, "CHILD", childCount))
                 .add(passengerTotal(rows, pkg, "INFANT", infantCount));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DepositPolicy resolveDepositPolicy(Long tourId) {
+        if (tourId == null) return null;
+        return tourRepository.findById(tourId)
+                .map(t -> DepositPolicies.configured(t.getDepositPolicies()))
+                .orElse(null);
     }
 
     private BigDecimal passengerTotal(java.util.List<PriceListPerPerson> rows, TourPackage pkg, String type, int count) {

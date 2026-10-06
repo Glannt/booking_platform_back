@@ -88,6 +88,9 @@ public class AirportTransferPriceServiceImpl implements IAirportTransferPriceSer
 
     private AirportTransferPriceDto toDto(AirportTransferPrice p) {
         DepositPolicy dp = p.getDepositPolicy();
+        // Read through raw accessors, not DepositPolicies.type/rate: those substitute a default so
+        // that no call site can ever observe "unconfigured", which is exactly what the booking flow
+        // and the price-row picker need to be able to see. A row with no deposit says null here.
         return AirportTransferPriceDto.builder()
                 .id(p.getId())
                 .airportRouteId(p.getAirportRouteId())
@@ -100,9 +103,9 @@ public class AirportTransferPriceServiceImpl implements IAirportTransferPriceSer
                 .feeOverchargeFixed(p.getFeeOverchargeFixed())
                 .currency(p.getCurrency())
                 .active(p.isActive())
-                .depositType(DepositPolicies.type(dp))
-                .depositRate(DepositPolicies.rate(dp))
-                .depositAmount(DepositPolicies.amount(dp))
+                .depositType(dp == null ? null : dp.getType())
+                .depositRate(dp == null ? null : dp.getRate())
+                .depositAmount(dp == null ? null : dp.getAmount())
                 .build();
     }
 }
