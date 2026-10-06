@@ -66,44 +66,11 @@ public class AirportFacade {
         BigDecimal basePrice = clientBasePrice;
         BigDecimal totalPrice = clientTotalPrice;
 
-        if (routeId != null && vehicleCategoryId != null) {
-            AirportTransferPrice transferPrice = airportTransferPriceRepository
-                    .findByAirportRouteIdAndVehicleCategoryId(routeId, vehicleCategoryId)
-                    .orElse(null);
-
-            if (transferPrice == null) {
-                log.warn("No airport transfer price for route {} category {}; trusting client price", routeId, vehicleCategoryId);
-            } else {
-                boolean isFixedRoute = airportRouteRepository.existsById(routeId);
-                BigDecimal calculationKm = isFixedRoute ? null : actualKm;
-
-                BigDecimal serverOneWay = AirportTransferPriceCalculator.oneWay(transferPrice, calculationKm);
-                BigDecimal serverTotal = "ROUND_TRIP".equals(tripType)
-                        ? AirportTransferPriceCalculator.roundTrip(transferPrice, calculationKm)
-                        : serverOneWay;
-
-                BigDecimal surchargeBase = "ROUND_TRIP".equals(tripType)
-                        ? transferPrice.getBaseAmount().multiply(BigDecimal.valueOf(2))
-                        : transferPrice.getBaseAmount();
-
-                PricingContext pricingContext = PricingContext.builder()
-                        .basePrice(surchargeBase)
-                        .serviceTime(outboundPickupTime)
-                        .routeId(routeId)
-                        .vehicleCategoryId(vehicleCategoryId)
-                        .tripType(tripType)
-                        .build();
-
-                SurchargeResult surchargeResult = surchargeService.calculate("AIRPORT_TRANSFER", pricingContext);
-                BigDecimal surcharge = surchargeResult != null && surchargeResult.getTotalSurcharge() != null
-                        ? surchargeResult.getTotalSurcharge()
-                        : BigDecimal.ZERO;
-                serverTotal = serverTotal.add(surcharge);
-
-                validateServerPrice("airport transfer", serverOneWay, serverTotal, clientUnitPrice, clientBasePrice, clientTotalPrice);
-                basePrice = serverOneWay;
-                totalPrice = serverTotal;
-            }
+        ServerPrice resolved = resolveServerPrice(vehicleCategoryId, routeId, tripType, outboundPickupTime, actualKm);
+        if (resolved != null) {
+            validateServerPrice("airport transfer", resolved.base(), resolved.total(), clientUnitPrice, clientBasePrice, clientTotalPrice);
+            basePrice = resolved.base();
+            totalPrice = resolved.total();
         }
 
         AirportBookingDetail detail = AirportBookingDetail.builder()
@@ -131,6 +98,80 @@ public class AirportFacade {
         detail = airportBookingDetailRepository.save(detail);
         return detail.getId();
     }
+
+    /**
+     * What this line is worth when the server prices it — the transfer price row for the route and
+     * vehicle category, plus whatever surcharge the time of day calls for. The same arithmetic
+     * {@link #createAirportBookingDetail} runs when it stores the detail, so the two can never
+     * disagree; this entry point exists so the booking aggregate can be priced before the line is
+     * written rather than read back afterwards.
+     *
+     * @param routeId            the chosen route, and {@code vehicleCategoryId} the chosen vehicle;
+     *                           either one missing means there is nothing to look a price up by
+     * @return the server-computed trip total, or {@code null} if the line cannot be priced
+     */
+    public BigDecimal quoteAirportTransfer(
+            Long vehicleCategoryId,
+            Long routeId,
+            String tripType,
+            LocalDateTime outboundPickupTime,
+            BigDecimal actualKm
+    ) {
+        ServerPrice resolved = resolveServerPrice(vehicleCategoryId, routeId, tripType, outboundPickupTime, actualKm);
+        if (resolved != null) return resolved.total();
+
+        log.warn("No server price for airport transfer, route {} category {} — the client figure is what gets kept",
+                routeId, vehicleCategoryId);
+        return null;
+    }
+
+    /**
+     * @return the priced line, or {@code null} when no row backs it — a null is a hole to report,
+     *         never a zero, so that a caller in ENFORCE mode can refuse instead of selling free
+     */
+    private ServerPrice resolveServerPrice(
+            Long vehicleCategoryId,
+            Long routeId,
+            String tripType,
+            LocalDateTime outboundPickupTime,
+            BigDecimal actualKm
+    ) {
+        if (routeId == null || vehicleCategoryId == null) return null;
+
+        AirportTransferPrice transferPrice = airportTransferPriceRepository
+                .findByAirportRouteIdAndVehicleCategoryId(routeId, vehicleCategoryId)
+                .orElse(null);
+        if (transferPrice == null) return null;
+
+        boolean isFixedRoute = airportRouteRepository.existsById(routeId);
+        BigDecimal calculationKm = isFixedRoute ? null : actualKm;
+
+        BigDecimal serverOneWay = AirportTransferPriceCalculator.oneWay(transferPrice, calculationKm);
+        BigDecimal serverTotal = "ROUND_TRIP".equals(tripType)
+                ? AirportTransferPriceCalculator.roundTrip(transferPrice, calculationKm)
+                : serverOneWay;
+
+        BigDecimal surchargeBase = "ROUND_TRIP".equals(tripType)
+                ? transferPrice.getBaseAmount().multiply(BigDecimal.valueOf(2))
+                : transferPrice.getBaseAmount();
+
+        PricingContext pricingContext = PricingContext.builder()
+                .basePrice(surchargeBase)
+                .serviceTime(outboundPickupTime)
+                .routeId(routeId)
+                .vehicleCategoryId(vehicleCategoryId)
+                .tripType(tripType)
+                .build();
+
+        SurchargeResult surchargeResult = surchargeService.calculate("AIRPORT_TRANSFER", pricingContext);
+        BigDecimal surcharge = surchargeResult != null && surchargeResult.getTotalSurcharge() != null
+                ? surchargeResult.getTotalSurcharge()
+                : BigDecimal.ZERO;
+
+        return new ServerPrice(serverOneWay, serverTotal.add(surcharge));
+    }
+
+    private record ServerPrice(BigDecimal base, BigDecimal total) {}
 
     public void updateAirportBookingItemId(Long detailId, Long bookingItemId) {
         AirportBookingDetail detail = airportBookingDetailRepository.findById(detailId).orElse(null);

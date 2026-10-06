@@ -1,17 +1,22 @@
 package com.dotnt.booking_travel_backend.tour.internal.service.impl;
 
 import com.dotnt.booking_travel_backend.tour.api.TourBookingService;
+import com.dotnt.booking_travel_backend.tour.internal.entity.PriceListPerPerson;
 import com.dotnt.booking_travel_backend.tour.internal.entity.TourBookingDetail;
+import com.dotnt.booking_travel_backend.tour.internal.entity.TourPackage;
 import com.dotnt.booking_travel_backend.tour.internal.repository.TourBookingDetailRepository;
 import com.dotnt.booking_travel_backend.tour.internal.entity.TourTranslation;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TourBookingServiceImpl implements TourBookingService {
 
     private final TourBookingDetailRepository tourBookingDetailRepository;
@@ -25,6 +30,49 @@ public class TourBookingServiceImpl implements TourBookingService {
         return tourPackageRepository.findById(tourPackageId)
                 .map(com.dotnt.booking_travel_backend.tour.internal.entity.TourPackage::isContactOnly)
                 .orElse(false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal quoteTourPackage(Long tourPackageId, int adultCount, int childCount, int infantCount) {
+        if (tourPackageId == null) return null;
+
+        TourPackage pkg = tourPackageRepository.findById(tourPackageId).orElse(null);
+        if (pkg == null) {
+            log.warn("No tour package {} to price this booking line with", tourPackageId);
+            return null;
+        }
+        // Contact-only sells as a quote: having no price row is the design here, not a hole.
+        if (pkg.isContactOnly()) return BigDecimal.ZERO;
+
+        java.util.List<PriceListPerPerson> rows = pkg.getPrices() == null
+                ? java.util.List.of()
+                : pkg.getPrices().stream().filter(r -> r.isActive() && r.getPricePerPerson() != null).toList();
+        if (rows.isEmpty()) {
+            log.warn("Tour package {} ({}) has no active price row; there is no total to invent for it",
+                    pkg.getId(), pkg.getName());
+            return null;
+        }
+
+        return passengerTotal(rows, pkg, "ADULT", adultCount)
+                .add(passengerTotal(rows, pkg, "CHILD", childCount))
+                .add(passengerTotal(rows, pkg, "INFANT", infantCount));
+    }
+
+    private BigDecimal passengerTotal(java.util.List<PriceListPerPerson> rows, TourPackage pkg, String type, int count) {
+        if (count <= 0) return BigDecimal.ZERO;
+        return rows.stream()
+                .filter(r -> type.equalsIgnoreCase(r.getPassengerType()))
+                .findFirst()
+                .map(r -> r.getPricePerPerson().multiply(BigDecimal.valueOf(count)))
+                .orElseGet(() -> {
+                    // A passenger type with no row books as free. For an infant that is correct
+                    // policy; for an adult it is revenue quietly disappearing, so it is logged
+                    // rather than assumed either way.
+                    log.warn("Tour package {} ({}) has no active {} price row; {} of them book as free",
+                            pkg.getId(), pkg.getName(), type, count);
+                    return BigDecimal.ZERO;
+                });
     }
 
     @Override

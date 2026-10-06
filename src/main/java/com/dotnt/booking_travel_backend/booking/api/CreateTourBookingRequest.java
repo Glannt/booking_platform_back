@@ -37,4 +37,6 @@ public class CreateTourBookingRequest {
     private String depositType;
     private BigDecimal depositRate;
     private BigDecimal depositAmount;
+    /** Applied server-side against the server's own price; the browser's discountAmount is not read. */
+    private String discountCode;
 }

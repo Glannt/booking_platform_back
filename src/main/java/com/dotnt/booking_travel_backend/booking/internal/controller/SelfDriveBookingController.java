@@ -71,6 +71,7 @@ public class SelfDriveBookingController {
                 .depositType(req.getDepositType())
                 .depositRate(req.getDepositRate())
                 .depositAmount(req.getDepositAmount())
+                .discountCode(req.getDiscountCode())
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(103L)
                         .serviceOptionId(req.getVehicleCategoryId())

@@ -55,6 +55,14 @@ public class BookingServiceImpl implements BookingService {
     private final com.dotnt.booking_travel_backend.promotion.api.PromotionValidationService promotionValidationService;
     private final com.dotnt.booking_travel_backend.promotion.api.PromotionRedemptionService promotionRedemptionService;
     private final com.dotnt.booking_travel_backend.booking.internal.repository.BookingTimelineEventRepository bookingTimelineEventRepository;
+    /**
+     * Who wins when the browser's figure for a booking line disagrees with the server's.
+     * {@link ServerPriceMode#ENFORCE} additionally refuses to book a line the server could not
+     * price; {@link ServerPriceMode#WARN} logs it and keeps what was sent so the gap can be
+     * measured against real traffic first.
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.booking.server-price-mode:WARN}")
+    private ServerPriceMode serverPriceMode = ServerPriceMode.WARN;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
@@ -131,6 +139,9 @@ public class BookingServiceImpl implements BookingService {
                 Long intercityBookingDetailId = null;
                 Long selfDriveBookingDetailId = null;
                 boolean contactOnlyItem = false;
+                // Filled in by whichever branch can price this line; null means the server had
+                // nothing to price it with, which WARN logs and ENFORCE refuses to book.
+                BigDecimal serverPrice = null;
                 boolean isTour = tourBookingService.isTour(itemReq.getServiceId());
                 boolean isAirport = airportFacade.existsTransferPriceById(itemReq.getServiceId())
                         || (itemReq.getServiceId() != null && itemReq.getServiceId().equals(101L));
@@ -225,6 +236,7 @@ public class BookingServiceImpl implements BookingService {
                             adultCount,
                             childCount,
                             infantCount);
+                    serverPrice = tourBookingService.quoteTourPackage(tourPackageId, adultCount, childCount, infantCount);
                 } else if (isAirport) {
                     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
                     java.util.Map<String, Object> ad = new java.util.HashMap<>();
@@ -328,6 +340,7 @@ public class BookingServiceImpl implements BookingService {
                             request.getCustomerNotes(),
                             actualKm
                     );
+                    serverPrice = airportFacade.quoteAirportTransfer(vehicleCategoryId, routeId, tripType, outboundPickupTime, actualKm);
                 } else if (isIntercity) {
                     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
                     java.util.Map<String, Object> ad = new java.util.HashMap<>();
@@ -493,6 +506,25 @@ public class BookingServiceImpl implements BookingService {
                             itemReq.getPickupLocation(),
                             dropoffLocation
                     );
+                    serverPrice = selfDriveFacade.quoteSelfDriveRental(vehicleCategoryId, startDate, endDate);
+                }
+
+                // The figure the browser sent is a cross-check, not an instruction: when the
+                // server can price the line, its figure is what gets stored and the booking
+                // aggregate is rebuilt from it. Only when the server has nothing to price the
+                // line with does the mode decide — warn and keep what was sent, or refuse.
+                if ((isTour || isAirport || isSelfDrive) && !contactOnlyItem) {
+                    if (serverPrice != null) {
+                        itemUnitPrice = serverPrice;
+                        itemTotalPrice = serverPrice;
+                    } else if (serverPriceMode == ServerPriceMode.ENFORCE) {
+                        throw new IllegalArgumentException(
+                                "No server-side price for this booking line (service " + itemReq.getServiceId()
+                                        + "): refusing to book an unpriced line.");
+                    } else {
+                        log.warn("No server price for booking line, service {}; keeping the client figure {}",
+                                itemReq.getServiceId(), itemUnitPrice);
+                    }
                 }
 
                 BookingItem item = BookingItem.builder()
@@ -600,6 +632,17 @@ public class BookingServiceImpl implements BookingService {
         booking.setTotalAmount(calculatedTotal);
         booking.setTotalPrice(calculatedTotal);
         booking = bookingRepository.save(booking);
+
+        // Whatever the browser claimed, the booking now carries what the server priced. Log the
+        // gap with the booking id so it can be sized against real traffic before the mode flips
+        // from WARN to ENFORCE; both figures are net of any discount, so this is like for like.
+        if (request.getTotalAmount() != null
+                && request.getTotalAmount().compareTo(booking.getTotalAmount()) != 0) {
+            log.warn("Price mismatch for booking {} ({}): browser said {}, server priced {} [mode={}, discount={}]",
+                    booking.getId(), booking.getBookingCode(),
+                    request.getTotalAmount(), booking.getTotalAmount(),
+                    serverPriceMode, booking.getDiscountCode());
+        }
 
         // Record promotion redemption & update counter/grant atomically
         if (appliedPromoId != null) {

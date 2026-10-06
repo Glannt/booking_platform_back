@@ -76,6 +76,7 @@ public class TourBookingController {
                 .depositType(req.getDepositType())
                 .depositRate(req.getDepositRate())
                 .depositAmount(req.getDepositAmount())
+                .discountCode(req.getDiscountCode())
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(req.getTourId())
                         .quantity(req.getGuestCount())

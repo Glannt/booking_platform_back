@@ -9,4 +9,7 @@ import java.util.List;
 @Repository
 public interface SelfDriveRentalPriceRepository extends JpaRepository<SelfDriveRentalPrice, Long> {
     List<SelfDriveRentalPrice> findByRentalId(Long rentalId);
+
+    /** Ordered so a category backed by more than one rental still resolves to the same row every time. */
+    List<SelfDriveRentalPrice> findByVehicleCategoryIdAndActiveTrueOrderById(Long vehicleCategoryId);
 }

@@ -47,5 +47,24 @@ public interface TourBookingService {
      */
     boolean isContactOnlyPackage(Long tourPackageId);
 
+    /**
+     * What this line is worth when the server prices it: the package's active
+     * {@code price_list_per_person} rows, one per passenger type, times the count of that type.
+     * This is the same arithmetic the confirm page does in the browser — the difference is that
+     * it reads the database instead of the request.
+     *
+     * <p>{@code null} means "cannot be priced at all": no package id, unknown id, or not a single
+     * active row. That is a hole to report, never a price. A passenger type the booking counts but
+     * the package does not price contributes 0 and logs — an infant is legitimately free, but a
+     * missing adult row is lost revenue, and both must be visible rather than silently summed.
+     *
+     * <p>A contact-only package prices as 0 on purpose: it books, it just books as a quote.
+     *
+     * @param tourPackageId the package being booked
+     * @param adultCount    passengers of each type on this line
+     * @return the server-computed total, or {@code null} if the line cannot be priced
+     */
+    java.math.BigDecimal quoteTourPackage(Long tourPackageId, int adultCount, int childCount, int infantCount);
+
     java.util.Map<String, Object> getTourBookingEmailVariables(Long detailId);
 }
