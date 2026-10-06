@@ -43,10 +43,8 @@ public class CreateTourRequest {
 	private List<TourPriceDto> prices;
 	private List<TourPackageDto> packages;
 
-	@Builder.Default
-	private String depositType = "PERCENT";
-	@Builder.Default
-	private BigDecimal depositRate = new BigDecimal("30.00");
+	private String depositType;
+	private BigDecimal depositRate;
 	private BigDecimal depositAmount;
 
 	@JsonIgnore

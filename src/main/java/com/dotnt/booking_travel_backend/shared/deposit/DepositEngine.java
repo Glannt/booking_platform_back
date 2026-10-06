@@ -2,30 +2,18 @@ package com.dotnt.booking_travel_backend.shared.deposit;
 
 import com.dotnt.booking_travel_backend.shared.deposit.dto.DepositCalculationRequest;
 import com.dotnt.booking_travel_backend.shared.deposit.dto.DepositCalculationResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 public class DepositEngine {
 
+    private static final Logger log = LoggerFactory.getLogger(DepositEngine.class);
+
     public static final String TYPE_PERCENT = "PERCENT";
     public static final String TYPE_FIXED = "FIXED";
-    public static final String TYPE_PER_PERSON = "PER_PERSON";
-
-    public static final BigDecimal DEFAULT_TOUR_RATE = new BigDecimal("30.00");
-    public static final BigDecimal DEFAULT_INTERCITY_RATE = new BigDecimal("20.00");
-    public static final BigDecimal DEFAULT_AIRPORT_RATE = new BigDecimal("20.00");
-    public static final BigDecimal DEFAULT_SELF_DRIVE_RATE = new BigDecimal("30.00");
-
-    public static BigDecimal getDefaultRate(String serviceType) {
-        if (serviceType == null) return DEFAULT_INTERCITY_RATE;
-        return switch (serviceType.toUpperCase()) {
-            case "TOUR", "TOURS" -> DEFAULT_TOUR_RATE;
-            case "SELF_DRIVE", "SELFDRIVE" -> DEFAULT_SELF_DRIVE_RATE;
-            case "AIRPORT", "AIRPORT_TRANSFER" -> DEFAULT_AIRPORT_RATE;
-            default -> DEFAULT_INTERCITY_RATE;
-        };
-    }
 
     public static BigDecimal roundToThousand(BigDecimal val) {
         if (val == null) return BigDecimal.ZERO;
@@ -34,84 +22,77 @@ public class DepositEngine {
     }
 
     /**
-     * Calculates deposit according to depositType (PERCENT, FIXED, or PER_PERSON).
-     * Note: PERCENT and FIXED are calculated from the total price.
+     * Calculates the deposit the customer pays upfront, from the policy stored on the rows the
+     * booking was priced from.
+     *
+     * <p>There is no module default and no fallback rate. A row with no type, a PERCENT row with
+     * no usable rate and a FIXED row with no amount are all the same fact — nobody configured a
+     * deposit, so the deposit is {@code 0}. Substituting a default would make an unconfigured
+     * service indistinguishable from one the business actually chose, both to the customer and in
+     * the ledger, and the two used to disagree anyway (DTO said 20%, booking charged 30%).
+     *
+     * <p>{@code PERCENT} is a percentage of the booking total <em>after</em> any discount, so the
+     * customer's deposit is a share of what they will really pay.
      */
     public static DepositCalculationResult calculateDeposit(DepositCalculationRequest req) {
-        BigDecimal total = req.getTotalAmount() != null ? req.getTotalAmount() : BigDecimal.ZERO;
-        if (total.compareTo(BigDecimal.ZERO) <= 0) {
-            return DepositCalculationResult.builder()
-                    .depositType(req.getDepositType() != null ? req.getDepositType() : TYPE_PERCENT)
-                    .depositRate(req.getDepositRate())
-                    .depositAmount(BigDecimal.ZERO)
-                    .remainingAmount(BigDecimal.ZERO)
-                    .description("Không yêu cầu đặt cọc")
-                    .build();
+        BigDecimal total = positive(req.getTotalAmount());
+        String type = normalizeType(req.getDepositType());
+
+        if (type == null) {
+            return noDeposit(null, total);
+        }
+        if (!TYPE_PERCENT.equals(type) && !TYPE_FIXED.equals(type)) {
+            // A type this engine does not know was never written through DepositPolicies, which
+            // rejects it on the way in. Refusing to invent a rate for it, but keeping the value on
+            // the booking so the bad row stays visible instead of being overwritten with null.
+            log.warn("Unknown deposit type '{}' — no deposit applied", type);
+            return noDeposit(type, total);
         }
 
-        String type = req.getDepositType() != null ? req.getDepositType().toUpperCase() : TYPE_PERCENT;
-        // Normalize alias
-        if ("RATE".equalsIgnoreCase(type)) {
-            type = TYPE_PERCENT;
-        }
+        BigDecimal deposit;
+        BigDecimal effectiveRate;
 
-        BigDecimal calculatedDeposit = BigDecimal.ZERO;
-        BigDecimal effectiveRate = req.getDepositRate();
-        String desc = "";
-
-        if (TYPE_PER_PERSON.equalsIgnoreCase(type)) {
-            int adults = Math.max(0, req.getAdultCount() != null ? req.getAdultCount() : 0);
-            int children = Math.max(0, req.getChildCount() != null ? req.getChildCount() : 0);
-            BigDecimal adultDep = req.getDepositPerAdult() != null ? req.getDepositPerAdult() : BigDecimal.ZERO;
-            BigDecimal childDep = req.getDepositPerChild() != null ? req.getDepositPerChild() : BigDecimal.ZERO;
-
-            BigDecimal perPersonTotal = adultDep.multiply(BigDecimal.valueOf(adults))
-                    .add(childDep.multiply(BigDecimal.valueOf(children)));
-            
-            // If perPerson rates are 0, fallback to PERCENT
-            if (perPersonTotal.compareTo(BigDecimal.ZERO) > 0) {
-                calculatedDeposit = roundToThousand(perPersonTotal).min(total);
-                effectiveRate = total.compareTo(BigDecimal.ZERO) > 0
-                        ? calculatedDeposit.multiply(new BigDecimal("100")).divide(total, 1, RoundingMode.HALF_UP)
-                        : BigDecimal.ZERO;
-                desc = String.format("Cọc vé: %d vé người lớn, %d vé trẻ em", adults, children);
-            } else {
-                type = TYPE_PERCENT;
-                BigDecimal rate = (req.getDepositRate() != null && req.getDepositRate().compareTo(BigDecimal.ZERO) > 0)
-                        ? req.getDepositRate()
-                        : getDefaultRate(req.getServiceType());
-                effectiveRate = rate;
-                BigDecimal raw = total.multiply(rate).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-                calculatedDeposit = roundToThousand(raw).min(total);
-                desc = String.format("Đặt cọc %,.0f%%", rate);
-            }
-        } else if (TYPE_FIXED.equalsIgnoreCase(type)) {
-            BigDecimal fixed = req.getFixedDepositAmount() != null ? req.getFixedDepositAmount() : BigDecimal.ZERO;
-            calculatedDeposit = roundToThousand(fixed).min(total);
-            effectiveRate = total.compareTo(BigDecimal.ZERO) > 0
-                    ? calculatedDeposit.multiply(new BigDecimal("100")).divide(total, 1, RoundingMode.HALF_UP)
+        if (TYPE_FIXED.equals(type)) {
+            BigDecimal configured = req.getFixedDepositAmount();
+            deposit = configured != null && configured.signum() > 0
+                    ? roundToThousand(configured).min(total)
                     : BigDecimal.ZERO;
-            desc = String.format("Tiền cọc: %,.0f đ", calculatedDeposit);
+            effectiveRate = total.signum() > 0
+                    ? deposit.multiply(new BigDecimal("100")).divide(total, 1, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
         } else {
-            // Default: PERCENT (calculated from total amount)
-            type = TYPE_PERCENT;
-            BigDecimal rate = (req.getDepositRate() != null && req.getDepositRate().compareTo(BigDecimal.ZERO) > 0)
-                    ? req.getDepositRate()
-                    : getDefaultRate(req.getServiceType());
+            BigDecimal rate = positive(req.getDepositRate());
             effectiveRate = rate;
-            BigDecimal raw = total.multiply(rate).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-            calculatedDeposit = roundToThousand(raw).min(total);
-            desc = String.format("Đặt cọc %,.0f%%", rate);
+            deposit = rate.signum() > 0
+                    ? roundToThousand(total.multiply(rate).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP)).min(total)
+                    : BigDecimal.ZERO;
         }
-
-        BigDecimal remaining = total.subtract(calculatedDeposit).max(BigDecimal.ZERO);
 
         return DepositCalculationResult.builder()
                 .depositType(type)
                 .depositRate(effectiveRate)
-                .depositAmount(calculatedDeposit)
-                .remainingAmount(remaining)
-                .description(desc)
+                .depositAmount(deposit)
+                .remainingAmount(total.subtract(deposit).max(BigDecimal.ZERO))
                 .build();
+    }
+
+    private static DepositCalculationResult noDeposit(String type, BigDecimal total) {
+        return DepositCalculationResult.builder()
+                .depositType(type)
+                .depositRate(null)
+                .depositAmount(BigDecimal.ZERO)
+                .remainingAmount(total)
+                .build();
+    }
+
+    /** Accepts the legacy {@code RATE} alias; blank/null means "nothing configured". */
+    private static String normalizeType(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String type = raw.trim().toUpperCase();
+        return "RATE".equals(type) ? TYPE_PERCENT : type;
+    }
+
+    private static BigDecimal positive(BigDecimal val) {
+        return val != null && val.signum() > 0 ? val : BigDecimal.ZERO;
     }
 }

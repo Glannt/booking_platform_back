@@ -9,11 +9,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class DepositPoliciesTest {
 
     @Test
-    void fromFallsBackToDefaultsWhenNull() {
+    void fromKeepsUnconfiguredValuesAsNull() {
         DepositPolicy p = DepositPolicies.from(null, null, null);
-        assertEquals("PERCENT", p.getType());
-        assertEquals(0, new BigDecimal("20.00").compareTo(p.getRate()));
+        assertNull(p.getType(), "no type means no deposit configured, not a default type");
+        assertNull(p.getRate(), "no rate means nobody chose one — it must not be filled in");
         assertNull(p.getAmount());
+        assertNull(DepositPolicies.configured(p));
     }
 
     @Test
@@ -35,12 +36,17 @@ class DepositPoliciesTest {
     }
 
     @Test
-    void accessorsAreNullSafe() {
-        assertEquals("PERCENT", DepositPolicies.type(null));
-        assertEquals(0, new BigDecimal("20.00").compareTo(DepositPolicies.rate(null)));
+    void configuredDistinguishesNeverHadAPolicyFromAnActualOne() {
+        assertNull(DepositPolicies.configured(null));
+        assertNull(DepositPolicies.configured(DepositPolicies.from(null, null, null)));
+        assertNull(DepositPolicies.configured(DepositPolicies.from("", null, null)));
+        assertNotNull(DepositPolicies.configured(DepositPolicies.from("PERCENT", new BigDecimal("10"), null)),
+                "a chosen rate must not be thrown away");
+    }
+
+    @Test
+    void amountIsNullSafe() {
         assertNull(DepositPolicies.amount(null));
-        assertEquals("PERCENT", DepositPolicies.type(new DepositPolicy()));
-        assertEquals(0, new BigDecimal("20.00").compareTo(DepositPolicies.rate(new DepositPolicy())));
     }
 
     @Test
@@ -48,5 +54,7 @@ class DepositPoliciesTest {
         assertThrows(IllegalArgumentException.class, () -> DepositPolicies.from("PRECENT", null, null));
         assertThrows(IllegalArgumentException.class, () -> DepositPolicies.from("custom", null, null));
         assertThrows(IllegalArgumentException.class, () -> DepositPolicies.merge(null, "FIXD", null, null));
+        assertThrows(IllegalArgumentException.class, () -> DepositPolicies.from("PER_PERSON", null, null),
+                "PER_PERSON is a pricing type, not a deposit type");
     }
 }

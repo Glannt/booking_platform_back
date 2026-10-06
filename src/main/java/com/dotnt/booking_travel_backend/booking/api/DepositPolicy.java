@@ -20,17 +20,12 @@ public class DepositPolicy {
     public static final String TYPE_FIXED = DepositEngine.TYPE_FIXED;
     public static final String TYPE_RATE = "RATE";
     public static final String TYPE_PERCENT = DepositEngine.TYPE_PERCENT;
-    public static final String TYPE_PER_PERSON = DepositEngine.TYPE_PER_PERSON;
 
-    public static final BigDecimal DEFAULT_TOUR_RATE = DepositEngine.DEFAULT_TOUR_RATE;
-    public static final BigDecimal DEFAULT_INTERCITY_RATE = DepositEngine.DEFAULT_INTERCITY_RATE;
-    public static final BigDecimal DEFAULT_AIRPORT_RATE = DepositEngine.DEFAULT_AIRPORT_RATE;
-    public static final BigDecimal DEFAULT_SELF_DRIVE_RATE = DepositEngine.DEFAULT_SELF_DRIVE_RATE;
-
-    public static BigDecimal getDefaultRate(String serviceType) {
-        return DepositEngine.getDefaultRate(serviceType);
-    }
-
+    /**
+     * @param serviceType no longer used: the deposit no longer has a per-service default rate, so
+     *                    an unconfigured service books at 0 instead of a substituted one. The
+     *                    parameter stays only so this deprecated signature does not break callers.
+     */
     public static BigDecimal calculateDeposit(
             String depositType,
             BigDecimal depositRate,
@@ -44,7 +39,6 @@ public class DepositPolicy {
                         .depositRate(depositRate)
                         .fixedDepositAmount(fixedAmount)
                         .totalAmount(totalAmount)
-                        .serviceType(serviceType)
                         .build()
         );
         return res.getDepositAmount();

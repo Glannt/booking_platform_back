@@ -1,8 +1,5 @@
 package com.dotnt.booking_travel_backend.booking;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import com.dotnt.booking_travel_backend.airport.api.AirportFacade;
 import com.dotnt.booking_travel_backend.booking.api.BookingDto;
 import com.dotnt.booking_travel_backend.booking.api.CreateBookingItemRequest;
@@ -17,7 +14,6 @@ import com.dotnt.booking_travel_backend.booking.internal.service.BookingServiceI
 import com.dotnt.booking_travel_backend.fleet.api.FleetFacade;
 import com.dotnt.booking_travel_backend.intercity.api.IntercityFacade;
 import com.dotnt.booking_travel_backend.selfdrive.api.SelfDriveFacade;
-import com.dotnt.booking_travel_backend.shared.deposit.DepositEngine;
 import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import com.dotnt.booking_travel_backend.tour.api.TourBookingService;
 import com.dotnt.booking_travel_backend.user.api.UserFacade;
@@ -27,7 +23,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -44,9 +39,9 @@ import static org.mockito.Mockito.*;
  * by then and the deposit was the last figure still in the browser's hands.
  *
  * <p>The first two tests are the whole point: whatever a stored policy says is what the customer
- * pays upfront, and a policy that was never configured falls back to the module default and says
- * so at INFO, so a booking sitting at a default stays distinguishable from one at a chosen rate.
- * The last test pins the contract itself — there is no field left in which a client-chosen
+ * pays upfront, and a policy that was never configured has no deposit at all — there is no module
+ * default to fall back on, so an unconfigured service books at 0 rather than at a rate nobody
+ * chose. The last test pins the contract itself — there is no field left in which a client-chosen
  * deposit could be expressed at all.
  */
 @ExtendWith(MockitoExtension.class)
@@ -58,7 +53,7 @@ class BookingServerDepositTest {
 
     private static final long SERVER_TOUR_TOTAL = 1_300_000L;
     private static final long SERVER_SELF_DRIVE_TOTAL = 2_400_000L;
-    /** The tour's own rate — deliberately not the module default, so the two cannot be confused. */
+    /** The tour's own configured rate. */
     private static final BigDecimal TOUR_CONFIGURED_RATE = new BigDecimal("10");
     /** What a self-drive rental actually stores on this schema: FIXED, no rate. */
     private static final BigDecimal RENTAL_FIXED_DEPOSIT = new BigDecimal("500000");
@@ -175,34 +170,21 @@ class BookingServerDepositTest {
     }
 
     @Test
-    void nothingConfiguredFallsBackToTheModuleDefaultAndSaysSo() {
+    void nothingConfiguredMeansTheBookingHasNoDepositAtAll() {
         givenPricedTour();
         when(tourBookingService.resolveDepositPolicy(TOUR_ID)).thenReturn(null);
 
-        Logger logger = (Logger) LoggerFactory.getLogger(BookingServiceImpl.class);
-        ListAppender<ILoggingEvent> appender = new ListAppender<>();
-        appender.start();
-        logger.addAppender(appender);
-        try {
-            bookingService.createBooking(tourRequest());
-        } finally {
-            logger.detachAppender(appender);
-        }
+        bookingService.createBooking(tourRequest());
 
         Booking booking = savedBooking.get();
-        BigDecimal defaultRate = DepositEngine.getDefaultRate("TOUR");
-        assertEquals(0, defaultRate.compareTo(booking.getDepositRate()),
-                "an unconfigured tour books at the module default, not at 0%");
-
-        String logged = appender.list.stream()
-                .map(ILoggingEvent::getFormattedMessage)
-                .filter(m -> m.contains("No deposit configured"))
-                .findFirst()
-                .orElse(null);
-        assertNotNull(logged,
-                "a booking at a default has to stay distinguishable from one at a chosen rate");
-        assertTrue(logged.contains("TOUR"), "the service type must be in the log: " + logged);
-        assertTrue(logged.contains(defaultRate.toPlainString()), "the applied default must be in the log: " + logged);
+        assertNull(booking.getDepositType(),
+                "an unconfigured service has no deposit type: a default would be indistinguishable from a chosen rate");
+        assertNull(booking.getDepositRate(),
+                "and no rate — the browser, and nobody else, must not end up with a number here");
+        assertEquals(0, BigDecimal.ZERO.compareTo(booking.getDepositAmount()),
+                "no configured policy means no deposit");
+        assertEquals(0, BigDecimal.valueOf(SERVER_TOUR_TOTAL).compareTo(booking.getTotalAmount()),
+                "the price itself is unaffected: the whole total is due, just not upfront");
     }
 
     /**

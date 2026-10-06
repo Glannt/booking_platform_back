@@ -3,8 +3,7 @@ package com.dotnt.booking_travel_backend.shared.deposit;
 import java.math.BigDecimal;
 
 /**
- * Mapper/normalizer for {@link DepositPolicy}. Single source for the previously
- * per-module pattern "value != null ? value : default" and for the RATE -> PERCENT
+ * Mapper/normalizer for {@link DepositPolicy}. Single source for the RATE -> PERCENT
  * alias the deposit engine already understands.
  */
 public final class DepositPolicies {
@@ -12,11 +11,15 @@ public final class DepositPolicies {
     private DepositPolicies() {
     }
 
-    /** Builds a policy from DTO values; null type/rate fall back to defaults (create semantics). */
+    /**
+     * Builds a policy from DTO values. A null or blank type means the caller configured nothing,
+     * so the policy stays null-typed rather than being filled with a default rate — an
+     * unconfigured service must book at 0, not at some rate nobody chose.
+     */
     public static DepositPolicy from(String type, BigDecimal rate, BigDecimal amount) {
         return DepositPolicy.builder()
                 .type(normalizeType(type))
-                .rate(rate != null ? rate : DepositPolicy.DEFAULT_RATE)
+                .rate(rate)
                 .amount(amount)
                 .build();
     }
@@ -28,22 +31,10 @@ public final class DepositPolicies {
     public static DepositPolicy merge(DepositPolicy current, String type, BigDecimal rate, BigDecimal amount) {
         DepositPolicy base = current != null ? current : new DepositPolicy();
         return DepositPolicy.builder()
-                .type(type != null ? normalizeType(type)
-                        : base.getType() != null ? base.getType() : DepositPolicy.DEFAULT_TYPE)
-                .rate(rate != null ? rate
-                        : base.getRate() != null ? base.getRate() : DepositPolicy.DEFAULT_RATE)
+                .type(type != null ? normalizeType(type) : base.getType())
+                .rate(rate != null ? rate : base.getRate())
                 .amount(amount != null ? amount : base.getAmount())
                 .build();
-    }
-
-    /** Null-safe accessor: never returns null. */
-    public static String type(DepositPolicy policy) {
-        return policy != null && policy.getType() != null ? policy.getType() : DepositPolicy.DEFAULT_TYPE;
-    }
-
-    /** Null-safe accessor: never returns null. */
-    public static BigDecimal rate(DepositPolicy policy) {
-        return policy != null && policy.getRate() != null ? policy.getRate() : DepositPolicy.DEFAULT_RATE;
     }
 
     public static BigDecimal amount(DepositPolicy policy) {
@@ -51,24 +42,21 @@ public final class DepositPolicies {
     }
 
     /**
-     * The policy exactly as stored, or {@code null} when the row never had one. This is the
-     * inverse of {@link #type}/{@link #rate} above: those substitute a default so that no call
-     * site can accidentally read null, which is precisely what makes an unconfigured row
-     * indistinguishable from a chosen one. The booking flow needs to tell them apart, because
-     * "never configured" is the one case in which the module default rate is allowed to apply.
+     * The policy exactly as stored, or {@code null} when the row never had one. This is what the
+     * booking flow reads: {@code null} means "no deposit configured", which is 0 — there is no
+     * default to substitute.
      */
     public static DepositPolicy configured(DepositPolicy policy) {
-        if (policy == null || policy.getType() == null) return null;
+        if (policy == null || policy.getType() == null || policy.getType().isBlank()) return null;
         return policy;
     }
 
+    /** @return the normalized type, or {@code null} when nothing is configured. */
     private static String normalizeType(String type) {
-        if (type == null || type.isBlank()) return DepositPolicy.DEFAULT_TYPE;
+        if (type == null || type.isBlank()) return null;
         String t = type.trim().toUpperCase();
-        if ("RATE".equals(t)) t = DepositPolicy.DEFAULT_TYPE;
-        if (!t.equals(DepositEngine.TYPE_PERCENT)
-                && !t.equals(DepositEngine.TYPE_FIXED)
-                && !t.equals(DepositEngine.TYPE_PER_PERSON)) {
+        if ("RATE".equals(t)) t = DepositEngine.TYPE_PERCENT;
+        if (!t.equals(DepositEngine.TYPE_PERCENT) && !t.equals(DepositEngine.TYPE_FIXED)) {
             throw new IllegalArgumentException("Invalid deposit type: " + type);
         }
         return t;

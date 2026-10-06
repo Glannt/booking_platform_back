@@ -10,9 +10,8 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class DepositCalculationResult {
-    private String depositType; // PERCENT, FIXED, PER_PERSON
+    private String depositType; // PERCENT or FIXED; null when nothing is configured
     private BigDecimal depositRate; // effective percentage
     private BigDecimal depositAmount; // calculated deposit amount in currency
     private BigDecimal remainingAmount; // totalAmount - depositAmount
-    private String description; // human-readable explanation from data
 }

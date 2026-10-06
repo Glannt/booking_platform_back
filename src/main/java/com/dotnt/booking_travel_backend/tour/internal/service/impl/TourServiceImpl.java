@@ -1014,8 +1014,8 @@ public class TourServiceImpl implements ITourService {
                 .inclusions(t.getInclusions())
                 .exclusions(t.getExclusions())
                 .components(t.getComponents())
-                .depositType(DepositPolicies.type(t.getDepositPolicies()))
-                .depositRate(DepositPolicies.rate(t.getDepositPolicies()))
+                .depositType(t.getDepositPolicies() != null ? t.getDepositPolicies().getType() : null)
+                .depositRate(t.getDepositPolicies() != null ? t.getDepositPolicies().getRate() : null)
                 .depositAmount(DepositPolicies.amount(t.getDepositPolicies()))
                 .build();
     }

@@ -25,14 +25,14 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * The confirm page applies a three-level deposit lookup — transfer price row, then the route it
- * travels, then the module default. This is the server's copy of the same lookup, so the two
- * cannot drift, and so the deposit is read from the same row the price came off.
+ * The confirm page applies a two-level deposit lookup — transfer price row, then the route it
+ * travels, then nothing at all. This is the server's copy of the same lookup, so the two cannot
+ * drift, and so the deposit is read from the same row the price came off.
  *
  * <p>The middle case is the one that used to be unreachable: a row whose deposit columns were
  * never written has to be passed over, not mistaken for a configured 20%. {@code
  * AirportRouteDepositReadBackTest} pins that Hibernate reads it back unconfigured; this pins that
- * the caller then falls through.
+ * the caller then falls through. A service nobody configured a deposit for books with none.
  */
 @ExtendWith(MockitoExtension.class)
 class AirportDepositPolicyTest {
@@ -99,6 +99,6 @@ class AirportDepositPolicyTest {
         routeReturns(unconfigured());
 
         assertNull(airportFacade.resolveDepositPolicy(ROUTE_ID, CATEGORY_ID),
-                "only a genuine absence may reach the module default");
+                "with neither level configured there is no policy — and therefore no deposit");
     }
 }

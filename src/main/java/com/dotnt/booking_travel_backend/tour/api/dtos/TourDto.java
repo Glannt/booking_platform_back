@@ -51,10 +51,8 @@ public class TourDto {
     private Long successfulBookingsCount;
     private java.math.BigDecimal totalRevenue;
 
-    @Builder.Default
-    private String depositType = "PERCENT";
-    @Builder.Default
-    private BigDecimal depositRate = new BigDecimal("30.00");
+    private String depositType;
+    private BigDecimal depositRate;
     private BigDecimal depositAmount;
 
     @JsonIgnore

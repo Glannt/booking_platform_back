@@ -618,38 +618,22 @@ public class BookingServiceImpl implements BookingService {
 
         // Deposit calculation (calculated from total price after any discount). The policy is the
         // one stored on the rows this booking was priced from — request.getDepositType/Rate/Amount
-        // are not read at all, so the browser has no say in what the customer pays upfront. The
-        // module default is allowed only when nothing was ever configured, and INFO says so: a
-        // booking sitting at a default has to stay distinguishable from one at a chosen rate.
-        String policyType = storedDeposit != null ? storedDeposit.getType() : null;
-        BigDecimal policyRate = storedDeposit != null ? storedDeposit.getRate() : null;
-        BigDecimal policyAmount = storedDeposit != null ? storedDeposit.getAmount() : null;
-
-        if (policyType == null
-                || ("PERCENT".equalsIgnoreCase(policyType) && (policyRate == null || policyRate.signum() <= 0))) {
-            BigDecimal defaultRate = DepositEngine.getDefaultRate(dominantServiceType);
-            log.info("No deposit configured for this {} booking (stored policy: {}); using the module default rate {}",
-                    dominantServiceType,
-                    storedDeposit == null ? "none" : storedDeposit.getType() + " without a rate",
-                    defaultRate);
-            policyType = "PERCENT";
-            policyRate = defaultRate;
-            policyAmount = null;
-        }
-
-        var depResult = com.dotnt.booking_travel_backend.shared.deposit.DepositEngine.calculateDeposit(
+        // are not read at all, so the browser has no say in what the customer pays upfront. A row
+        // that was never configured has no deposit: there is no module default to fall back on,
+        // because a default would be indistinguishable from a rate the business actually chose
+        // (and the two used to disagree — DTO claimed 20%, the booking charged 30%).
+        var depResult = DepositEngine.calculateDeposit(
                 com.dotnt.booking_travel_backend.shared.deposit.dto.DepositCalculationRequest.builder()
-                        .depositType(policyType)
-                        .depositRate(policyRate)
-                        .fixedDepositAmount(policyAmount)
+                        .depositType(storedDeposit != null ? storedDeposit.getType() : null)
+                        .depositRate(storedDeposit != null ? storedDeposit.getRate() : null)
+                        .fixedDepositAmount(storedDeposit != null ? storedDeposit.getAmount() : null)
                         .totalAmount(calculatedTotal)
-                        .serviceType(dominantServiceType)
                         .build()
         );
 
         BigDecimal depAmount = depResult.getDepositAmount();
         booking.setDepositType(depResult.getDepositType());
-        booking.setDepositRate(depResult.getDepositRate() != null ? depResult.getDepositRate() : policyRate);
+        booking.setDepositRate(depResult.getDepositRate());
         booking.setDepositAmount(depAmount);
         booking.setPaidAmount(BigDecimal.ZERO);
         booking.setReceivedAmount(BigDecimal.ZERO);
@@ -785,35 +769,29 @@ public class BookingServiceImpl implements BookingService {
             booking.setDepositRate(request.getDepositRate());
         }
 
-        String dominantServiceType = null;
-        if (booking.getItems() != null && !booking.getItems().isEmpty()) {
-            BookingItem firstItem = booking.getItems().iterator().next();
-            if (firstItem.getTourBookingDetailId() != null) dominantServiceType = "TOUR";
-            else if (firstItem.getSelfDriveBookingDetailId() != null) dominantServiceType = "SELF_DRIVE";
-            else if (firstItem.getAirportTransferBookingDetailId() != null) dominantServiceType = "AIRPORT";
-            else if (firstItem.getIntercityBookingDetailId() != null) dominantServiceType = "INTERCITY";
-        }
-
-        if (DepositPolicy.TYPE_RATE.equalsIgnoreCase(booking.getDepositType())
-                || DepositPolicy.TYPE_PERCENT.equalsIgnoreCase(booking.getDepositType())) {
-            BigDecimal rate = booking.getDepositRate() != null && booking.getDepositRate().compareTo(BigDecimal.ZERO) > 0
-                    ? booking.getDepositRate()
-                    : DepositPolicy.getDefaultRate(dominantServiceType);
-            booking.setDepositRate(rate);
-            if (booking.getTotalAmount() != null) {
-                booking.setDepositAmount(DepositPolicy.calculateDeposit(
-                        DepositPolicy.TYPE_PERCENT, rate, null, booking.getTotalAmount(), dominantServiceType));
+        // An admin edit recomputes the deposit from what is on the booking now. There is no
+        // default rate any more: a percentage with no rate is a deposit of 0, exactly as it is
+        // for a booking created through the public flow.
+        if (booking.getDepositType() == null || booking.getDepositType().isBlank()
+                || booking.getTotalAmount() == null) {
+            // Nothing typed on the booking (or nowhere to calculate against): a bare amount the
+            // admin entered is taken as-is, and is ignored if there is none.
+            if (request.getDepositAmount() != null) booking.setDepositAmount(request.getDepositAmount());
+        } else {
+            var editedDeposit = DepositEngine.calculateDeposit(
+                    com.dotnt.booking_travel_backend.shared.deposit.dto.DepositCalculationRequest.builder()
+                            .depositType(booking.getDepositType())
+                            .depositRate(booking.getDepositRate())
+                            .fixedDepositAmount(request.getDepositAmount() != null
+                                    ? request.getDepositAmount()
+                                    : booking.getDepositAmount())
+                            .totalAmount(booking.getTotalAmount())
+                            .build());
+            booking.setDepositAmount(editedDeposit.getDepositAmount());
+            if (DepositPolicy.TYPE_RATE.equalsIgnoreCase(booking.getDepositType())
+                    || DepositPolicy.TYPE_PERCENT.equalsIgnoreCase(booking.getDepositType())) {
+                booking.setDepositRate(editedDeposit.getDepositRate());
             }
-        } else if (DepositPolicy.TYPE_FIXED.equalsIgnoreCase(booking.getDepositType())) {
-            BigDecimal fixed = request.getDepositAmount() != null
-                    ? request.getDepositAmount()
-                    : booking.getDepositAmount();
-            if (booking.getTotalAmount() != null) {
-                booking.setDepositAmount(DepositPolicy.calculateDeposit(
-                        DepositPolicy.TYPE_FIXED, null, fixed, booking.getTotalAmount(), dominantServiceType));
-            }
-        } else if (request.getDepositAmount() != null) {
-            booking.setDepositAmount(request.getDepositAmount());
         }
 
         if (request.getReceivedAmount() != null)
