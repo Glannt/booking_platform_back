@@ -62,7 +62,7 @@ public class SelfDriveRentalServiceImpl implements ISelfDriveRentalService {
                 .rentalTypeId(dto.getRentalTypeId())
                 .driverRequired(dto.isDriverRequired())
                 .deposit(dto.getDeposit())
-                .depositType(dto.getDepositType() != null ? dto.getDepositType() : "FIXED")
+                .depositType(dto.getDepositType())
                 .depositRate(dto.getDepositRate())
                 .minimumDays(dto.getMinimumDays())
                 .active(dto.isActive())
@@ -131,7 +131,7 @@ public class SelfDriveRentalServiceImpl implements ISelfDriveRentalService {
             r.setRentalTypeId(dto.getRentalTypeId());
             r.setDriverRequired(dto.isDriverRequired());
             r.setDeposit(dto.getDeposit());
-            r.setDepositType(dto.getDepositType() != null ? dto.getDepositType() : "FIXED");
+            r.setDepositType(dto.getDepositType());
             r.setDepositRate(dto.getDepositRate());
             r.setMinimumDays(dto.getMinimumDays());
             r.setActive(dto.isActive());

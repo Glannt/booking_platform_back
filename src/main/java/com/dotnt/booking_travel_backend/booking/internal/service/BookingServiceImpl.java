@@ -243,7 +243,7 @@ public class BookingServiceImpl implements BookingService {
                             childCount,
                             infantCount);
                     serverPrice = tourBookingService.quoteTourPackage(tourPackageId, adultCount, childCount, infantCount);
-                    if (storedDeposit == null) storedDeposit = tourBookingService.resolveDepositPolicy(itemReq.getServiceId());
+                    if (storedDeposit == null) storedDeposit = tourBookingService.resolveDepositPolicyForPackage(tourPackageId);
                 } else if (isAirport) {
                     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
                     java.util.Map<String, Object> ad = new java.util.HashMap<>();

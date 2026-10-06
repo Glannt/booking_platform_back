@@ -110,8 +110,6 @@ public class TourServiceImpl implements ITourService {
             t.setImageIds(new ArrayList<>(request.getImageIds()));
         }
 
-        t.setDepositPolicies(DepositPolicies.from(request.getDepositType(), request.getDepositRate(), request.getDepositAmount()));
-
         Tour saved = tourRepository.save(t);
 
         // Save options
@@ -181,6 +179,7 @@ public class TourServiceImpl implements ITourService {
                         .tour(saved)
                         .name(pkgDto.getName() != null ? pkgDto.getName() : "Gói Tiêu Chuẩn")
                         .prices(prices)
+                        .depositPolicies(DepositPolicies.from(pkgDto.getDepositType(), pkgDto.getDepositRate(), pkgDto.getDepositAmount()))
                         .childPolicyNote(pkgDto.getChildPolicyNote())
                         .infantPolicyNote(pkgDto.getInfantPolicyNote())
                         .isContactOnly(pkgDto.isContactOnly())
@@ -426,6 +425,9 @@ public class TourServiceImpl implements ITourService {
                                 .id(pkg.getId())
                                 .tourId(t.getId())
                                 .name(pkg.getName())
+                                .depositType(pkg.getDepositPolicies() != null ? pkg.getDepositPolicies().getType() : null)
+                                .depositRate(pkg.getDepositPolicies() != null ? pkg.getDepositPolicies().getRate() : null)
+                                .depositAmount(pkg.getDepositPolicies() != null ? pkg.getDepositPolicies().getAmount() : null)
                                 .pricingType(pricingType)
                                 .adultPrice(adultPrice)
                                 .childPrice(childPrice)
@@ -564,9 +566,6 @@ public class TourServiceImpl implements ITourService {
                 t.setImageIds(new ArrayList<>(tourDto.getImageIds()));
             }
 
-            t.setDepositPolicies(DepositPolicies.merge(t.getDepositPolicies(),
-                    tourDto.getDepositType(), tourDto.getDepositRate(), tourDto.getDepositAmount()));
-
             // 1. Merge translations (key = locale)
             mergeCollection(
                     t.getTranslations(),
@@ -655,6 +654,8 @@ public class TourServiceImpl implements ITourService {
                         }
                         pkg.setChildPolicyNote(pkgDto.getChildPolicyNote());
                         pkg.setInfantPolicyNote(pkgDto.getInfantPolicyNote());
+                        pkg.setDepositPolicies(DepositPolicies.merge(pkg.getDepositPolicies(),
+                                pkgDto.getDepositType(), pkgDto.getDepositRate(), pkgDto.getDepositAmount()));
                         pkg.setContactOnly(pkgDto.isContactOnly());
                         pkg.setMinGuests(pkgDto.getMinGuests() != null && pkgDto.getMinGuests() > 0 ? pkgDto.getMinGuests() : 1);
                         pkg.setMaxGuests(pkgDto.getMaxGuests() != null && pkgDto.getMaxGuests() > 0 ? pkgDto.getMaxGuests() : 30);
@@ -1014,9 +1015,6 @@ public class TourServiceImpl implements ITourService {
                 .inclusions(t.getInclusions())
                 .exclusions(t.getExclusions())
                 .components(t.getComponents())
-                .depositType(t.getDepositPolicies() != null ? t.getDepositPolicies().getType() : null)
-                .depositRate(t.getDepositPolicies() != null ? t.getDepositPolicies().getRate() : null)
-                .depositAmount(DepositPolicies.amount(t.getDepositPolicies()))
                 .build();
     }
 }

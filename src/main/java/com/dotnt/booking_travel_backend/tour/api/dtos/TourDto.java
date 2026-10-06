@@ -5,7 +5,6 @@ import com.dotnt.booking_travel_backend.shared.component.Component;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -50,10 +49,6 @@ public class TourDto {
     private Boolean isRecommended = false;
     private Long successfulBookingsCount;
     private java.math.BigDecimal totalRevenue;
-
-    private String depositType;
-    private BigDecimal depositRate;
-    private BigDecimal depositAmount;
 
     @JsonIgnore
     public boolean isActive() {

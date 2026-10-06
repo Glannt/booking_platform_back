@@ -34,7 +34,7 @@ public class CreateTourBookingRequest {
     private String startTime;
     private String endTime;
     @NotNull @DecimalMin("0.0") private BigDecimal totalPrice;
-    // No depositType/depositRate/depositAmount: the deposit is read from Tour.depositPolicies.
+    // No depositType/depositRate/depositAmount: the deposit is read from TourPackage.depositPolicies.
     /** Applied server-side against the server's own price; the browser's discountAmount is not read. */
     private String discountCode;
 }

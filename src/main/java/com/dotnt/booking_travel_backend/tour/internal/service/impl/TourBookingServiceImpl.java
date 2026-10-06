@@ -63,10 +63,10 @@ public class TourBookingServiceImpl implements TourBookingService {
 
     @Override
     @Transactional(readOnly = true)
-    public DepositPolicy resolveDepositPolicy(Long tourId) {
-        if (tourId == null) return null;
-        return tourRepository.findById(tourId)
-                .map(t -> DepositPolicies.configured(t.getDepositPolicies()))
+    public DepositPolicy resolveDepositPolicyForPackage(Long tourPackageId) {
+        if (tourPackageId == null) return null;
+        return tourPackageRepository.findById(tourPackageId)
+                .map(pkg -> DepositPolicies.configured(pkg.getDepositPolicies()))
                 .orElse(null);
     }
 

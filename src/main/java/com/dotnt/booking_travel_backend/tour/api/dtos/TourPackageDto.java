@@ -24,6 +24,12 @@ public class TourPackageDto {
     private BigDecimal childPrice;
     private BigDecimal infantPrice;
 
+    // Chưa cấu hình = null (không default, không prefill): PERCENT tính trên tổng tiền vé sau
+    // discount, FIXED là số tiền cố định. Admin tự nhập.
+    private String depositType;
+    private BigDecimal depositRate;
+    private BigDecimal depositAmount;
+
     @Builder.Default
     private List<PriceListPerPersonDto> prices = new ArrayList<>();
 

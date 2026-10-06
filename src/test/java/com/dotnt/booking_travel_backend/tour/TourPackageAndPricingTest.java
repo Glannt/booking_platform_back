@@ -8,6 +8,7 @@ import com.dotnt.booking_travel_backend.tour.internal.repository.TourBookingDeta
 import com.dotnt.booking_travel_backend.tour.internal.repository.TourPackageRepository;
 import com.dotnt.booking_travel_backend.tour.internal.repository.TourRepository;
 import com.dotnt.booking_travel_backend.tour.internal.service.impl.TourBookingServiceImpl;
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -340,5 +341,26 @@ public class TourPackageAndPricingTest {
         assertFalse(tourBookingService.isContactOnlyPackage(10L));
         assertFalse(tourBookingService.isContactOnlyPackage(null), "no package id, nothing to look up");
         assertFalse(tourBookingService.isContactOnlyPackage(999L));
+    }
+
+    @Test
+    @DisplayName("Deposit resolves from the booked package: configured stays, unconfigured stays null")
+    void testResolveDepositPolicyForPackage() {
+        sharedCanoPackage.setDepositPolicies(DepositPolicy.builder()
+                .type("PERCENT").rate(new BigDecimal("10.00")).build());
+        when(tourPackageRepository.findById(10L))
+                .thenReturn(java.util.Optional.of(sharedCanoPackage));
+        when(tourPackageRepository.findById(20L))
+                .thenReturn(java.util.Optional.of(mudBathPackage));
+
+        DepositPolicy configured = tourBookingService.resolveDepositPolicyForPackage(10L);
+        assertNotNull(configured);
+        assertEquals("PERCENT", configured.getType());
+        assertEquals(0, new BigDecimal("10.00").compareTo(configured.getRate()));
+
+        assertNull(tourBookingService.resolveDepositPolicyForPackage(20L),
+                "an unconfigured package resolves to null — no default rate is substituted");
+        assertNull(tourBookingService.resolveDepositPolicyForPackage(null),
+                "no package id, nothing to look up");
     }
 }

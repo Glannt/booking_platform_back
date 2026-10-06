@@ -2,8 +2,6 @@ package com.dotnt.booking_travel_backend.tour.internal.entity;
 
 import com.dotnt.booking_travel_backend.shared.component.Component;
 import com.dotnt.booking_travel_backend.shared.component.ComponentListConverter;
-import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicies;
-import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import com.dotnt.booking_travel_backend.shared.entity.MasterEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -68,9 +66,6 @@ public class Tour extends MasterEntity {
     @Column(name = "is_recommended")
     @Builder.Default
     private Boolean isRecommended = Boolean.FALSE;
-
-    @Embedded
-    private DepositPolicy depositPolicies;
 
     @Convert(converter = ComponentListConverter.class)
     @Column(name = "components", columnDefinition = "TEXT")

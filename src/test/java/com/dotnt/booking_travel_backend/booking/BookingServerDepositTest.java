@@ -128,7 +128,7 @@ class BookingServerDepositTest {
     @Test
     void theStoredPolicyIsWhatTheCustomerPaysUpfront() {
         givenPricedTour();
-        when(tourBookingService.resolveDepositPolicy(TOUR_ID))
+        when(tourBookingService.resolveDepositPolicyForPackage(PACKAGE_ID))
                 .thenReturn(DepositPolicy.builder().type("PERCENT").rate(TOUR_CONFIGURED_RATE).build());
 
         bookingService.createBooking(tourRequest());
@@ -136,7 +136,7 @@ class BookingServerDepositTest {
         Booking booking = savedBooking.get();
         assertNotNull(booking, "the booking has to reach the database at all");
         assertEquals(0, TOUR_CONFIGURED_RATE.compareTo(booking.getDepositRate()),
-                "the deposit is the tour's own configured rate, not the module default");
+                "the deposit is the package's own configured rate, not a default nobody chose");
         assertEquals(0, new BigDecimal("130000").compareTo(booking.getDepositAmount()),
                 "10% of the server-priced 1,300,000");
         assertEquals("PERCENT", booking.getDepositType());
@@ -172,7 +172,7 @@ class BookingServerDepositTest {
     @Test
     void nothingConfiguredMeansTheBookingHasNoDepositAtAll() {
         givenPricedTour();
-        when(tourBookingService.resolveDepositPolicy(TOUR_ID)).thenReturn(null);
+        when(tourBookingService.resolveDepositPolicyForPackage(PACKAGE_ID)).thenReturn(null);
 
         bookingService.createBooking(tourRequest());
 

@@ -4,7 +4,6 @@ import com.dotnt.booking_travel_backend.shared.component.Component;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -42,10 +41,6 @@ public class CreateTourRequest {
 	private List<TourTranslationDto> translations;
 	private List<TourPriceDto> prices;
 	private List<TourPackageDto> packages;
-
-	private String depositType;
-	private BigDecimal depositRate;
-	private BigDecimal depositAmount;
 
 	@JsonIgnore
 	public boolean isActive() {

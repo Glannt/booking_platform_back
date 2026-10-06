@@ -1,5 +1,6 @@
 package com.dotnt.booking_travel_backend.tour.internal.entity;
 
+import com.dotnt.booking_travel_backend.shared.deposit.DepositPolicy;
 import com.dotnt.booking_travel_backend.shared.entity.MasterEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,6 +37,14 @@ public class TourPackage extends MasterEntity {
     @BatchSize(size = 50)
     @Builder.Default
     private List<PriceListPerPerson> prices = new ArrayList<>();
+
+    /**
+     * Deposit rule this package sells under. The deposit belongs to what is actually sold, so it
+     * lives on the package, not on the tour (migration V5 copies a tour's old value onto every one
+     * of its packages). Null type = chưa cấu hình = 0đ; there is no default rate.
+     */
+    @Embedded
+    private DepositPolicy depositPolicies;
 
     @Column(name = "child_policy_note")
     @Builder.Default
