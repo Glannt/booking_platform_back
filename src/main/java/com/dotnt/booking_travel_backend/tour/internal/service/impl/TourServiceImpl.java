@@ -157,9 +157,14 @@ public class TourServiceImpl implements ITourService {
                 List<PriceListPerPerson> prices = new ArrayList<>();
                 if (pkgDto.getPrices() != null) {
                     for (PriceListPerPersonDto prDto : pkgDto.getPrices()) {
+                        // A price the admin never entered does not become a row. Writing 0 here
+                        // created an active 0đ entry out of an empty box, which is a price nobody
+                        // set. Free-by-policy infant and child stay expressible — they are entered
+                        // as 0, which is a figure, not a blank.
+                        if (prDto.getPricePerPerson() == null) continue;
                         prices.add(PriceListPerPerson.builder()
                                 .passengerType(prDto.getPassengerType() != null ? prDto.getPassengerType() : "ADULT")
-                                .pricePerPerson(prDto.getPricePerPerson() != null ? prDto.getPricePerPerson() : BigDecimal.ZERO)
+                                .pricePerPerson(prDto.getPricePerPerson())
                                 .minPax(prDto.getMinPax() != null ? prDto.getMinPax() : 1)
                                 .maxPax(prDto.getMaxPax())
                                 .active(prDto.getActive() != null ? prDto.getActive() : true)
@@ -187,6 +192,7 @@ public class TourServiceImpl implements ITourService {
                         .active(pkgDto.isActive())
                         .sortOrder(pkgDto.getSortOrder() != null ? pkgDto.getSortOrder() : 0)
                         .build();
+                assertPackagePublishable(pkg);
                 TourPackage savedPkg = tourPackageRepository.save(pkg);
                 if (pkgDto.getTranslations() != null) {
                     for (TourPackageTranslationDto ptrDto : pkgDto.getTranslations()) {
@@ -472,6 +478,19 @@ public class TourServiceImpl implements ITourService {
 
             return dto;
         }).orElse(null);
+    }
+
+    /**
+     * A package that is switched on has to be buyable. Without a price the customer would be
+     * quoted 0đ, which is the exact hole this closes — an empty price box plus an un-ticked
+     * contact-only flag reads as an accident, so it is rejected rather than published.
+     */
+    private void assertPackagePublishable(TourPackage pkg) {
+        if (pkg.isActive() && !pkg.isPublishable()) {
+            throw new IllegalArgumentException(
+                    "Gói \"" + pkg.getName() + "\" đang bật nhưng chưa có giá người lớn. "
+                            + "Hãy nhập giá người lớn, hoặc bật \"Chỉ liên hệ\" nếu muốn khách báo giá.");
+        }
     }
 
     @Override
@@ -771,6 +790,10 @@ public class TourServiceImpl implements ITourService {
                         return newPkg;
                     }
             );
+
+            // Checked after the merge so it sees both the packages that were updated in place and
+            // the ones just created, and reads the prices as they now stand rather than as sent.
+            t.getPackages().forEach(this::assertPackagePublishable);
 
             // 4. Merge days & activities (key = dayNumber cho day, key = id cho activity)
             mergeCollection(

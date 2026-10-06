@@ -125,12 +125,12 @@ public class BookingServiceImpl implements BookingService {
                 int quantity = itemReq.getQuantity() != null ? itemReq.getQuantity() : 1;
                 BigDecimal itemUnitPrice = itemReq.getUnitPrice() != null ? itemReq.getUnitPrice() : BigDecimal.ZERO;
                 BigDecimal itemTotalPrice = itemUnitPrice;
-                calculatedTotal = calculatedTotal.add(itemTotalPrice);
 
                 Long tourBookingDetailId = null;
                 Long airportTransferBookingDetailId = null;
                 Long intercityBookingDetailId = null;
                 Long selfDriveBookingDetailId = null;
+                boolean contactOnlyItem = false;
                 boolean isTour = tourBookingService.isTour(itemReq.getServiceId());
                 boolean isAirport = airportFacade.existsTransferPriceById(itemReq.getServiceId())
                         || (itemReq.getServiceId() != null && itemReq.getServiceId().equals(101L));
@@ -199,6 +199,16 @@ public class BookingServiceImpl implements BookingService {
                                 infantCount = Integer.parseInt(tdMap.get("infantCount").toString());
                             }
                         } catch (Exception ignored) {}
+                    }
+
+                    // A contact-only package has no price by design: it is a quote request. The
+                    // booking therefore always totals 0đ, and the row is stamped so that unticking
+                    // the flag later cannot turn an old quote back into revenue.
+                    contactOnlyItem = tourPackageId != null
+                            && tourBookingService.isContactOnlyPackage(tourPackageId);
+                    if (contactOnlyItem) {
+                        itemUnitPrice = BigDecimal.ZERO;
+                        itemTotalPrice = BigDecimal.ZERO;
                     }
 
                     tourBookingDetailId = tourBookingService.createTourBookingDetail(
@@ -490,12 +500,18 @@ public class BookingServiceImpl implements BookingService {
                         .quantity(quantity)
                         .unitPrice(itemUnitPrice)
                         .totalPrice(itemTotalPrice)
+                        .isContactOnly(contactOnlyItem)
                         .dynamicDetails(itemReq.getDynamicDetails())
                         .tourBookingDetailId(tourBookingDetailId)
                         .airportTransferBookingDetailId(airportTransferBookingDetailId)
                         .intercityBookingDetailId(intercityBookingDetailId)
                         .selfDriveBookingDetailId(selfDriveBookingDetailId)
                         .build();
+
+                // Summed here rather than up front, so it picks up the price after each branch has
+                // settled it — otherwise a contact-only 0đ would be summed at its client-supplied
+                // figure and the booking would total more than its own line items.
+                calculatedTotal = calculatedTotal.add(itemTotalPrice);
 
                 item = bookingItemRepository.save(item);
                 booking.getItems().add(item);

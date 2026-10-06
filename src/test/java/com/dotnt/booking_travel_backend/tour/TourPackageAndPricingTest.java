@@ -35,6 +35,9 @@ public class TourPackageAndPricingTest {
     @Mock
     private TourRepository tourRepository;
 
+    @Mock
+    private com.dotnt.booking_travel_backend.tour.internal.repository.TourPackageRepository tourPackageRepository;
+
     @InjectMocks
     private TourBookingServiceImpl tourBookingService;
 
@@ -236,5 +239,106 @@ public class TourPackageAndPricingTest {
         assertTrue(childPrice.isApplyHeightCondition());
         assertEquals(100, childPrice.getMinHeight());
         assertEquals(129, childPrice.getMaxHeight());
+    }
+
+    // --- Publishable rule -----------------------------------------------------------
+    // Price does not live on `tours` or even on `tour_packages` — it lives in
+    // `price_list_per_person`. So "this package can be sold" means there is an active ADULT row
+    // with a figure above zero, unless the admin deliberately marked it as a quote request.
+
+    @Test
+    @DisplayName("Publishable: a package with an active adult price can go live")
+    void testPublishableWhenAnAdultPriceIsPresent() {
+        assertTrue(sharedCanoPackage.isPublishable(), "rule A: priced, no flag needed");
+        assertTrue(mudBathPackage.isPublishable());
+    }
+
+    @Test
+    @DisplayName("Publishable: a contact-only package may go live with no price at all")
+    void testPublishableWhenContactOnlyDespiteHavingNoPrice() {
+        assertTrue(privateCanoPackage.isPublishable(), "rule B: quote request, still books");
+    }
+
+    @Test
+    @DisplayName("Not publishable: no adult price and no contact-only flag")
+    void testNotPublishableWhenThereIsNeitherAPriceNorAFlag() {
+        TourPackage unpublishable = TourPackage.builder()
+                .tour(tour)
+                .name("Gói thiếu giá")
+                .prices(List.of())
+                .active(true)
+                .build();
+
+        assertFalse(unpublishable.isPublishable(),
+                "rule C: without either, activating would advertise a trip nobody priced");
+    }
+
+    @Test
+    @DisplayName("Not publishable: a zero adult price is a missing price, not a price")
+    void testNotPublishableWhenTheAdultPriceIsZero() {
+        TourPackage freeAdult = TourPackage.builder()
+                .tour(tour)
+                .name("Gói giá 0")
+                .prices(List.of(
+                        PriceListPerPerson.builder()
+                                .passengerType("ADULT")
+                                .pricePerPerson(BigDecimal.ZERO)
+                                .build()
+                ))
+                .active(true)
+                .build();
+
+        assertFalse(freeAdult.isPublishable(), "0đ is what an empty price box stores");
+    }
+
+    @Test
+    @DisplayName("Not publishable: a free infant cannot stand in for an adult price")
+    void testNotPublishableWhenOnlyFreePassengerTypesArePriced() {
+        TourPackage infantOnly = TourPackage.builder()
+                .tour(tour)
+                .name("Gói chỉ có trẻ sơ sinh")
+                .prices(List.of(
+                        PriceListPerPerson.builder().passengerType("INFANT").pricePerPerson(BigDecimal.ZERO).build(),
+                        PriceListPerPerson.builder().passengerType("CHILD").pricePerPerson(BigDecimal.ZERO).build()
+                ))
+                .active(true)
+                .build();
+
+        assertFalse(infantOnly.isPublishable(),
+                "infant is free by policy and child follows the itinerary — neither can price the trip");
+    }
+
+    @Test
+    @DisplayName("Not publishable: a deactivated adult price no longer counts")
+    void testNotPublishableWhenTheAdultPriceIsInactive() {
+        TourPackage inactivePrice = TourPackage.builder()
+                .tour(tour)
+                .name("Gói giá đã tắt")
+                .prices(List.of(
+                        PriceListPerPerson.builder()
+                                .passengerType("ADULT")
+                                .pricePerPerson(new BigDecimal("650000"))
+                                .active(false)
+                                .build()
+                ))
+                .active(true)
+                .build();
+
+        assertFalse(inactivePrice.isPublishable(),
+                "ticking the price off is how an admin takes a price out of service");
+    }
+
+    @Test
+    @DisplayName("isContactOnlyPackage resolves the flag by package id and never throws on a bad id")
+    void testIsContactOnlyPackageLookup() {
+        when(tourPackageRepository.findById(30L))
+                .thenReturn(java.util.Optional.of(privateCanoPackage));
+        when(tourPackageRepository.findById(10L))
+                .thenReturn(java.util.Optional.of(sharedCanoPackage));
+
+        assertTrue(tourBookingService.isContactOnlyPackage(30L));
+        assertFalse(tourBookingService.isContactOnlyPackage(10L));
+        assertFalse(tourBookingService.isContactOnlyPackage(null), "no package id, nothing to look up");
+        assertFalse(tourBookingService.isContactOnlyPackage(999L));
     }
 }

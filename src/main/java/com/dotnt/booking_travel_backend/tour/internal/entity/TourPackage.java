@@ -78,4 +78,27 @@ public class TourPackage extends MasterEntity {
     @BatchSize(size = 50)
     @Builder.Default
     private List<TourPackageTranslation> translations = new ArrayList<>();
+
+    /**
+     * Whether this package may be switched on, i.e. whether it can actually be sold.
+     *
+     * <p>Price does not live on {@code tour_packages} — it lives in {@code price_list_per_person},
+     * one row per passenger type. "Has a price" therefore means an <b>active ADULT row with a
+     * figure above zero</b>: infant is free by policy and child pricing follows the itinerary, so
+     * neither can stand in for an adult price. A 0đ adult row is not a price, it is a missing one.
+     *
+     * <p>A contact-only package is the deliberate exception: it is a quote request that still books,
+     * and the booking row records that so it never reaches revenue reporting.
+     *
+     * <p>Single source of truth for the rule, called from both the create and the update path.
+     */
+    public boolean isPublishable() {
+        if (isContactOnly) {
+            return true;
+        }
+        return prices != null && prices.stream().anyMatch(price ->
+                price.isActive()
+                        && "ADULT".equalsIgnoreCase(price.getPassengerType())
+                        && price.getPricePerPerson().signum() > 0);
+    }
 }

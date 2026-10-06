@@ -35,5 +35,17 @@ public interface TourBookingService {
 
     String getTourName(Long tourId);
 
+    /**
+     * Whether the package is a quote request rather than a sale: it is contact-only, so it has no
+     * price and books at 0đ.
+     *
+     * <p>Booking needs to know this at write time so it can stamp its own line item. Reading the
+     * flag back later would let an admin who unticks contact-only turn every old 0đ quote into
+     * revenue.
+     *
+     * @param tourPackageId the package being booked; a null or unknown id is not contact-only
+     */
+    boolean isContactOnlyPackage(Long tourPackageId);
+
     java.util.Map<String, Object> getTourBookingEmailVariables(Long detailId);
 }

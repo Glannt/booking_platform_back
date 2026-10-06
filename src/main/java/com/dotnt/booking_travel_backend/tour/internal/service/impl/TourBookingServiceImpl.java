@@ -16,6 +16,16 @@ public class TourBookingServiceImpl implements TourBookingService {
 
     private final TourBookingDetailRepository tourBookingDetailRepository;
     private final com.dotnt.booking_travel_backend.tour.internal.repository.TourRepository tourRepository;
+    private final com.dotnt.booking_travel_backend.tour.internal.repository.TourPackageRepository tourPackageRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isContactOnlyPackage(Long tourPackageId) {
+        if (tourPackageId == null) return false;
+        return tourPackageRepository.findById(tourPackageId)
+                .map(com.dotnt.booking_travel_backend.tour.internal.entity.TourPackage::isContactOnly)
+                .orElse(false);
+    }
 
     @Override
     @Transactional(readOnly = true)

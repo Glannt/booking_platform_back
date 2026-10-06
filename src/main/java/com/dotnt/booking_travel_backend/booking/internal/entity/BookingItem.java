@@ -53,4 +53,15 @@ public class BookingItem extends MasterEntity {
     @Column(name = "price_snapshot", columnDefinition = "text")
     private String priceSnapshot;
 
+    /**
+     * This row is a quote request rather than a sale: the package was contact-only, so it books
+     * with no price and the totals are 0đ.
+     *
+     * <p>Stamped once at booking time rather than derived from the package on read. An admin can
+     * untick contact-only later, and a flag read back from the package would quietly turn every
+     * old 0đ quote into revenue.
+     */
+    @Column(name = "is_contact_only")
+    private Boolean isContactOnly;
+
 }
