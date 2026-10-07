@@ -26,6 +26,7 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
         JOIN tour_booking_details tbd ON bi.tour_booking_detail_id = tbd.id
         JOIN tour_packages tp ON tbd.tour_package_id = tp.id
         WHERE UPPER(b.booking_status) IN ('CONFIRMED', 'COMPLETED', 'PAID')
+          AND COALESCE(bi.is_contact_only, FALSE) = FALSE
         GROUP BY tp.tour_id
         ORDER BY successful_bookings DESC, total_revenue DESC
     """, nativeQuery = true)

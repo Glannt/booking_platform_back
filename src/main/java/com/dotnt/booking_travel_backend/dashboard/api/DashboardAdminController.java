@@ -53,10 +53,9 @@ public class DashboardAdminController {
 
         long totalBookings = bookings.size();
 
-        BigDecimal totalRevenue = bookings.stream()
-                .map(Booking::getTotalAmount)
-                .filter(amount -> amount != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Revenue excludes quote-only bookings: every line contact-only totals 0đ, and the item
+        // flag is a permanent stamp so unticking contact-only later cannot resurrect an old quote.
+        BigDecimal totalRevenue = bookingRepository.sumTotalAmountExcludingContactOnly();
 
         // Fetch counts from other repositories
         long totalVehicleCategories = vehicleCategoryRepository.count();

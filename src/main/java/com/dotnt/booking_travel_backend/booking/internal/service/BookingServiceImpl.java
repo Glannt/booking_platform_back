@@ -439,6 +439,17 @@ public class BookingServiceImpl implements BookingService {
 
                     String dropoffAddress = ad.get("dropoffAddress") != null ? ad.get("dropoffAddress").toString() : null;
 
+                    // Contact-only is a quote request by design: 0đ, stamped so unticking the flag
+                    // later cannot turn an old quote back into revenue (same rule as contact-only
+                    // tour packages).
+                    contactOnlyItem = routeId != null && intercityFacade.isContactOnlyRoute(routeId);
+                    if (contactOnlyItem) {
+                        itemUnitPrice = java.math.BigDecimal.ZERO;
+                        itemTotalPrice = java.math.BigDecimal.ZERO;
+                        basePrice = java.math.BigDecimal.ZERO;
+                        totalPrice = java.math.BigDecimal.ZERO;
+                    }
+
                     intercityBookingDetailId = intercityFacade.createIntercityBookingDetail(
                             serviceType,
                             passengerCount,
@@ -510,6 +521,17 @@ public class BookingServiceImpl implements BookingService {
                     }
 
                     String dropoffLocation = ad.get("dropoffLocation") != null ? ad.get("dropoffLocation").toString() : null;
+
+                    // Contact-only is a quote request by design: 0đ, stamped so unticking the flag
+                    // later cannot turn an old quote back into revenue (same rule as contact-only
+                    // tour packages).
+                    contactOnlyItem = vehicleCategoryId != null && selfDriveFacade.isContactOnlyRental(vehicleCategoryId);
+                    if (contactOnlyItem) {
+                        itemUnitPrice = java.math.BigDecimal.ZERO;
+                        itemTotalPrice = java.math.BigDecimal.ZERO;
+                        basePrice = java.math.BigDecimal.ZERO;
+                        totalPrice = java.math.BigDecimal.ZERO;
+                    }
 
                     selfDriveBookingDetailId = selfDriveFacade.createSelfDriveBookingDetail(
                             vehicleCategoryId,

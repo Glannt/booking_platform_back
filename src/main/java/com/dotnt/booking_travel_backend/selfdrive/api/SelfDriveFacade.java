@@ -100,13 +100,15 @@ public class SelfDriveFacade {
             return null;
         }
 
+        // Contact-only is a quote request: 0đ by design, even if a price row was left behind.
+        if (rental.isContactOnly()) return BigDecimal.ZERO;
+
         SelfDriveRentalPrice price = priceRepository
                 .findByVehicleCategoryIdAndActiveTrueOrderById(vehicleCategoryId).stream()
                 .filter(p -> rental.getId().equals(p.getRentalId()))
                 .findFirst()
                 .orElse(null);
         if (price == null || price.getAmount() == null) {
-            if (rental.isContactOnly()) return BigDecimal.ZERO;
             log.warn("No active self-drive price row for rental {} / vehicle category {}; the client figure is what gets kept",
                     rental.getId(), vehicleCategoryId);
             return null;
@@ -132,6 +134,19 @@ public class SelfDriveFacade {
                 .rate(rental.getDepositRate())
                 .amount(rental.getDeposit())
                 .build());
+    }
+
+    /**
+     * Whether the rental for this vehicle category is a quote request rather than a sale
+     * (contact-only). Booking stamps its line item from this at write time so unticking the
+     * flag later cannot turn an old 0đ quote back into revenue.
+     *
+     * @param vehicleCategoryId the vehicle category selecting the rental, as in the price paths
+     * @return {@code true} when that category has an active contact-only rental
+     */
+    public boolean isContactOnlyRental(Long vehicleCategoryId) {
+        SelfDriveRental rental = pickRental(vehicleCategoryId);
+        return rental != null && rental.isContactOnly();
     }
 
     /**

@@ -92,7 +92,10 @@ public class IntercityFacade {
             // The client number is never stored: it was computed browser-side and a same-day
             // round trip used to be billed as 2x the one-way fare whenever the dedicated
             // ROUND_TRIP_SAME_DAY row was ignored.
-            if (routeId != null && serviceOptionId != null) {
+            // A contact-only route is a quote request: no price by design, so the caller's 0đ
+            // is kept instead of asking price_list for a row that must not exist.
+            boolean routeContactOnly = routeId != null && isContactOnlyRoute(routeId);
+            if (!routeContactOnly && routeId != null && serviceOptionId != null) {
                 IntercityPriceCalculateResponse quote = intercityPriceService.calculatePrice(
                         IntercityPriceCalculateRequest.builder()
                                 .routeId(routeId)
@@ -184,6 +187,21 @@ public class IntercityFacade {
                 .departureDate(departureDateTime != null ? departureDateTime.toLocalDate() : null)
                 .returnDate(returnDate)
                 .build());
+    }
+
+    /**
+     * Whether the route is a quote request rather than a sale (contact-only). Booking stamps its
+     * line item from this at write time so unticking the flag later cannot turn an old 0đ quote
+     * back into revenue.
+     *
+     * @param routeId the intercity route
+     * @return {@code true} when that route exists and is contact-only
+     */
+    public boolean isContactOnlyRoute(Long routeId) {
+        if (routeId == null) return false;
+        return intercityRouteRepository.findById(routeId)
+                .map(IntercityRoute::isContactOnly)
+                .orElse(false);
     }
 
     public void updateIntercityBookingItemId(Long detailId, Long bookingItemId) {
