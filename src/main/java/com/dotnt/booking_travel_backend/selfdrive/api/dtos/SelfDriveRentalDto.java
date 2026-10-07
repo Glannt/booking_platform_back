@@ -14,8 +14,7 @@ public class SelfDriveRentalDto {
     private Long vehicleCategoryId;
     private boolean driverRequired;
     private BigDecimal deposit;
-    @Builder.Default
-    private String depositType = "FIXED"; // FIXED, PERCENT
+    private String depositType; // FIXED, PERCENT
     private BigDecimal depositRate;
     private Integer minimumDays;
     private boolean active;

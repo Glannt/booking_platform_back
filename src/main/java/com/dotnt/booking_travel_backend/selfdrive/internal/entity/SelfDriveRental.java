@@ -27,8 +27,7 @@ public class SelfDriveRental extends MasterEntity {
     private BigDecimal deposit;
 
     @Column(name = "deposit_type", length = 20)
-    @Builder.Default
-    private String depositType = "FIXED"; // FIXED, PERCENT
+    private String depositType; // FIXED, PERCENT
 
     @Column(name = "deposit_rate", precision = 5, scale = 2)
     private BigDecimal depositRate;
