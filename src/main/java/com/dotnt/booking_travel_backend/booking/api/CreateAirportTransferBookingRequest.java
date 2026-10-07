@@ -41,11 +41,9 @@ public class CreateAirportTransferBookingRequest {
     private Long routeId;
     private BigDecimal actualKm;
 
-    @DecimalMin("0.0") private BigDecimal basePrice;
-    @NotNull @DecimalMin("0.0") private BigDecimal totalPrice;
-
     private Integer passengerCount;
     private BigDecimal luggageWeight;
-    // No depositType/depositRate/depositAmount: the deposit is read from the transfer price row
+    // No basePrice/totalPrice: the line is priced by the server (quoteAirportTransfer) from the
+    // price_list rows. No deposit fields either: the deposit is read from the transfer price row
     // that priced this line, falling back to its route (see AirportFacade.resolveDepositPolicy).
 }

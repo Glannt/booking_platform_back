@@ -3,8 +3,6 @@ package com.dotnt.booking_travel_backend.booking.api;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
-import java.math.BigDecimal;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -33,8 +31,9 @@ public class CreateTourBookingRequest {
     private String description;
     private String startTime;
     private String endTime;
-    @NotNull @DecimalMin("0.0") private BigDecimal totalPrice;
-    // No depositType/depositRate/depositAmount: the deposit is read from TourPackage.depositPolicies.
+    // No totalPrice: the server prices the line from the package (quoteTourPackage). A client
+    // number was the last figure still in the browser's hands, and it could disagree with the
+    // price_list by any amount — server-priced only.
     /** Applied server-side against the server's own price; the browser's discountAmount is not read. */
     private String discountCode;
 }

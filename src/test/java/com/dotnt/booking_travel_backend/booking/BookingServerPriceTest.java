@@ -37,15 +37,15 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * The browser's price is a cross-check, not an instruction. Whichever of the three priced modules
- * builds the line — tour, self-drive, airport — the figure that reaches the database has to be the
- * one the server computed, whatever number was sent, and the gap has to be logged with enough of
- * both numbers to be sized against real traffic.
+ * The browser's price is a cross-check, not an instruction. Whichever of the priced modules builds
+ * the line — tour, self-drive, airport, intercity (PRIVATE) — the figure that reaches the database
+ * has to be the one the server computed, and the gap against the claimed total has to be logged with
+ * enough of both numbers to be sized against real traffic.
  *
  * <p>The last two tests pin down the other half of that contract: when the server has nothing to
- * price the line with, WARN keeps the booking alive on the client's figure so nothing is lost while
- * the gap is being measured, and ENFORCE refuses to sell an unpriced line instead of defaulting it
- * to free.
+ * price the line with, WARN keeps the booking alive on 0 so nothing is lost while the gap is being
+ * measured, and ENFORCE refuses to sell an unpriced line instead of defaulting it to free. SHARED
+ * intercity is operator-quoted, so it is the one line type the server deliberately prices at 0.
  */
 @ExtendWith(MockitoExtension.class)
 class BookingServerPriceTest {
@@ -55,10 +55,13 @@ class BookingServerPriceTest {
     private static final long SELF_DRIVE_CATEGORY_ID = 7L;
     private static final long AIRPORT_ROUTE_ID = 3L;
     private static final long AIRPORT_CATEGORY_ID = 5L;
+    private static final long INTERCITY_ROUTE_ID = 4L;
+    private static final long INTERCITY_CATEGORY_ID = 6L;
 
     private static final long SERVER_TOUR_TOTAL = 1_300_000L;
     private static final long SERVER_SELF_DRIVE_TOTAL = 2_400_000L;
     private static final long SERVER_AIRPORT_TOTAL = 950_000L;
+    private static final long SERVER_INTERCITY_TOTAL = 1_100_000L;
     /** The lie under test: a line the server prices in the millions, claimed at one đồng. */
     private static final long FALSIFIED = 1L;
 
@@ -119,7 +122,6 @@ class BookingServerPriceTest {
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(serviceId)
                         .quantity(2)
-                        .unitPrice(BigDecimal.valueOf(clientTotal))
                         .dynamicDetails(dynamicDetails)
                         .build()))
                 .build();
@@ -175,6 +177,27 @@ class BookingServerPriceTest {
     }
 
     @Test
+    void privateIntercityLineIsServerPricedAndSharedStaysOperatorQuoted() {
+        // PRIVATE: the price_list quote wins (same pair the detail stores).
+        when(intercityFacade.quoteIntercityTrip(eq(INTERCITY_ROUTE_ID), eq(INTERCITY_CATEGORY_ID),
+                eq("ONE_WAY"), any(), any()))
+                .thenReturn(new BigDecimal[]{BigDecimal.valueOf(SERVER_INTERCITY_TOTAL), BigDecimal.valueOf(SERVER_INTERCITY_TOTAL)});
+
+        bookingService.createBooking(request(102L, FALSIFIED,
+                "{\"routeId\":" + INTERCITY_ROUTE_ID + ",\"vehicleCategoryId\":" + INTERCITY_CATEGORY_ID
+                        + ",\"serviceType\":\"PRIVATE\",\"tripType\":\"ONE_WAY\"}"));
+
+        assertServerFigureWon(SERVER_INTERCITY_TOTAL);
+
+        // SHARED is operator-quoted: books at 0 in ENFORCE without being refused.
+        bookingService.createBooking(request(102L, 0,
+                "{\"routeId\":" + INTERCITY_ROUTE_ID + ",\"serviceType\":\"SHARED\",\"tripType\":\"ONE_WAY\"}"));
+
+        assertEquals(BigDecimal.ZERO, savedItem.get().getTotalPrice(),
+                "SHARED intercity is operator-quoted: the line stays 0 until admin prices it");
+    }
+
+    @Test
     void theMismatchIsLoggedWithBothFiguresAndTheBookingId() {
         lenient().when(tourBookingService.isTour(TOUR_ID)).thenReturn(true);
         when(tourBookingService.quoteTourPackage(eq(PACKAGE_ID), anyInt(), anyInt(), anyInt()))
@@ -203,16 +226,17 @@ class BookingServerPriceTest {
     }
 
     @Test
-    void anUnpriceableLineKeepsTheClientFigureInWarnMode() {
+    void anUnpriceableLineStaysAliveOnZeroInWarnMode() {
         lenient().when(tourBookingService.isTour(TOUR_ID)).thenReturn(true);
         when(tourBookingService.quoteTourPackage(eq(PACKAGE_ID), anyInt(), anyInt(), anyInt()))
                 .thenReturn(null);
+        ReflectionTestUtils.setField(bookingService, "serverPriceMode", ServerPriceMode.WARN);
 
         bookingService.createBooking(request(TOUR_ID, SERVER_TOUR_TOTAL,
                 "{\"tourPackageId\":" + PACKAGE_ID + ",\"adultCount\":2}"));
 
-        assertEquals(BigDecimal.valueOf(SERVER_TOUR_TOTAL), savedItem.get().getTotalPrice(),
-                "WARN exists precisely so a hole in the price list does not cost a booking while it is being measured");
+        assertEquals(BigDecimal.ZERO, savedItem.get().getTotalPrice(),
+                "WARN exists so a hole in the price list does not cost a booking while it is being measured; with no client figure to keep, the line stores 0");
     }
 
     @Test

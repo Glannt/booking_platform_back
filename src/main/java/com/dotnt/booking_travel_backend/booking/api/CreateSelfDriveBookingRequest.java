@@ -3,7 +3,6 @@ package com.dotnt.booking_travel_backend.booking.api;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -28,16 +27,13 @@ public class CreateSelfDriveBookingRequest {
     private Integer rentalDays;
     @NotBlank private String pickupLocation;
     private String dropoffLocation;
-    @DecimalMin("0.0") private BigDecimal basePrice;
-    @DecimalMin("0.0") private BigDecimal deposit;
-    @NotNull @DecimalMin("0.0") private BigDecimal totalPrice;
 
     private Long seatAddOnId;
     private Long fuelAddOnId;
     private List<Long> addOnIds;
 
-    // No depositType/depositRate/depositAmount: the deposit is read from the rental that priced
-    // this line (see SelfDriveFacade.resolveDepositPolicy).
+    // No basePrice/deposit/totalPrice: the server prices the line from the rental and carries
+    // no client-chosen deposit (see SelfDriveFacade.resolveDepositPolicy).
     /** Applied server-side against the server's own price; the browser's discountAmount is not read. */
     private String discountCode;
 }

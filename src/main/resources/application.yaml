@@ -85,10 +85,12 @@ aws:
 app:
   portal-url: ${APP_PORTAL_URL:http://localhost:3000/portal/bookings}
   booking:
-    # WARN stores the server-computed line price and logs any gap with what the browser sent.
-    # ENFORCE additionally refuses to book a line the server could not price. Anything other
-    # than WARN/ENFORCE fails at startup — the property converts straight into the enum.
-    server-price-mode: ${APP_BOOKING_SERVER_PRICE_MODE:WARN}
+    # ENFORCE is the default: booking requests carry no prices, so the server prices every line
+    # and refuses to book a line it cannot price. WARN is the temporary measure — store 0 for an
+    # unpriced line and log the gap — for sizing a still-misconfigured service against real
+    # traffic. Anything other than WARN/ENFORCE fails at startup — the property converts straight
+    # into the enum.
+    server-price-mode: ${APP_BOOKING_SERVER_PRICE_MODE:ENFORCE}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
   upload:

@@ -3,7 +3,6 @@ package com.dotnt.booking_travel_backend.booking.api;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
@@ -32,7 +31,7 @@ public class CreateRentCarBookingRequest {
     private String returnTime;
     @NotBlank private String pickupAddress;
     private String dropoffAddress;
-    @DecimalMin("0.0") private BigDecimal basePrice;
-    @NotNull @DecimalMin("0.0") private BigDecimal totalPrice;
-    // No depositType/depositRate/depositAmount: the deposit comes from the stored policy.
+    // No basePrice/totalPrice: a PRIVATE line is priced from price_list inside the facade and a
+    // SHARED line is operator-quoted (books at 0 until the operator sets a figure in admin). No
+    // deposit fields either: the deposit comes from the stored policy.
 }

@@ -39,8 +39,6 @@ public class RentCarBookingController {
         dd.put("departureTime", req.getDepartureTime());
         if (req.getReturnDate() != null) dd.put("returnDate", req.getReturnDate().toString());
         if (req.getReturnTime() != null) dd.put("returnTime", req.getReturnTime());
-        dd.put("basePrice", req.getBasePrice());
-        dd.put("totalPrice", req.getTotalPrice());
         dd.put("routeName", "");
         dd.put("vehicleCategory", "");
         dd.put("pickupAddress", req.getPickupAddress());
@@ -53,7 +51,6 @@ public class RentCarBookingController {
                 .customerName(req.getCustomerName())
                 .customerEmail(req.getCustomerEmail())
                 .customerPhone(req.getCustomerPhone())
-                .totalAmount(req.getTotalPrice())
                 .customerNotes(req.getCustomerNotes())
                 .contactChannel(req.getContactChannel())
                 .contactId(req.getContactId())
@@ -64,7 +61,6 @@ public class RentCarBookingController {
                         .serviceId(102L)
                         .serviceOptionId(req.getVehicleCategoryId())
                         .quantity(quantity)
-                        .unitPrice(req.getTotalPrice())
                         .startDate(startDate.atStartOfDay())
                         .pickupLocation(req.getPickupAddress())
                         .dropoffLocation(req.getDropoffAddress())

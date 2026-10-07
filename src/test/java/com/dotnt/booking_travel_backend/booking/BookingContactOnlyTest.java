@@ -115,7 +115,6 @@ class BookingContactOnlyTest {
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(TOUR_ID)
                         .quantity(2)
-                        .unitPrice(BigDecimal.valueOf(clientSuppliedUnitPrice))
                         .dynamicDetails("{\"tourPackageId\":" + packageId + "}")
                         .build()))
                 .build();
@@ -145,15 +144,18 @@ class BookingContactOnlyTest {
     }
 
     @Test
-    void pricedPackageKeepsTheClientPriceAndIsNotStamped() {
+    void pricedPackageBooksAtTheServerFigureAndIsNotStamped() {
         when(tourBookingService.isContactOnlyPackage(PRICED_PACKAGE_ID)).thenReturn(false);
+        lenient().when(tourBookingService.quoteTourPackage(eq(PRICED_PACKAGE_ID), anyInt(), anyInt(), anyInt()))
+                .thenReturn(BigDecimal.valueOf(UNIT_PRICE));
 
         bookingService.createBooking(request(PRICED_PACKAGE_ID, UNIT_PRICE));
 
         BookingItem item = savedItem.get();
         assertFalse(Boolean.TRUE.equals(item.getIsContactOnly()),
                 "contact-only must be the exception, not a blanket stamp on every tour booking");
-        assertEquals(BigDecimal.valueOf(UNIT_PRICE), item.getUnitPrice());
+        assertEquals(BigDecimal.valueOf(UNIT_PRICE), item.getUnitPrice(),
+                "the figure is the server's quote, since the request carries no price");
         assertEquals(BigDecimal.valueOf(UNIT_PRICE), item.getTotalPrice());
 
         Booking booking = savedBooking.get();

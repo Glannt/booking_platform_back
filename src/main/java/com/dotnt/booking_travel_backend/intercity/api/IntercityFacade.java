@@ -96,34 +96,11 @@ public class IntercityFacade {
             // is kept instead of asking price_list for a row that must not exist.
             boolean routeContactOnly = routeId != null && isContactOnlyRoute(routeId);
             if (!routeContactOnly && routeId != null && serviceOptionId != null) {
-                IntercityPriceCalculateResponse quote = intercityPriceService.calculatePrice(
-                        IntercityPriceCalculateRequest.builder()
-                                .routeId(routeId)
-                                .vehicleCategoryId(serviceOptionId)
-                                .priceTypeCode(tripType)
-                                .departureDate(departureDateTime != null ? departureDateTime.toLocalDate() : null)
-                                .returnDate(returnDate)
-                                .build());
-
-                // calculatePrice already throws when the requested trip type has no configured row,
+                // quoteIntercityTrip throws when the requested trip type has no configured row,
                 // so there is no stand-in price left to fall back on here.
-                BigDecimal serverBase = quote.getTotalPrice();
-                BigDecimal serverTotal = serverBase;
-
-                if (departureDateTime != null) {
-                    PricingContext pricingContext = PricingContext.builder()
-                            .basePrice(serverTotal)
-                            .serviceTime(departureDateTime)
-                            .routeId(routeId)
-                            .vehicleCategoryId(serviceOptionId)
-                            .tripType(tripType)
-                            .build();
-                    SurchargeResult surchargeResult = surchargeService.calculate("INTERCITY", pricingContext);
-                    if (surchargeResult != null && surchargeResult.getTotalSurcharge() != null) {
-                        serverTotal = serverTotal.add(surchargeResult.getTotalSurcharge());
-                    }
-                }
-
+                BigDecimal[] quote = quoteIntercityTrip(routeId, serviceOptionId, tripType, departureDateTime, returnDate);
+                BigDecimal serverBase = quote[0];
+                BigDecimal serverTotal = quote[1];
                 if (!matchesPrice(serverTotal, clientTotalPrice)) {
                     log.warn("Client total {} differs from price_list {} for route {} category {}; stored the price_list value",
                             clientTotalPrice, serverTotal, routeId, serviceOptionId);
@@ -162,6 +139,50 @@ public class IntercityFacade {
 
         detail = intercityBookingDetailRepository.save(detail);
         return detail.getId();
+    }
+
+    /**
+     * The server's figure for a PRIVATE intercity trip: the price_list row for the requested trip
+     * type plus any applicable surcharge — exactly the pair {@link #createIntercityBookingDetail}
+     * stores for a non-contact-only PRIVATE line, so a line is never priced off one row here and
+     * another in the detail.
+     *
+     * <p>Throws (from calculatePrice) when the requested trip type has no configured row — the same
+     * contract the detail-creation path relies on, so a caller that can fall back (Booking) catches
+     * and treats it as "cannot be priced".
+     *
+     * @return {base, total} — the pre-surcharge base and the final total, or {@code null} when the
+     *         line cannot even be looked up (route or category missing)
+     */
+    public BigDecimal[] quoteIntercityTrip(Long routeId, Long vehicleCategoryId, String tripType,
+                                           LocalDateTime departureDateTime, LocalDate returnDate) {
+        if (routeId == null || vehicleCategoryId == null) {
+            return null;
+        }
+        IntercityPriceCalculateResponse quote = intercityPriceService.calculatePrice(
+                IntercityPriceCalculateRequest.builder()
+                        .routeId(routeId)
+                        .vehicleCategoryId(vehicleCategoryId)
+                        .priceTypeCode(tripType)
+                        .departureDate(departureDateTime != null ? departureDateTime.toLocalDate() : null)
+                        .returnDate(returnDate)
+                        .build());
+        BigDecimal serverBase = quote.getTotalPrice();
+        BigDecimal serverTotal = serverBase;
+        if (departureDateTime != null) {
+            PricingContext pricingContext = PricingContext.builder()
+                    .basePrice(serverTotal)
+                    .serviceTime(departureDateTime)
+                    .routeId(routeId)
+                    .vehicleCategoryId(vehicleCategoryId)
+                    .tripType(tripType)
+                    .build();
+            SurchargeResult surchargeResult = surchargeService.calculate("INTERCITY", pricingContext);
+            if (surchargeResult != null && surchargeResult.getTotalSurcharge() != null) {
+                serverTotal = serverTotal.add(surchargeResult.getTotalSurcharge());
+            }
+        }
+        return new BigDecimal[]{serverBase, serverTotal};
     }
 
     /**

@@ -46,9 +46,6 @@ public class SelfDriveBookingController {
         detailsMap.put("startDate", req.getStartDate().toString());
         detailsMap.put("endDate", endDate.toString());
         detailsMap.put("rentalDays", rentalDays);
-        detailsMap.put("basePrice", req.getBasePrice());
-        detailsMap.put("deposit", req.getDeposit());
-        detailsMap.put("totalPrice", req.getTotalPrice());
         detailsMap.put("pickupLocation", req.getPickupLocation());
         detailsMap.put("dropoffLocation", req.getDropoffLocation() != null ? req.getDropoffLocation() : "");
         if (req.getSeatAddOnId() != null) detailsMap.put("seatAddOnId", req.getSeatAddOnId());
@@ -61,7 +58,6 @@ public class SelfDriveBookingController {
                 .customerName(req.getCustomerName())
                 .customerEmail(req.getCustomerEmail())
                 .customerPhone(req.getCustomerPhone())
-                .totalAmount(req.getTotalPrice())
                 .customerNotes(req.getCustomerNotes())
                 .contactChannel(req.getContactChannel())
                 .contactId(req.getContactId())
@@ -73,7 +69,6 @@ public class SelfDriveBookingController {
                         .serviceId(103L)
                         .serviceOptionId(req.getVehicleCategoryId())
                         .quantity(rentalDays)
-                        .unitPrice(req.getTotalPrice())
                         .startDate(req.getStartDate().atStartOfDay())
                         .endDate(endDate.atStartOfDay())
                         .pickupLocation(req.getPickupLocation())

@@ -59,11 +59,12 @@ public class BookingServiceImpl implements BookingService {
     /**
      * Who wins when the browser's figure for a booking line disagrees with the server's.
      * {@link ServerPriceMode#ENFORCE} additionally refuses to book a line the server could not
-     * price; {@link ServerPriceMode#WARN} logs it and keeps what was sent so the gap can be
-     * measured against real traffic first.
+     * price; {@link ServerPriceMode#WARN} logs it and stores 0 so the gap can still be measured
+     * against real traffic. ENFORCE is the default: booking requests no longer carry prices at
+     * all, so there is nothing for WARN to fall back on by design.
      */
-    @org.springframework.beans.factory.annotation.Value("${app.booking.server-price-mode:WARN}")
-    private ServerPriceMode serverPriceMode = ServerPriceMode.WARN;
+    @org.springframework.beans.factory.annotation.Value("${app.booking.server-price-mode:ENFORCE}")
+    private ServerPriceMode serverPriceMode = ServerPriceMode.ENFORCE;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
@@ -137,7 +138,9 @@ public class BookingServiceImpl implements BookingService {
         if (request.getItems() != null) {
             for (var itemReq : request.getItems()) {
                 int quantity = itemReq.getQuantity() != null ? itemReq.getQuantity() : 1;
-                BigDecimal itemUnitPrice = itemReq.getUnitPrice() != null ? itemReq.getUnitPrice() : BigDecimal.ZERO;
+                // Only the server prices a line now (no unitPrice on the request): each branch
+                // below fills serverPrice with its quote, and this line's price is settled after it.
+                BigDecimal itemUnitPrice = BigDecimal.ZERO;
                 BigDecimal itemTotalPrice = itemUnitPrice;
 
                 Long tourBookingDetailId = null;
@@ -148,6 +151,10 @@ public class BookingServiceImpl implements BookingService {
                 // Filled in by whichever branch can price this line; null means the server had
                 // nothing to price it with, which WARN logs and ENFORCE refuses to book.
                 BigDecimal serverPrice = null;
+                // Lines the server deliberately does not price (SHARED intercity is operator-quoted by
+                // design, books at 0 until the operator sets a figure in admin): the ENFORCE refusal
+                // must not fire for them.
+                boolean operatorQuotedLine = false;
                 boolean isTour = tourBookingService.isTour(itemReq.getServiceId());
                 boolean isAirport = airportFacade.existsTransferPriceById(itemReq.getServiceId())
                         || (itemReq.getServiceId() != null && itemReq.getServiceId().equals(101L));
@@ -472,6 +479,22 @@ public class BookingServiceImpl implements BookingService {
                         storedDeposit = intercityFacade.resolveDepositPolicy(
                                 routeId, vehicleCategoryId, tripType, departureDateTime, returnDate);
                     }
+
+                    // PRIVATE intercity is priced from the same price_list row the detail stores;
+                    // SHARED is operator-quoted, so the server does not price it and the line books
+                    // at 0 until the operator sets a figure in admin (kept out of the override below).
+                    if ("SHARED".equalsIgnoreCase(serviceType)) {
+                        operatorQuotedLine = true;
+                    } else {
+                        try {
+                            java.math.BigDecimal[] quote = intercityFacade.quoteIntercityTrip(
+                                    routeId, vehicleCategoryId, tripType, departureDateTime, returnDate);
+                            serverPrice = quote != null ? quote[1] : null;
+                        } catch (Exception e) {
+                            // No configured price row for this trip type — the mode decides below.
+                            serverPrice = null;
+                        }
+                    }
                 } else if (isSelfDrive) {
                     com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
                     java.util.Map<String, Object> ad = new java.util.HashMap<>();
@@ -546,11 +569,12 @@ public class BookingServiceImpl implements BookingService {
                     if (storedDeposit == null) storedDeposit = selfDriveFacade.resolveDepositPolicy(vehicleCategoryId);
                 }
 
-                // The figure the browser sent is a cross-check, not an instruction: when the
-                // server can price the line, its figure is what gets stored and the booking
-                // aggregate is rebuilt from it. Only when the server has nothing to price the
-                // line with does the mode decide — warn and keep what was sent, or refuse.
-                if ((isTour || isAirport || isSelfDrive) && !contactOnlyItem) {
+                // The server's figure for the line is what gets stored and the booking aggregate is
+                // rebuilt from it; the browser identifies the line, it does not price it. Only when
+                // the server has nothing to price the line with does the mode decide — warn and
+                // store 0, or refuse. Operator-quoted lines (SHARED intercity) are exempt: the
+                // server deliberately does not price them.
+                if ((isTour || isAirport || isSelfDrive || (isIntercity && !operatorQuotedLine)) && !contactOnlyItem) {
                     if (serverPrice != null) {
                         itemUnitPrice = serverPrice;
                         itemTotalPrice = serverPrice;
@@ -559,8 +583,8 @@ public class BookingServiceImpl implements BookingService {
                                 "No server-side price for this booking line (service " + itemReq.getServiceId()
                                         + "): refusing to book an unpriced line.");
                     } else {
-                        log.warn("No server price for booking line, service {}; keeping the client figure {}",
-                                itemReq.getServiceId(), itemUnitPrice);
+                        log.warn("No server price for booking line, service {}; storing 0 (an operator will have to price it)",
+                                itemReq.getServiceId());
                     }
                 }
 
@@ -663,9 +687,9 @@ public class BookingServiceImpl implements BookingService {
         booking.setTotalPrice(calculatedTotal);
         booking = bookingRepository.save(booking);
 
-        // Whatever the browser claimed, the booking now carries what the server priced. Log the
-        // gap with the booking id so it can be sized against real traffic before the mode flips
-        // from WARN to ENFORCE; both figures are net of any discount, so this is like for like.
+        // Whatever the browser claimed (only the generic endpoint can still claim a figure), the
+        // booking now carries what the server priced. Log the gap with the booking id so it can be
+        // sized against real traffic; both figures are net of any discount, so this is like for like.
         if (request.getTotalAmount() != null
                 && request.getTotalAmount().compareTo(booking.getTotalAmount()) != 0) {
             log.warn("Price mismatch for booking {} ({}): browser said {}, server priced {} [mode={}, discount={}]",

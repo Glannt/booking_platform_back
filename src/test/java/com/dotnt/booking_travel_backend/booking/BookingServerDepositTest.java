@@ -113,7 +113,6 @@ class BookingServerDepositTest {
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(TOUR_ID)
                         .quantity(2)
-                        .unitPrice(BigDecimal.valueOf(SERVER_TOUR_TOTAL))
                         .dynamicDetails("{\"tourPackageId\":" + PACKAGE_ID + ",\"adultCount\":2}")
                         .build()))
                 .build();
@@ -157,7 +156,6 @@ class BookingServerDepositTest {
                 .items(List.of(CreateBookingItemRequest.builder()
                         .serviceId(103L)
                         .quantity(3)
-                        .unitPrice(BigDecimal.valueOf(SERVER_SELF_DRIVE_TOTAL))
                         .dynamicDetails("{\"vehicleCategoryId\":" + SELF_DRIVE_CATEGORY_ID
                                 + ",\"startDate\":\"2026-10-10\",\"endDate\":\"2026-10-13\"}")
                         .build()))

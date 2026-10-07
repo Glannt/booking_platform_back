@@ -42,8 +42,6 @@ public class AirportTransferBookingController {
         ad.put("returnDropoffAddress", req.getReturnDropoffAddress());
         ad.put("routeId", req.getRouteId());
         ad.put("actualKm", req.getActualKm());
-        ad.put("basePrice", req.getBasePrice());
-        ad.put("totalPrice", req.getTotalPrice());
         ad.put("vehicleCategoryId", req.getVehicleCategoryId());
         ad.put("passengerCount", req.getPassengerCount());
         ad.put("luggageWeight", req.getLuggageWeight());
@@ -54,7 +52,6 @@ public class AirportTransferBookingController {
                 .customerName(req.getCustomerName())
                 .customerEmail(req.getCustomerEmail())
                 .customerPhone(req.getCustomerPhone())
-                .totalAmount(req.getTotalPrice())
                 .customerNotes(req.getCustomerNotes())
                 .contactChannel(req.getContactChannel())
                 .contactId(req.getContactId())
@@ -65,7 +62,6 @@ public class AirportTransferBookingController {
                         .serviceId(101L)
                         .serviceOptionId(req.getVehicleCategoryId())
                         .quantity(req.getPassengerCount() != null ? req.getPassengerCount() : 1)
-                        .unitPrice(req.getTotalPrice())
                         .startDate(req.getOutboundPickupTime())
                         .endDate(req.getReturnPickupTime())
                         .flightNumber(req.getOutboundFlightNumber())
