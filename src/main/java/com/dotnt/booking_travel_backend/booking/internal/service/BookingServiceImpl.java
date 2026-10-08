@@ -1043,6 +1043,92 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional
+    public BookingDto requestCancellation(Long id, Long userId) {
+        Booking booking = bookingRepository.findById(id)
+                .filter(b -> b.getDeletedAt() == null)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt với ID: " + id));
+
+        if (booking.getUserId() == null || !booking.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Bạn không có quyền thao tác trên đơn đặt này");
+        }
+
+        BookingStatus current = booking.getBookingStatus();
+        if (current == BookingStatus.completed || current == BookingStatus.cancelled) {
+            throw new IllegalArgumentException("Đơn đặt đã " + (current == BookingStatus.cancelled ? "hủy" : "hoàn thành") + ", không thể yêu cầu hủy");
+        }
+        if (current == BookingStatus.cancellation_requested) {
+            // Idempotent: yêu cầu hủy đã được ghi nhận, trả về nguyên trạng.
+            return bookingMapper.toDto(booking);
+        }
+
+        booking.setBookingStatus(BookingStatus.cancellation_requested);
+        booking = bookingRepository.save(booking);
+
+        recordTimelineEvent(booking.getId(), "CANCELLATION_REQUESTED", "Khách yêu cầu hủy",
+                "Khách hàng đã gửi yêu cầu hủy cho đơn đặt",
+                current != null ? current.name() : null, booking.getBookingStatus().name());
+
+        return bookingMapper.toDto(booking);
+    }
+
+    @Override
+    @Transactional
+    public BookingDto acceptCancellationRequest(Long id) {
+        Booking booking = bookingRepository.findById(id)
+                .filter(b -> b.getDeletedAt() == null)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt với ID: " + id));
+
+        if (booking.getBookingStatus() != BookingStatus.cancellation_requested) {
+            throw new IllegalArgumentException("Đơn đặt không ở trạng thái chờ hủy");
+        }
+
+        BookingStatus oldStatus = booking.getBookingStatus();
+        booking.setBookingStatus(BookingStatus.cancelled);
+        booking = bookingRepository.save(booking);
+
+        recordTimelineEvent(booking.getId(), "CANCELLATION_ACCEPTED", "Chấp nhận hủy đơn",
+                "Quản trị viên đã chấp nhận yêu cầu hủy của khách",
+                oldStatus.name(), booking.getBookingStatus().name());
+
+        return bookingMapper.toDto(booking);
+    }
+
+    @Override
+    @Transactional
+    public BookingDto rejectCancellationRequest(Long id) {
+        Booking booking = bookingRepository.findById(id)
+                .filter(b -> b.getDeletedAt() == null)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn đặt với ID: " + id));
+
+        if (booking.getBookingStatus() != BookingStatus.cancellation_requested) {
+            throw new IllegalArgumentException("Đơn đặt không ở trạng thái chờ hủy");
+        }
+
+        BookingStatus oldStatus = booking.getBookingStatus();
+        BookingStatus restore = BookingStatus.confirmed;
+        for (com.dotnt.booking_travel_backend.booking.internal.entity.BookingTimelineEvent e
+                : bookingTimelineEventRepository.findByBookingIdOrderByCreatedAtAsc(id)) {
+            if ("CANCELLATION_REQUESTED".equals(e.getEventType()) && e.getOldValue() != null) {
+                try {
+                    restore = BookingStatus.valueOf(e.getOldValue());
+                } catch (IllegalArgumentException ignored) {
+                    // Giữ giá trị mặc định nếu dữ liệu timeline không hợp lệ.
+                }
+            }
+        }
+
+        booking.setBookingStatus(restore);
+        booking = bookingRepository.save(booking);
+
+        recordTimelineEvent(booking.getId(), "CANCELLATION_REJECTED", "Từ chối yêu cầu hủy",
+                "Quản trị viên đã từ chối yêu cầu hủy, khôi phục trạng thái đơn",
+                oldStatus.name(), booking.getBookingStatus().name());
+
+        return bookingMapper.toDto(booking);
+    }
+
     private String generateBookingCode() {
         String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         int randNum = 100000 + SECURE_RANDOM.nextInt(900000);

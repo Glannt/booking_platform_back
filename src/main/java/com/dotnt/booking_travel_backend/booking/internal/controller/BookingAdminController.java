@@ -52,4 +52,18 @@ public class BookingAdminController {
     public ResponseEntity<List<com.dotnt.booking_travel_backend.booking.api.BookingTimelineDto>> getBookingTimeline(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.getBookingTimeline(id));
     }
+
+    @PreAuthorize("hasAuthority('BOOKING_UPDATE')")
+    @PostMapping("/{id}/accept-cancel")
+    @SuccessResponse("Cancellation accepted successfully!")
+    public ResponseEntity<BookingDto> acceptCancellation(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.acceptCancellationRequest(id));
+    }
+
+    @PreAuthorize("hasAuthority('BOOKING_UPDATE')")
+    @PostMapping("/{id}/reject-cancel")
+    @SuccessResponse("Cancellation rejected successfully!")
+    public ResponseEntity<BookingDto> rejectCancellation(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.rejectCancellationRequest(id));
+    }
 }

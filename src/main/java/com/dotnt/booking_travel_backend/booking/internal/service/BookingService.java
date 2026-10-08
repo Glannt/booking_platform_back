@@ -16,4 +16,9 @@ public interface BookingService {
     void deleteBooking(Long id, String reason);
     List<com.dotnt.booking_travel_backend.booking.api.BookingTimelineDto> getBookingTimeline(Long id);
     List<BookingDto> getMyBookings(Long userId);
+    BookingDto requestCancellation(Long id, Long userId);
+
+    BookingDto acceptCancellationRequest(Long id);
+
+    BookingDto rejectCancellationRequest(Long id);
 }

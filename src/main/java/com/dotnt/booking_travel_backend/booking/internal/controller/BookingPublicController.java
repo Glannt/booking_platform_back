@@ -51,4 +51,18 @@ public class BookingPublicController {
     public ResponseEntity<BookingDto> getBookingByCode(@PathVariable String code) {
         return ResponseEntity.ok(bookingService.getBookingByCode(code));
     }
+
+    @PostMapping("/{id}/cancel-request")
+    @SuccessResponse("Cancellation request submitted successfully!")
+    public ResponseEntity<BookingDto> requestCancellation(@PathVariable Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof String email)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Long userId = userFacade.findUserIdByEmail(email);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(bookingService.requestCancellation(id, userId));
+    }
 }
