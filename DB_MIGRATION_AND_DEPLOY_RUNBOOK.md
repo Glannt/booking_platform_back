@@ -208,28 +208,29 @@ Sửa trong script (3 chỗ):
 
 3. Tăng `--memory 384m → 512m` cho frontend nếu thấy OOM trong `docker stats`.
 
-## 6. GitHub Actions (đã cập nhật trong cả 2 repo)
+## 6. GitHub Actions (build & push image)
 
-- Trigger: `push: branches: [main]` + `workflow_dispatch` (rollback/deploy tay).
-- Job `build-and-push`: như cũ (tag `latest` + `<sha>`).
-- Job `deploy`: thay `docker compose pull/up` bằng:
+Workflow hiện tại: `.github/workflows/deploy.yml` — **chỉ build image và push Docker Hub**, không SSH, không gọi Render hook.
+
+- Trigger: `push: branches: [main]` + `workflow_dispatch`.
+- Tag đẩy lên: `latest` và `<git-sha>` (giữ tag sha để rollback).
+- Render chạy service kiểu **Existing Image** → sau khi workflow chạy xong phải vào Render bấm **Manual Deploy** (image-backed service không tự redeploy khi có tag mới).
 
 ```yaml
-      - name: Blue-Green deploy Backend
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Build & push image
+        uses: docker/build-push-action@v6
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script_stop: true
-          script: |
-            set -e
-            cd /opt/projects/minhkhoatravel
-            ./scripts/deploy-bluegreen.sh backend ${{ github.sha }}
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 ```
 
-- Thêm `concurrency` (không để 2 deploy cùng lúc).
-- Trước khi bật CI tự động: **phải sửa `deploy-bluegreen.sh` theo §5** trên VPS, vì CI giờ gọi chính script này.
+- Thêm `concurrency` (không để 2 build cùng lúc).
 
 ## 7. Checklist setup TAY (không CI hoá được)
 
@@ -237,7 +238,8 @@ Sửa trong script (3 chỗ):
 - [ ] `deploy.yml` trên VPS đã thêm `JPA_DDL_AUTO: validate` + `FLYWAY_ENABLED: "true"`.
 - [ ] `scripts/deploy-bluegreen.sh` đã sửa theo §5 (health `127.0.0.1` + `/api/health`).
 - [ ] `/opt/backups` + cron backup DB định kỳ.
-- [ ] GitHub secrets mỗi repo: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, (`NEXT_PUBLIC_BACKEND_API` cho frontend).
+- [ ] GitHub secrets repo backend: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (không còn `VPS_*`).
+- [ ] Render: service **Existing Image** trỏ `docker.io/<DOCKERHUB_USERNAME>/booking-platform-backend:latest`, env theo `.env.production`.
 - [ ] DB: đã chạy `sync.sql` trên prod (§4 Bước 7) — **chỉ sau khi test sạch ở Bước 6**.
 
 ## 8. Cảnh báo quan trọng

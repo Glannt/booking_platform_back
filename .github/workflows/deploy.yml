@@ -1,4 +1,8 @@
-name: Build, Push & Deploy Backend
+name: Build & Push Backend Image
+
+# Chỉ build Docker image và push lên Docker Hub.
+# Render deploy thủ công bằng "Existing Image" -> Manual Deploy.
+# Không SSH, không deploy hook, không phụ thuộc Render trong workflow này.
 
 on:
   push:
@@ -6,18 +10,18 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-backend
-  cancel-in-progress: false
+  group: build-backend-image
+  cancel-in-progress: true
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      # secrets không dùng được ở env cấp workflow -> khai báo ở cấp job.
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/booking-platform-backend
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Check Docker Hub credentials
         env:
@@ -25,9 +29,12 @@ jobs:
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_TOKEN" ]; then
-            echo "::error::Thiếu secret DOCKERHUB_USERNAME hoặc DOCKERHUB_TOKEN. Vào Settings > Secrets and variables > Actions để thêm (đúng tên, phân biệt hoa/thường)."
+            echo "::error::Thiếu secret DOCKERHUB_USERNAME hoặc DOCKERHUB_TOKEN (Settings > Secrets and variables > Actions)."
             exit 1
           fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -39,22 +46,26 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          # Render chạy amd64; chỉ build 1 platform cho nhanh.
+          platforms: linux/amd64
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/booking-platform-backend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/booking-platform-backend:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Trigger Render deploy
-        if: github.ref == 'refs/heads/main'
-        env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      - name: Summary
         run: |
-          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
-            echo "::warning::Chưa có secret RENDER_DEPLOY_HOOK_URL — bỏ qua bước trigger Render."
-            exit 0
-          fi
-          echo "Triggering Render deploy..."
-          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
-
+          {
+            echo "### Image đã push"
+            echo ""
+            echo "- \`${{ env.IMAGE_NAME }}:latest\`"
+            echo "- \`${{ env.IMAGE_NAME }}:${{ github.sha }}\`"
+            echo ""
+            echo "Vào Render > service (Existing Image) > **Manual Deploy > Deploy latest commit** để kéo image mới."
+            echo "Rollback: đổi Image URL sang tag \`${{ github.sha }}\` cũ rồi Manual Deploy."
+          } >> "$GITHUB_STEP_SUMMARY"
