@@ -56,6 +56,12 @@ spring:
       force-request: true
       force-response: true
 
+server:
+  # Render (và các PaaS khác) inject PORT; local vẫn mặc định 8080.
+  port: ${PORT:8080}
+  # Sau reverse proxy của Render, cần đọc X-Forwarded-* để redirect/cookie đúng scheme/host.
+  forward-headers-strategy: framework
+
 mailer:
   service: gmail
   from: ${MAILER_FROM:tongnguyenthanhdo@gmail.com}
