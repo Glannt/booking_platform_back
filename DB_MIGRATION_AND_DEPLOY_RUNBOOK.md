@@ -1,5 +1,7 @@
 # Runbook — Migration DB bằng Flyway & Deploy Production
 
+> ⚠️ **KHÔNG CÒN ÁP DỤNG (11/2026):** Flyway và toàn bộ `src/main/resources/db/migration` đã được gỡ khỏi project. DB mới/rỗng nên schema do Hibernate quản lý qua `spring.jpa.hibernate.ddl-auto` (`JPA_DDL_AUTO=update`). Tài liệu này chỉ giữ lại để tham khảo lịch sử.
+
 > Trạng thái: **Đã test local thành công** (xem §2). Áp dụng cho `minhkhoatravel` production.
 > Repo: `booking_travel_backend` (branch `dev`, merge → `main` để trigger CI).
 

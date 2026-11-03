@@ -1,1 +1,6 @@
+plugins {
+    // Cho phép Gradle tự tải JDK khi toolchain (vd: Java 23) chưa được cài trên máy.
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
 rootProject.name = 'booking_travel_backend'
