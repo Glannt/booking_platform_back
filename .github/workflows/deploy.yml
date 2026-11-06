@@ -16,6 +16,7 @@ concurrency:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    environment: booking-platform-backend
     env:
       # secrets không dùng được ở env cấp workflow -> khai báo ở cấp job.
       IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/booking-platform-backend
